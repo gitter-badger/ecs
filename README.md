@@ -10,14 +10,14 @@ class WeaponComponent: IEcsComponent {
 ```
 
 ## Entity
-Component's container for components. Implemented with int id-s for less memory allocation:
+Сontainer for components. Implemented with int id-s for less memory allocation:
 ```
 int entity = World.CreateEntity();
 World.RemoveEntity(entity);
 ```
 
 ## System
-Logic container for filtered entities processing. User class should inherits EcsSystem class:
+Сontainer for logic for processing filtered entities. User class should inherits EcsSystem class:
 ```
 class WeaponSystem : EcsSystem {
     // we want to filter entities only with WeaponComponent on them.
@@ -30,10 +30,22 @@ class WeaponSystem : EcsSystem {
 ## EcsWorld
 Root level container for all systems / entities / components, works like isolated environment:
 ```
-var world = new EcsWorld()
-    .AddSystem(new WeaponSystem());
-world.Initialize();
-...
-// process all dependent systems.
-world.Update();
+class Startup : MonoBehaviour {
+    EcsWorld _world;
+    void OnEnable() {
+        // create ecs environment.
+        var world = new EcsWorld()
+            .AddSystem(new WeaponSystem());
+        world.Initialize();
+    }
+    void Update() {
+        // process all dependent systems.
+        world.Update();
+    }
+    void OnDisable() {
+        // destroy ecs environment.
+        world.Destroy();
+        world = null;
+    }
+}
 ```
