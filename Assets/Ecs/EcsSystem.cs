@@ -1,42 +1,17 @@
-using System;
-
 namespace LeopotamGroup.Ecs {
-    public interface IEcsUpdateSystem {
+    public interface IEcsUpdatableSystem {
         void Update ();
     }
 
-    public interface IEcsFixedUpdateSystem {
+    public interface IEcsFixedUpdatableSystem {
         void FixedUpdate ();
     }
 
-    public abstract class EcsSystem {
-        public ComponentMask ComponentsMask { get; private set; }
+    public interface IEcsDestroyableSystem {
+        void Destroy ();
+    }
 
-        protected EcsWorld World { get; private set; }
-
-        public void SetWorld (EcsWorld world) {
-            if (world == null) {
-                throw new Exception ("world is null");
-            }
-            if (World != null) {
-                throw new Exception ("Already inited");
-            }
-            World = world;
-
-            var types = GetRequiredComponents ();
-            var mask = new ComponentMask ();
-            if (types != null) {
-                for (var i = 0; i < types.Length; i++) {
-                    mask.EnableBits (new ComponentMask (world.GetComponentId (types[i])));
-                }
-            }
-            ComponentsMask = mask;
-        }
-
-        protected abstract Type[] GetRequiredComponents ();
-
-        public virtual void Initialize () { }
-
-        public virtual void Destroy () { }
+    public interface IEcsSystem {
+        void Initialize (EcsWorld world);
     }
 }

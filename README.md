@@ -12,8 +12,8 @@ class WeaponComponent: IEcsComponent {
 ## Entity
 Сontainer for components. Implemented with int id-s for more simplified api:
 ```
-int entity = _world.CreateEntity();
-_world.RemoveEntity(entity);
+int entity = _world.CreateEntity ();
+_world.RemoveEntity (entity);
 ```
 
 ## System
@@ -25,8 +25,8 @@ class WeaponSystem : IEcsSystem {
     void IEcsSystem.Initialize (EcsWorld world) {
         _world = world;
 
-        var entity = _world.CreateEntity();
-        _world.RemoveEntity(entity);
+        var entity = _world.CreateEntity ();
+        _world.RemoveEntity (entity);
     }
 
     void IEcsSystem.Destroy () {
@@ -35,9 +35,9 @@ class WeaponSystem : IEcsSystem {
 ```
 
 ## EcsFilter
-Container for keep filtered entities for specified component list:
+Container for keep filtered entities with specified component list:
 ```
-class WeaponSystem : IEcsSystem {
+class WeaponSystem : IEcsSystem, IEcsUpdatableSystem {
     EcsWorld _world;
     EcsFilter _filter;
 
@@ -47,11 +47,13 @@ class WeaponSystem : IEcsSystem {
         // we want to filter entities only with WeaponComponent on them.
         _filter = _world.GetFilter (typeof (WeaponComponent));
         
-        var newEntity = _world.CreateEntity();
-        _world.AddComponent<WeaponComponent>(newEntity);
+        var newEntity = _world.CreateEntity ();
+        _world.AddComponent<WeaponComponent> (newEntity);
+    }
 
+    void IEcsUpdatableSystem.Update () {
         foreach (var entity in _filter.Entities) {
-            var weapon = _world.GetComponent<WeaponComponent>(entity);
+            var weapon = _world.GetComponent<WeaponComponent> (entity);
             weapon.Ammo--;
         }
     }
@@ -66,19 +68,19 @@ class Startup : MonoBehaviour {
 
     void OnEnable() {
         // create ecs environment.
-        var world = new EcsWorld()
-            .AddSystem(new WeaponSystem());
+        var world = new EcsWorld ()
+            .AddSystem(new WeaponSystem ());
         world.Initialize();
     }
     
     void Update() {
         // process all dependent systems.
-        world.Update();
+        world.Update ();
     }
 
     void OnDisable() {
         // destroy ecs environment.
-        world.Destroy();
+        world.Destroy ();
         world = null;
     }
 }
