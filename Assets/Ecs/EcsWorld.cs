@@ -4,24 +4,40 @@ using System.Collections.Generic;
 namespace LeopotamGroup.Ecs {
     public sealed class EcsWorld {
         /// <summary>
+        /// Raises after component was attached to entity.
+        /// </summary>
+        public event Action<IEcsComponent> OnComponentAttach = delegate { };
+
+        /// <summary>
+        /// Raises before component was detached to entity.
+        /// </summary>
+        public event Action<IEcsComponent> OnComponentDetach = delegate { };
+
+        /// <summary>
         /// All registered systems.
         /// </summary>
         readonly List<EcsSystem> _allSystems = new List<EcsSystem> (64);
 
         /// <summary>
-        /// Dictionary for fast search component <-> bitmask for component type.
+        /// Dictionary for fast search component -> type id.
         /// </summary>
-        readonly Dictionary<Type, ComponentMask> _componentMasks = new Dictionary<Type, ComponentMask> (64);
+        /// <returns></returns>
+        readonly Dictionary<Type, int> _componentIds = new Dictionary<Type, int> (64);
 
         /// <summary>
         /// List of all entities (their components).
         /// </summary>
-        readonly List<IEcsComponent[]> _entities = new List<IEcsComponent[]> (1024);
+        readonly List<EcsEntity> _entities = new List<EcsEntity> (1024);
 
         /// <summary>
         /// List of removed entities - they can be reused later.
         /// </summary>
-        readonly List<int> _reservedEntities = new List<int> (256);
+        readonly List<int> _reservedEntityIds = new List<int> (256);
+
+        /// <summary>
+        /// List of entities with added / removed components on them.
+        /// </summary>
+        readonly List<int> _dirtyEntityIds = new List<int> (256);
 
         /// <summary>
         /// Is Initialize method was called?
@@ -59,9 +75,11 @@ namespace LeopotamGroup.Ecs {
                 _allSystems[i].Destroy ();
             }
             _allSystems.Clear ();
-            _componentMasks.Clear ();
+            _componentIds.Clear ();
             _entities.Clear ();
-            _reservedEntities.Clear ();
+            _reservedEntityIds.Clear ();
+            _dirtyEntityIds.Clear ();
+            // TODO: raise all destroy entities or suppress?
         }
 
         /// <summary>
@@ -73,6 +91,7 @@ namespace LeopotamGroup.Ecs {
                 if (updateSystem != null) {
                     updateSystem.Update ();
                 }
+                ProcessDirtyEntities ();
             }
         }
 
@@ -85,6 +104,7 @@ namespace LeopotamGroup.Ecs {
                 if (updateSystem != null) {
                     updateSystem.FixedUpdate ();
                 }
+                ProcessDirtyEntities ();
             }
         }
 
@@ -93,13 +113,13 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public int CreateEntity () {
             int entity;
-            if (_reservedEntities.Count > 0) {
-                var id = _reservedEntities.Count - 1;
-                entity = _reservedEntities[id];
-                _reservedEntities.RemoveAt (id);
+            if (_reservedEntityIds.Count > 0) {
+                var id = _reservedEntityIds.Count - 1;
+                entity = _reservedEntityIds[id];
+                _reservedEntityIds.RemoveAt (id);
             } else {
                 entity = _entities.Count;
-                _entities.Add (new IEcsComponent[_componentMasks.Count]);
+                _entities.Add (new EcsEntity ());
             }
             return entity;
         }
@@ -112,67 +132,106 @@ namespace LeopotamGroup.Ecs {
             if (entity < 0 || entity >= _entities.Count) {
                 throw new Exception ("Invalid entity");
             }
-            if (_reservedEntities.IndexOf (entity) != -1) {
+            if (_reservedEntityIds.IndexOf (entity) != -1) {
                 throw new Exception ("Entity already removed");
             }
-            _reservedEntities.Add (entity);
+            _reservedEntityIds.Add (entity);
+            _entities[entity].DirtyMask = new ComponentMask ();
+            _dirtyEntityIds.Add (entity);
         }
 
         /// <summary>
         /// Adds component to entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        public T AddComponent<T> (int entity) where T : IEcsComponent {
+        public T AddComponent<T> (int entity) where T : class, IEcsComponent {
             if (entity < 0 || entity >= _entities.Count) {
                 throw new Exception ("Invalid entity");
             }
-            throw new NotImplementedException ();
+            var componentId = GetComponentId (typeof (T));
+            var mask = new ComponentMask (componentId);
+            var entityData = _entities[entity];
+            if (ComponentMask.AreCompatible (ref entityData.Mask, ref mask)) {
+                return entityData.Components[componentId] as T;
+            }
+            entityData.Mask.EnableBits (mask);
+            entityData.DirtyMask.EnableBits (mask);
+            // TODO: add pooling.
+            var component = Activator.CreateInstance (typeof (T)) as T;
+            while (entityData.Components.Count <= componentId) {
+                entityData.Components.Add (null);
+            }
+            entityData.Components[componentId] = component;
+            OnComponentAttach (component);
+            return component;
         }
 
         /// <summary>
         /// Removes component from entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        public void RemoveComponent<T> (int entity) where T : IEcsComponent {
+        public void RemoveComponent<T> (int entity) where T : class, IEcsComponent {
             if (entity < 0 || entity >= _entities.Count) {
                 throw new Exception ("Invalid entity");
             }
-            throw new NotImplementedException ();
-        }
-
-        /// <summary>
-        /// For internal use only, dont call it directly.
-        /// </summary>
-        public ComponentMask GetComponentsMask (Type[] types) {
-            if (_inited) {
-                throw new Exception ("Initialize method already called.");
-            }
-            var mask = new ComponentMask ();
-            if (types != null) {
-                for (var i = 0; i < types.Length; i++) {
-                    mask |= GetComponentMask (types[i]);
+            var componentId = GetComponentId (typeof (T));
+            if (componentId != -1) {
+                var entityData = _entities[entity];
+                var mask = new ComponentMask (componentId);
+                if (ComponentMask.AreCompatible (ref entityData.Mask, ref mask)) {
+                    entityData.DirtyMask.DisableBits (mask);
+                    _dirtyEntityIds.Add (entity);
                 }
             }
-            return mask;
         }
 
         /// <summary>
         /// For internal use only, dont call it directly.
         /// </summary>
         public string GetDebugStats () {
-            return string.Format ("Components: {0}\nEntities: {1}", _componentMasks.Count, _entities.Count);
+            return string.Format ("Components: {0}\nEntities: {1}", _componentIds.Count, _entities.Count);
         }
 
-        ComponentMask GetComponentMask (Type type) {
-            if (!typeof (IEcsComponent).IsAssignableFrom (type)) {
-                throw new Exception ("Invalid component");
-            }
-            ComponentMask retVal;
-            if (!_componentMasks.TryGetValue (type, out retVal)) {
-                retVal = ComponentMask.Create (_componentMasks.Count);
-                _componentMasks[type] = retVal;
+        /// <summary>
+        /// Gets component index in EcsEntity.Components list.
+        /// </summary>
+        /// <param name="componentType">Component type.</param>
+        public int GetComponentId (Type componentType) {
+            int retVal;
+            if (!_componentIds.TryGetValue (componentType, out retVal)) {
+                retVal = _componentIds.Count;
+                _componentIds[componentType] = retVal;
             }
             return retVal;
+        }
+
+        void ProcessDirtyEntities () {
+            var iMax = _dirtyEntityIds.Count;
+            for (var i = 0; i < iMax; i++) {
+                var entity = _dirtyEntityIds[i];
+                var entityData = _entities[entity];
+                if (!ComponentMask.AreEquals (ref entityData.Mask, ref entityData.DirtyMask)) {
+                    var mask = entityData.Mask;
+                    var dirty = entityData.DirtyMask;
+                    while (!ComponentMask.AreEquals (ref mask, ref dirty)) {
+                        // TODO: scan bits and recycle entityData.Components[bit] to pool + call OnComponentDetach(entity).
+                    }
+                }
+            }
+            if (_dirtyEntityIds.Count == iMax) {
+                _dirtyEntityIds.Clear ();
+            } else {
+                _dirtyEntityIds.RemoveRange (0, iMax);
+                ProcessDirtyEntities ();
+            }
+        }
+
+        sealed class EcsEntity {
+            public ComponentMask Mask = new ComponentMask ();
+
+            public ComponentMask DirtyMask = new ComponentMask ();
+
+            public readonly List<IEcsComponent> Components = new List<IEcsComponent> (8);
         }
     }
 }

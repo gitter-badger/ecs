@@ -23,7 +23,14 @@ namespace LeopotamGroup.Ecs {
             }
             World = world;
 
-            ComponentsMask = World.GetComponentsMask (GetRequiredComponents ());
+            var types = GetRequiredComponents ();
+            var mask = new ComponentMask ();
+            if (types != null) {
+                for (var i = 0; i < types.Length; i++) {
+                    mask.EnableBits (new ComponentMask (world.GetComponentId (types[i])));
+                }
+            }
+            ComponentsMask = mask;
         }
 
         protected abstract Type[] GetRequiredComponents ();

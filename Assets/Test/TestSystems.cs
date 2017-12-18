@@ -8,7 +8,7 @@ namespace LeopotamGroup.Ecs.Tests {
         }
 
         public override void Initialize () {
-            Debug.LogFormat ("{0}.requrements mask: {1}", GetType ().Name, ComponentsMask);
+            Debug.LogFormat ("{0} => required components mask: {1}", GetType ().Name, ComponentsMask);
         }
     }
 
@@ -18,7 +18,7 @@ namespace LeopotamGroup.Ecs.Tests {
         }
 
         public override void Initialize () {
-            Debug.LogFormat ("{0}.requrements mask: {1}", GetType ().Name, ComponentsMask);
+            Debug.LogFormat ("{0} => required components mask: {1}", GetType ().Name, ComponentsMask);
         }
 
         void IEcsUpdateSystem.Update () {
