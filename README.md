@@ -10,19 +10,50 @@ class WeaponComponent: IEcsComponent {
 ```
 
 ## Entity
-Сontainer for components. Implemented with int id-s for less memory allocation:
+Сontainer for components. Implemented with int id-s for more simplified api:
 ```
-int entity = World.CreateEntity();
-World.RemoveEntity(entity);
+int entity = _world.CreateEntity();
+_world.RemoveEntity(entity);
 ```
 
 ## System
-Сontainer for logic for processing filtered entities. User class should inherits EcsSystem class:
+Сontainer for logic for processing filtered entities. User class should implements IEcsSystem interface:
 ```
-class WeaponSystem : EcsSystem {
-    // we want to filter entities only with WeaponComponent on them.
-    protected override Type[] GetRequiredComponents () {
-        return new Type[] { typeof (WeaponComponent) };
+class WeaponSystem : IEcsSystem {
+    EcsWorld _world;
+
+    void IEcsSystem.Initialize (EcsWorld world) {
+        _world = world;
+
+        var entity = _world.CreateEntity();
+        _world.RemoveEntity(entity);
+    }
+
+    void IEcsSystem.Destroy () {
+    }
+}
+```
+
+## EcsFilter
+Container for keep filtered entities for specified component list:
+```
+class WeaponSystem : IEcsSystem {
+    EcsWorld _world;
+    EcsFilter _filter;
+
+    void IEcsSystem.Initialize (EcsWorld world) {
+        _world = world;
+
+        // we want to filter entities only with WeaponComponent on them.
+        _filter = _world.GetFilter (typeof (WeaponComponent));
+        
+        var newEntity = _world.CreateEntity();
+        _world.AddComponent<WeaponComponent>(newEntity);
+
+        foreach (var entity in _filter.Entities) {
+            var weapon = _world.GetComponent<WeaponComponent>(entity);
+            weapon.Ammo--;
+        }
     }
 }
 ```
@@ -32,16 +63,19 @@ Root level container for all systems / entities / components, works like isolate
 ```
 class Startup : MonoBehaviour {
     EcsWorld _world;
+
     void OnEnable() {
         // create ecs environment.
         var world = new EcsWorld()
             .AddSystem(new WeaponSystem());
         world.Initialize();
     }
+    
     void Update() {
         // process all dependent systems.
         world.Update();
     }
+
     void OnDisable() {
         // destroy ecs environment.
         world.Destroy();
