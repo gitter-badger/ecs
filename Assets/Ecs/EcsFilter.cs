@@ -5,7 +5,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Do not change it manually.
         /// </summary>
-        public ComponentMask Mask;
+        public readonly ComponentMask Mask;
 
         public readonly List<int> Entities = new List<int> (512);
 

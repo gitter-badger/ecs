@@ -1,46 +1,37 @@
 namespace LeopotamGroup.Ecs {
     public struct ComponentMask {
-        public long raw0;
+        ulong _raw0;
 
         public ComponentMask (int bitId) {
-            raw0 = 1L << bitId;
+            _raw0 = 1UL << bitId;
         }
 
         public override string ToString () {
-            return System.Convert.ToString (raw0, 2);
+            return System.Convert.ToString ((long) _raw0, 2);
         }
 
         public void SetBit (int id, bool state) {
             if (state) {
-                raw0 |= 1L << id;
+                _raw0 |= 1UL << id;
             } else {
-                raw0 &= ~(1L << id);
+                _raw0 &= ~(1UL << id);
             }
         }
 
-        public void EnableBits (ComponentMask mask) {
-            raw0 |= mask.raw0;
-        }
-
-        public ComponentMask GetInversedBits () {
-            return new ComponentMask () { raw0 = ~this.raw0 };
-        }
-
-        public void DisableBits (ComponentMask mask) {
-            var inv = mask.GetInversedBits ();
-            raw0 &= inv.raw0;
+        public bool IsEmpty () {
+            return _raw0 == 0;
         }
 
         public bool GetBit (int id) {
-            return (raw0 & (1 << id)) != 0;
+            return (_raw0 & (1UL << id)) != 0;
         }
 
-        public static bool AreCompatible (ref ComponentMask a, ref ComponentMask b) {
-            return (a.raw0 & b.raw0) == b.raw0;
+        public bool IsEquals (ComponentMask a) {
+            return _raw0 == a._raw0;
         }
 
-        public static bool AreEquals (ref ComponentMask a, ref ComponentMask b) {
-            return a.raw0 == b.raw0;
+        public bool IsCompatible (ComponentMask a) {
+            return (_raw0 & a._raw0) == a._raw0;
         }
     }
 

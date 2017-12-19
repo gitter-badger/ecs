@@ -51,7 +51,7 @@ namespace LeopotamGroup.Ecs.Tests {
             //     var weapon = _world.GetComponent<WeaponComponent> (entity);
             //     weapon.Ammo = System.Math.Max (0, weapon.Ammo);
             // }
-            // Debug.LogFormat ("Found {0} entities / {1}", _filter.Entities.Count, Time.time);
+            Debug.LogFormat ("Found {0} entities / {1}", _filter.Entities.Count, Time.time);
         }
     }
 }
