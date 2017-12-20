@@ -24,6 +24,8 @@ namespace LeopotamGroup.Ecs {
         /// <returns></returns>
         readonly Dictionary<Type, int> _componentIds = new Dictionary<Type, int> (64);
 
+        readonly Dictionary<int, EcsComponentPool> _componentPools = new Dictionary<int, EcsComponentPool> (64);
+
         /// <summary>
         /// List of all entities (their components).
         /// </summary>
@@ -87,13 +89,14 @@ namespace LeopotamGroup.Ecs {
 
             _allSystems.Clear ();
             _componentIds.Clear ();
+            _componentPools.Clear ();
             _entities.Clear ();
             _reservedEntityIds.Clear ();
             _filters.Clear ();
         }
 
         /// <summary>
-        /// Processing for IEcsUpdateSystem systems.
+        /// Processes all IEcsUpdateSystem systems.
         /// </summary>
         public void Update () {
             for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
@@ -108,7 +111,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Processing for IEcsFixedUpdateSystem systems.
+        /// Processes all IEcsFixedUpdateSystem systems.
         /// </summary>
         public void FixedUpdate () {
             for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
@@ -164,8 +167,14 @@ namespace LeopotamGroup.Ecs {
                 return entityData.Components[componentId] as T;
             }
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, componentId));
-            // TODO: add pooling.
-            var component = Activator.CreateInstance (typeof (T)) as T;
+
+            EcsComponentPool pool;
+            if (!_componentPools.TryGetValue (componentId, out pool)) {
+                pool = new EcsComponentPool (typeof (T));
+                _componentPools[componentId] = pool;
+            }
+            var component = pool.Get () as T;
+            // TODO: move to arrays.
             while (entityData.Components.Count <= componentId) {
                 entityData.Components.Add (null);
             }
@@ -203,6 +212,9 @@ namespace LeopotamGroup.Ecs {
             return components.Count <= componentId ? null : components[componentId] as T;
         }
 
+        /// <summary>
+        /// Creates event enity with event-data component.
+        /// </summary>
         public T CreateEvent<T> () where T : class, IEcsComponent {
             return AddComponent<T> (CreateEntity ());
         }
@@ -228,29 +240,44 @@ namespace LeopotamGroup.Ecs {
             return retVal;
         }
 
+        /// <summary>
+        /// Gets filter for specific component.
+        /// </summary>
+        /// <param name="forEvents">Filter will be used for events.</param>
         public EcsFilter GetFilter<A> (bool forEvents) {
-            var mask = new ComponentMask ();
-            mask.SetBit (GetComponentTypeId (typeof (A)), true);
+            var mask = new EcsComponentMask (GetComponentTypeId (typeof (A)));
             return GetFilter (mask, forEvents);
         }
 
+        /// <summary>
+        /// Gets filter for specific components.
+        /// </summary>
+        /// <param name="forEvents">Filter will be used for events.</param>
         public EcsFilter GetFilter<A, B> (bool forEvents) {
-            var mask = new ComponentMask ();
+            var mask = new EcsComponentMask ();
             mask.SetBit (GetComponentTypeId (typeof (A)), true);
             mask.SetBit (GetComponentTypeId (typeof (B)), true);
             return GetFilter (mask, forEvents);
         }
 
+        /// <summary>
+        /// Gets filter for specific components.
+        /// </summary>
+        /// <param name="forEvents">Filter will be used for events.</param>
         public EcsFilter GetFilter<A, B, C> (bool forEvents) {
-            var mask = new ComponentMask ();
+            var mask = new EcsComponentMask ();
             mask.SetBit (GetComponentTypeId (typeof (A)), true);
             mask.SetBit (GetComponentTypeId (typeof (B)), true);
             mask.SetBit (GetComponentTypeId (typeof (C)), true);
             return GetFilter (mask, forEvents);
         }
 
+        /// <summary>
+        /// Gets filter for specific components.
+        /// </summary>
+        /// <param name="forEvents">Filter will be used for events.</param>
         public EcsFilter GetFilter<A, B, C, D> (bool forEvents) {
-            var mask = new ComponentMask ();
+            var mask = new EcsComponentMask ();
             mask.SetBit (GetComponentTypeId (typeof (A)), true);
             mask.SetBit (GetComponentTypeId (typeof (B)), true);
             mask.SetBit (GetComponentTypeId (typeof (C)), true);
@@ -258,7 +285,12 @@ namespace LeopotamGroup.Ecs {
             return GetFilter (mask, forEvents);
         }
 
-        public EcsFilter GetFilter (ComponentMask mask, bool forEvents) {
+        /// <summary>
+        /// Gets filter for specific components.
+        /// </summary>
+        /// <param name="mask">Component selection.</param>
+        /// <param name="forEvents">Filter will be used for events.</param>
+        public EcsFilter GetFilter (EcsComponentMask mask, bool forEvents) {
             var i = _filters.Count - 1;
             for (; i >= 0; i--) {
                 if (_filters[i].ForEvents == forEvents && _filters[i].Mask.IsEquals (mask)) {
@@ -272,6 +304,9 @@ namespace LeopotamGroup.Ecs {
             return _filters[i];
         }
 
+        /// <summary>
+        /// Recycle all filtered event entities.
+        /// </summary>
         void ClearEventFilters () {
             for (var i = _filters.Count - 1; i >= 0; i--) {
                 if (_filters[i].ForEvents) {
@@ -283,13 +318,21 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
-        void DetachComponent (EcsEntity entity, int component) {
-            var comp = entity.Components[component];
-            entity.Components[component] = null;
+        /// <summary>
+        /// Detaches component from entity and raise OnComponentDetach event.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        /// <param name="componentId">Detaching component.</param>
+        void DetachComponent (EcsEntity entity, int componentId) {
+            var comp = entity.Components[componentId];
+            entity.Components[componentId] = null;
             OnComponentDetach (comp);
-            // TODO: add pooling for comp.
+            _componentPools[componentId].Recycle (comp);
         }
 
+        /// <summary>
+        /// Process delayed updates.
+        /// </summary>
         void ProcessDelayedUpdates () {
             var iMax = _delayedUpdates.Count;
             for (var i = 0; i < iMax; i++) {
@@ -300,7 +343,7 @@ namespace LeopotamGroup.Ecs {
                     case DelayedUpdate.Op.RemoveEntity:
                         if (!entityData.IsReserved) {
                             var componentId = 0;
-                            var empty = new ComponentMask ();
+                            var empty = new EcsComponentMask ();
                             while (!entityData.Mask.IsEmpty ()) {
                                 if (entityData.Mask.GetBit (componentId)) {
                                     entityData.Mask.SetBit (componentId, false);
@@ -345,7 +388,7 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entity">Entity.</param>
         /// <param name="oldMask">Old component state.</param>
         /// <param name="newMask">New component state.</param>
-        void UpdateFilters (int entity, ref ComponentMask oldMask, ref ComponentMask newMask) {
+        void UpdateFilters (int entity, ref EcsComponentMask oldMask, ref EcsComponentMask newMask) {
             for (var i = _filters.Count - 1; i >= 0; i--) {
                 var isNewMaskCompatible = newMask.IsCompatible (_filters[i].Mask);
                 if (oldMask.IsCompatible (_filters[i].Mask)) {
@@ -379,8 +422,8 @@ namespace LeopotamGroup.Ecs {
 
         sealed class EcsEntity {
             public bool IsReserved;
-            public ComponentMask Mask = new ComponentMask ();
-            public readonly List<IEcsComponent> Components = new List<IEcsComponent> (8);
+            public EcsComponentMask Mask = new EcsComponentMask ();
+            public readonly List<IEcsComponent> Components = new List<IEcsComponent> (64);
         }
     }
 }

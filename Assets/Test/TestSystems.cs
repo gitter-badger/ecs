@@ -37,10 +37,6 @@ namespace LeopotamGroup.Ecs.Tests {
             _world.AddComponent<HealthComponent> (entity);
             _world.AddComponent<WeaponComponent> (entity);
 
-            // send event.
-            var eventData = _world.CreateEvent<DamageEventComponent> ();
-            eventData.Amount = 10;
-
             Debug.LogFormat ("{0} => initialize", GetType ().Name);
         }
 
@@ -51,11 +47,11 @@ namespace LeopotamGroup.Ecs.Tests {
         }
 
         void OnComponentAttach (IEcsComponent obj) {
-            Debug.LogFormat ("{0} => attach", obj.GetType ().Name);
+            // Debug.LogFormat ("{0} => attach", obj.GetType ().Name);
         }
 
         void OnComponentDetach (IEcsComponent obj) {
-            Debug.LogFormat ("{0} => detach", obj.GetType ().Name);
+            // Debug.LogFormat ("{0} => detach", obj.GetType ().Name);
         }
 
         void IEcsUpdateSystem.Update () {
@@ -64,6 +60,10 @@ namespace LeopotamGroup.Ecs.Tests {
             //     weapon.Ammo = System.Math.Max (0, weapon.Ammo);
             // }
             // Debug.LogFormat ("Found {0} entities / {1}", _filter.Entities.Count, Time.time);
+
+            // send event.
+            var eventData = _world.CreateEvent<DamageEventComponent> ();
+            eventData.Amount = 10;
 
             foreach (var damageEvent in _damageEvent.Entities) {
                 var damage = _world.GetComponent<DamageEventComponent> (damageEvent);
