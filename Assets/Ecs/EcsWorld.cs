@@ -161,7 +161,7 @@ namespace LeopotamGroup.Ecs {
             if (entity < 0 || entity >= _entities.Count) {
                 throw new Exception ("Invalid entity");
             }
-            var componentId = GetComponentTypeId (typeof (T));
+            var componentId = GetComponentTypeId<T> ();
             var entityData = _entities[entity];
             if (entityData.Mask.GetBit (componentId)) {
                 return entityData.Components[componentId] as T;
@@ -174,7 +174,6 @@ namespace LeopotamGroup.Ecs {
                 _componentPools[componentId] = pool;
             }
             var component = pool.Get () as T;
-            // TODO: move to arrays.
             while (entityData.Components.Count <= componentId) {
                 entityData.Components.Add (null);
             }
@@ -190,10 +189,7 @@ namespace LeopotamGroup.Ecs {
             if (entity < 0 || entity >= _entities.Count) {
                 throw new Exception ("Invalid entity");
             }
-            var componentId = GetComponentTypeId (typeof (T));
-            if (componentId != -1) {
-                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, componentId));
-            }
+            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, GetComponentTypeId<T> ()));
         }
 
         /// <summary>
@@ -204,10 +200,7 @@ namespace LeopotamGroup.Ecs {
             if (entity < 0 || entity >= _entities.Count) {
                 throw new Exception ("Invalid entity");
             }
-            var componentId = GetComponentTypeId (typeof (T));
-            if (componentId == -1) {
-                return null;
-            }
+            var componentId = GetComponentTypeId<T> ();
             var components = _entities[entity].Components;
             return components.Count <= componentId ? null : components[componentId] as T;
         }
@@ -230,12 +223,12 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Gets component index in EcsEntity.Components list.
         /// </summary>
-        /// <param name="componentType">Component type.</param>
-        public int GetComponentTypeId (Type componentType) {
+        public int GetComponentTypeId<T> () where T : class, IEcsComponent {
             int retVal;
-            if (!_componentIds.TryGetValue (componentType, out retVal)) {
+            var type = typeof (T);
+            if (!_componentIds.TryGetValue (type, out retVal)) {
                 retVal = _componentIds.Count;
-                _componentIds[componentType] = retVal;
+                _componentIds[type] = retVal;
             }
             return retVal;
         }
@@ -244,8 +237,8 @@ namespace LeopotamGroup.Ecs {
         /// Gets filter for specific component.
         /// </summary>
         /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A> (bool forEvents) {
-            var mask = new EcsComponentMask (GetComponentTypeId (typeof (A)));
+        public EcsFilter GetFilter<A> (bool forEvents) where A : class, IEcsComponent {
+            var mask = new EcsComponentMask (GetComponentTypeId<A> ());
             return GetFilter (mask, forEvents);
         }
 
@@ -253,10 +246,10 @@ namespace LeopotamGroup.Ecs {
         /// Gets filter for specific components.
         /// </summary>
         /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A, B> (bool forEvents) {
+        public EcsFilter GetFilter<A, B> (bool forEvents) where A : class, IEcsComponent where B : class, IEcsComponent {
             var mask = new EcsComponentMask ();
-            mask.SetBit (GetComponentTypeId (typeof (A)), true);
-            mask.SetBit (GetComponentTypeId (typeof (B)), true);
+            mask.SetBit (GetComponentTypeId<A> (), true);
+            mask.SetBit (GetComponentTypeId<B> (), true);
             return GetFilter (mask, forEvents);
         }
 
@@ -264,11 +257,11 @@ namespace LeopotamGroup.Ecs {
         /// Gets filter for specific components.
         /// </summary>
         /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A, B, C> (bool forEvents) {
+        public EcsFilter GetFilter<A, B, C> (bool forEvents) where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent {
             var mask = new EcsComponentMask ();
-            mask.SetBit (GetComponentTypeId (typeof (A)), true);
-            mask.SetBit (GetComponentTypeId (typeof (B)), true);
-            mask.SetBit (GetComponentTypeId (typeof (C)), true);
+            mask.SetBit (GetComponentTypeId<A> (), true);
+            mask.SetBit (GetComponentTypeId<B> (), true);
+            mask.SetBit (GetComponentTypeId<C> (), true);
             return GetFilter (mask, forEvents);
         }
 
@@ -276,12 +269,12 @@ namespace LeopotamGroup.Ecs {
         /// Gets filter for specific components.
         /// </summary>
         /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A, B, C, D> (bool forEvents) {
+        public EcsFilter GetFilter<A, B, C, D> (bool forEvents) where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent where D : class, IEcsComponent {
             var mask = new EcsComponentMask ();
-            mask.SetBit (GetComponentTypeId (typeof (A)), true);
-            mask.SetBit (GetComponentTypeId (typeof (B)), true);
-            mask.SetBit (GetComponentTypeId (typeof (C)), true);
-            mask.SetBit (GetComponentTypeId (typeof (D)), true);
+            mask.SetBit (GetComponentTypeId<A> (), true);
+            mask.SetBit (GetComponentTypeId<B> (), true);
+            mask.SetBit (GetComponentTypeId<C> (), true);
+            mask.SetBit (GetComponentTypeId<D> (), true);
             return GetFilter (mask, forEvents);
         }
 
