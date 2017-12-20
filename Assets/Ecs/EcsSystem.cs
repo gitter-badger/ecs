@@ -1,17 +1,14 @@
 namespace LeopotamGroup.Ecs {
-    public interface IEcsUpdatableSystem {
+    public interface IEcsUpdateSystem {
         void Update ();
     }
 
-    public interface IEcsFixedUpdatableSystem {
+    public interface IEcsFixedUpdateSystem {
         void FixedUpdate ();
-    }
-
-    public interface IEcsDestroyableSystem {
-        void Destroy ();
     }
 
     public interface IEcsSystem {
         void Initialize (EcsWorld world);
+        void Destroy ();
     }
 }
