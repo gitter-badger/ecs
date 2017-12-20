@@ -73,15 +73,7 @@ namespace LeopotamGroup.Ecs {
 
         public void Recycle (IEcsComponent item) {
             if (item != null) {
-                CheckType (item);
                 _pool.Push (item);
-            }
-        }
-
-        [System.Diagnostics.Conditional ("DEBUG")]
-        void CheckType (IEcsComponent item) {
-            if (item.GetType () != _type) {
-                throw new Exception ("Invalid type");
             }
         }
 

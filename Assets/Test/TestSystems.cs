@@ -27,6 +27,8 @@ namespace LeopotamGroup.Ecs.Tests {
 
         EcsFilter _damageEvent;
 
+        int _weaponComponentId;
+
         void IEcsSystem.Initialize (EcsWorld world) {
             _world = world;
             _world.OnComponentAttach += OnComponentAttach;
@@ -47,6 +49,8 @@ namespace LeopotamGroup.Ecs.Tests {
             _world.AddComponent<HealthComponent> (entity);
             _world.AddComponent<WeaponComponent> (entity);
 
+            _weaponComponentId = _world.GetComponentIndex<WeaponComponent> ();
+
             Debug.LogFormat ("{0} => initialize", GetType ().Name);
         }
 
@@ -66,7 +70,7 @@ namespace LeopotamGroup.Ecs.Tests {
 
         void IEcsUpdateSystem.Update () {
             foreach (var entity in _filter.Entities) {
-                var weapon = _world.GetComponent<WeaponComponent> (entity);
+                var weapon = _world.GetComponent<WeaponComponent> (entity, _weaponComponentId);
                 weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
             }
 

@@ -14,22 +14,16 @@ namespace LeopotamGroup.Ecs.Tests {
         }
 
         void Update () {
-            if (_world != null) {
-                _world.Update ();
-            }
+            _world.Update ();
         }
 
         void FixedUpdate () {
-            if (_world != null) {
-                _world.FixedUpdate ();
-            }
+            _world.FixedUpdate ();
         }
 
         void OnDisable () {
-            if (_world != null) {
-                _world.Destroy ();
-                _world = null;
-            }
+            _world.Destroy ();
+            _world = null;
         }
     }
 }
