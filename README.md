@@ -37,7 +37,7 @@ class WeaponSystem : IEcsSystem {
 ## EcsFilter
 Container for keep filtered entities with specified component list:
 ```
-class WeaponSystem : IEcsSystem, IEcsUpdatableSystem {
+class WeaponSystem : IEcsSystem, IEcsUpdateSystem {
     EcsWorld _world;
     EcsFilter _filter;
 
@@ -45,16 +45,43 @@ class WeaponSystem : IEcsSystem, IEcsUpdatableSystem {
         _world = world;
 
         // we want to filter entities only with WeaponComponent on them.
-        _filter = _world.GetFilter (typeof (WeaponComponent));
+        _filter = _world.GetFilter<WeaponComponent> (false);
         
         var newEntity = _world.CreateEntity ();
         _world.AddComponent<WeaponComponent> (newEntity);
     }
 
-    void IEcsUpdatableSystem.Update () {
+    void IEcsUpdateSystem.Update () {
         foreach (var entity in _filter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
             weapon.Ammo--;
+        }
+    }
+}
+```
+For events processing EcsFilter should be created with flag "forEvents"=true,
+event data is standard class with IEcsComponent implementation:
+```
+public class DamageComponent : IEcsComponent {
+    public int Amount;
+}
+class WeaponSystem : IEcsSystem, IEcsUpdateSystem {
+    EcsWorld _world;
+    EcsFilter _event;
+
+    void IEcsSystem.Initialize (EcsWorld world) {
+        _world = world;
+
+        _event = _world.GetFilter<DamageComponent> (true);
+        
+        var eventData = _world.CreateEvent<DamageComponent> ();
+        eventData.Amount = 10;
+    }
+
+    void IEcsUpdateSystem.Update () {
+        foreach (var eventData in _event.Entities) {
+            var damage = _world.GetComponent<DamageComponent> (eventData);
+            Debug.Log("Damage " + damage.Amount);
         }
     }
 }
