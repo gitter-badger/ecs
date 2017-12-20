@@ -1,4 +1,5 @@
 # Test Entity Component System implementation.
+Performance and zero memory allocation / no gc - main goals of this project. 
 
 ## Component
 Container for user data without / with small logic inside. User class should implements IEcsComponent interface:
@@ -54,7 +55,7 @@ class WeaponSystem : IEcsSystem, IEcsUpdateSystem {
     void IEcsUpdateSystem.Update () {
         foreach (var entity in _filter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
-            weapon.Ammo--;
+            weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
         }
     }
 }
@@ -112,3 +113,6 @@ class Startup : MonoBehaviour {
     }
 }
 ```
+
+# License
+The software released under the terms of the MIT license. Enjoy.
