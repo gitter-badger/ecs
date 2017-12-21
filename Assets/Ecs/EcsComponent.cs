@@ -19,7 +19,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         public override string ToString () {
-            return System.Convert.ToString ((long) _raw0, 2);
+            return string.Format ("{0:X16}", _raw0);
         }
 
         public void SetBit (int bitId, bool state) {

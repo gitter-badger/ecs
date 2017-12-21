@@ -19,10 +19,14 @@ namespace LeopotamGroup.Ecs {
         readonly List<IEcsSystem> _allSystems = new List<IEcsSystem> (64);
 
         /// <summary>
-        /// Dictionary for fast search component -> type id.
+        /// Dictionary for fast search component (type.hashcode) -> type id.
         /// </summary>
         readonly Dictionary<int, int> _componentIds = new Dictionary<int, int> (64);
 
+        /// <summary>
+        /// Pools list for recycled component instances.
+        /// </summary>
+        /// <returns></returns>
         readonly Dictionary<int, EcsComponentPool> _componentPools = new Dictionary<int, EcsComponentPool> (64);
 
         /// <summary>
@@ -287,6 +291,27 @@ namespace LeopotamGroup.Ecs {
                 _filters.Add (new EcsFilter (mask, forEvents));
             }
             return _filters[i];
+        }
+
+        /// <summary>
+        /// Gets all components on entity.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        /// <param name="list">List to put results in it.</param>
+        public void GetComponents (int entity, IList<IEcsComponent> list) {
+            if (list != null) {
+                list.Clear ();
+                var entityData = _entities[entity];
+                var componentId = 0;
+                var mask = entityData.Mask;
+                while (!mask.IsEmpty ()) {
+                    if (mask.GetBit (componentId)) {
+                        mask.SetBit (componentId, false);
+                        list.Add (entityData.Components[componentId]);
+                    }
+                    componentId++;
+                }
+            }
         }
 
         /// <summary>

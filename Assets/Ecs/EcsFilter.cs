@@ -2,18 +2,30 @@
 
 namespace LeopotamGroup.Ecs {
     public sealed class EcsFilter {
+        /// <summary>
+        /// Components mask for filtering.
+        /// Do not change it manually!
+        /// </summary>
         public readonly EcsComponentMask Mask;
 
+        /// <summary>
+        /// Is this filter for events (should be cleared after each update loop) or not.
+        /// </summary>
         public readonly bool ForEvents;
 
         /// <summary>
-        /// Do not change it manually.
+        /// List of filtered entities.
+        /// Do not change it manually!
         /// </summary>
         public readonly List<int> Entities = new List<int> (512);
 
         public EcsFilter (EcsComponentMask mask, bool forEvents) {
             Mask = mask;
             ForEvents = forEvents;
+        }
+
+        public override string ToString () {
+            return string.Format ("Filter({0})", Mask);
         }
     }
 }
