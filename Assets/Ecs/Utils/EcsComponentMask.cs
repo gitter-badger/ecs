@@ -1,12 +1,4 @@
-using System;
-using System.Collections.Generic;
-
-namespace LeopotamGroup.Ecs {
-    /// <summary>
-    /// Base interface for all ecs components.
-    /// </summary>
-    public interface IEcsComponent { }
-
+﻿namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Mask for components selection.
     /// </summary>
@@ -50,35 +42,8 @@ namespace LeopotamGroup.Ecs {
         [System.Diagnostics.Conditional ("DEBUG")]
         static void CheckBitId (int bitId) {
             if (bitId < 0 || bitId >= 64) {
-                throw new Exception ("Invalid bit");
+                throw new System.Exception ("Invalid bit");
             }
-        }
-    }
-
-    /// <summary>
-    /// Component pool container.
-    /// </summary>
-    sealed class EcsComponentPool {
-        readonly Stack<IEcsComponent> _pool = new Stack<IEcsComponent> (512);
-
-        readonly Type _type;
-
-        public EcsComponentPool (Type type) {
-            _type = type;
-        }
-
-        public IEcsComponent Get () {
-            return _pool.Count > 0 ? _pool.Pop () : Activator.CreateInstance (_type) as IEcsComponent;
-        }
-
-        public void Recycle (IEcsComponent item) {
-            if (item != null) {
-                _pool.Push (item);
-            }
-        }
-
-        public int GetCachedCount () {
-            return _pool.Count;
         }
     }
 }

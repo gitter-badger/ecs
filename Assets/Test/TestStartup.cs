@@ -10,7 +10,9 @@ namespace LeopotamGroup.Ecs.Tests {
                 .AddSystem (new TestSystem2 ());
             _world.Initialize ();
 
-            Debug.Log (_world.GetDebugStats ());
+            var stats = _world.GetStats ();
+            Debug.LogFormat ("[Systems: {0}] [Entities: {1}/{2}] [Components: {3}] [Filters: {4}] [DelayedUpdates: {5}]",
+                stats.AllSystems, stats.AllEntities, stats.ReservedEntities, stats.Components, stats.Filters, stats.DelayedUpdates);
         }
 
         void Update () {

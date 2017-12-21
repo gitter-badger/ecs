@@ -209,14 +209,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// For internal use only, dont call it directly.
-        /// </summary>
-        public string GetDebugStats () {
-            return string.Format ("Components: {0}\nEntitiesInCache: {1}\nFilters: {2}",
-                _componentIds.Count, _entities.Count, _filters.Count);
-        }
-
-        /// <summary>
         /// Gets component index. Useful for GetComponent() requests as second parameter for performance reason.
         /// </summary>
         public int GetComponentIndex<T> () where T : class, IEcsComponent {
@@ -312,6 +304,21 @@ namespace LeopotamGroup.Ecs {
                     componentId++;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets stats of internal data.
+        /// </summary>
+        public EcsWorldStats GetStats () {
+            var stats = new EcsWorldStats () {
+                AllSystems = _allSystems.Count,
+                AllEntities = _entities.Count,
+                ReservedEntities = _reservedEntityIds.Count,
+                Filters = _filters.Count,
+                Components = _componentIds.Count,
+                DelayedUpdates = _delayedUpdates.Count
+            };
+            return stats;
         }
 
         /// <summary>
