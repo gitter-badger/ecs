@@ -19,7 +19,7 @@
         }
 
         public override string ToString () {
-            return string.Format ("{0:X16}", _raw0);
+            return string.Format ("{0:X16}{1:X16}", _raw1, _raw0);
         }
 
         public void SetBit (int bitId, bool state) {
