@@ -37,10 +37,10 @@ namespace LeopotamGroup.Ecs.Tests {
             _filter = _world.GetFilter<WeaponComponent> ();
             // if you need more - you can create it with component mask:
             // var mask = new EcsComponentMask ();
-            // mask.SetBit (_world.GetComponentTypeId<A> (), true);
-            // mask.SetBit (_world.GetComponentTypeId<B> (), true);
-            // mask.SetBit (_world.GetComponentTypeId<C> (), true);
-            // var filter = _world.GetFilter (mask, false);
+            // mask.SetBit (_world.GetComponentIndex<A> (), true);
+            // mask.SetBit (_world.GetComponentIndex<B> (), true);
+            // mask.SetBit (_world.GetComponentIndex<C> (), true);
+            // var filter = _world.GetFilter (mask);
 
             // Listen to event.
             _world.SubscribeToEvent<DamageEvent> (OnDamageEvent);
