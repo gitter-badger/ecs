@@ -112,9 +112,9 @@ namespace LeopotamGroup.Ecs {
                 var updateSystem = _allSystems[i] as IEcsUpdateSystem;
                 if (updateSystem != null) {
                     updateSystem.Update ();
-                    ProcessDelayedUpdates ();
                 }
             }
+            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -125,9 +125,9 @@ namespace LeopotamGroup.Ecs {
                 var updateSystem = _allSystems[i] as IEcsFixedUpdateSystem;
                 if (updateSystem != null) {
                     updateSystem.FixedUpdate ();
-                    ProcessDelayedUpdates ();
                 }
             }
+            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -338,21 +338,9 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Detaches component from entity and raise OnComponentDetach event.
+        /// Processes delayed updates. Use carefully!
         /// </summary>
-        /// <param name="entity">Entity.</param>
-        /// <param name="componentId">Detaching component.</param>
-        void DetachComponent (EcsEntity entity, int componentId) {
-            var comp = entity.Components[componentId];
-            entity.Components[componentId] = null;
-            OnComponentDetach (comp);
-            _componentPools[componentId].Recycle (comp);
-        }
-
-        /// <summary>
-        /// Processes delayed updates.
-        /// </summary>
-        void ProcessDelayedUpdates () {
+        public void ProcessDelayedUpdates () {
             var iMax = _delayedUpdates.Count;
             for (var i = 0; i < iMax; i++) {
                 var op = _delayedUpdates[i];
@@ -399,6 +387,18 @@ namespace LeopotamGroup.Ecs {
                     ProcessDelayedUpdates ();
                 }
             }
+        }
+
+        /// <summary>
+        /// Detaches component from entity and raise OnComponentDetach event.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        /// <param name="componentId">Detaching component.</param>
+        void DetachComponent (EcsEntity entity, int componentId) {
+            var comp = entity.Components[componentId];
+            entity.Components[componentId] = null;
+            OnComponentDetach (comp);
+            _componentPools[componentId].Recycle (comp);
         }
 
         /// <summary>
