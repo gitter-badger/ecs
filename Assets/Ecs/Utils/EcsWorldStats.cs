@@ -1,4 +1,4 @@
-﻿namespace LeopotamGroup.Ecs {
+namespace LeopotamGroup.Ecs {
     public struct EcsWorldStats {
         /// <summary>
         /// Amount of registered systems.

@@ -1,4 +1,4 @@
-﻿namespace LeopotamGroup.Ecs {
+namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Mask for components selection.
     /// </summary>
