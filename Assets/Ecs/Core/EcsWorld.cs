@@ -26,7 +26,6 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Pools list for recycled component instances.
         /// </summary>
-        /// <returns></returns>
         readonly Dictionary<int, EcsComponentPool> _componentPools = new Dictionary<int, EcsComponentPool> (64);
 
         /// <summary>
@@ -48,6 +47,12 @@ namespace LeopotamGroup.Ecs {
         /// List of requested filters.
         /// </summary>
         readonly List<EcsFilter> _filters = new List<EcsFilter> (64);
+
+        /// <summary>
+        /// Events processing.
+        /// </summary>
+        /// <returns></returns>
+        readonly EcsEvents _events = new EcsEvents ();
 
         /// <summary>
         /// Is Initialize method was called?
@@ -90,6 +95,7 @@ namespace LeopotamGroup.Ecs {
                 _allSystems[i].Destroy ();
             }
 
+            _events.UnsubscribeAndClearAllEvents ();
             _allSystems.Clear ();
             _componentIds.Clear ();
             _componentPools.Clear ();
@@ -109,8 +115,6 @@ namespace LeopotamGroup.Ecs {
                     ProcessDelayedUpdates ();
                 }
             }
-            ClearEventFilters ();
-            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -202,10 +206,27 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Creates event enity with event-data component.
+        /// Subscribes to event.
         /// </summary>
-        public T CreateEvent<T> () where T : class, IEcsComponent {
-            return AddComponent<T> (CreateEntity ());
+        /// <param name="eventData">Event callback.</param>
+        public void SubscribeToEvent<T> (Action<T> cb) where T : struct {
+            _events.Subscribe (cb);
+        }
+
+        /// <summary>
+        /// Unsubscribes from event.
+        /// </summary>
+        /// <param name="eventData">Event callback.</param>
+        public void UnsubscribeFromEvent<T> (Action<T> cb) where T : struct {
+            _events.Unsubscribe (cb);
+        }
+
+        /// <summary>
+        /// Publishes event with custom data.
+        /// </summary>
+        /// <param name="eventData">Event data.</param>
+        public void PublishEvent<T> (T eventData) where T : struct {
+            _events.Publish (eventData);
         }
 
         /// <summary>
@@ -224,63 +245,58 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Gets filter for specific component.
         /// </summary>
-        /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A> (bool forEvents) where A : class, IEcsComponent {
+        public EcsFilter GetFilter<A> () where A : class, IEcsComponent {
             var mask = new EcsComponentMask (GetComponentIndex<A> ());
-            return GetFilter (mask, forEvents);
+            return GetFilter (mask);
         }
 
         /// <summary>
         /// Gets filter for specific components.
         /// </summary>
-        /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A, B> (bool forEvents) where A : class, IEcsComponent where B : class, IEcsComponent {
+        public EcsFilter GetFilter<A, B> () where A : class, IEcsComponent where B : class, IEcsComponent {
             var mask = new EcsComponentMask ();
             mask.SetBit (GetComponentIndex<A> (), true);
             mask.SetBit (GetComponentIndex<B> (), true);
-            return GetFilter (mask, forEvents);
+            return GetFilter (mask);
         }
 
         /// <summary>
         /// Gets filter for specific components.
         /// </summary>
-        /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A, B, C> (bool forEvents) where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent {
+        public EcsFilter GetFilter<A, B, C> () where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent {
             var mask = new EcsComponentMask ();
             mask.SetBit (GetComponentIndex<A> (), true);
             mask.SetBit (GetComponentIndex<B> (), true);
             mask.SetBit (GetComponentIndex<C> (), true);
-            return GetFilter (mask, forEvents);
+            return GetFilter (mask);
         }
 
         /// <summary>
         /// Gets filter for specific components.
         /// </summary>
-        /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter<A, B, C, D> (bool forEvents) where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent where D : class, IEcsComponent {
+        public EcsFilter GetFilter<A, B, C, D> () where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent where D : class, IEcsComponent {
             var mask = new EcsComponentMask ();
             mask.SetBit (GetComponentIndex<A> (), true);
             mask.SetBit (GetComponentIndex<B> (), true);
             mask.SetBit (GetComponentIndex<C> (), true);
             mask.SetBit (GetComponentIndex<D> (), true);
-            return GetFilter (mask, forEvents);
+            return GetFilter (mask);
         }
 
         /// <summary>
         /// Gets filter for specific components.
         /// </summary>
         /// <param name="mask">Component selection.</param>
-        /// <param name="forEvents">Filter will be used for events.</param>
-        public EcsFilter GetFilter (EcsComponentMask mask, bool forEvents) {
+        public EcsFilter GetFilter (EcsComponentMask mask) {
             var i = _filters.Count - 1;
             for (; i >= 0; i--) {
-                if (_filters[i].ForEvents == forEvents && _filters[i].Mask.IsEquals (mask)) {
+                if (_filters[i].Mask.IsEquals (mask)) {
                     break;
                 }
             }
             if (i == -1) {
                 i = _filters.Count;
-                _filters.Add (new EcsFilter (mask, forEvents));
+                _filters.Add (new EcsFilter (mask));
             }
             return _filters[i];
         }
@@ -322,20 +338,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Recycle all filtered event entities.
-        /// </summary>
-        void ClearEventFilters () {
-            for (var i = _filters.Count - 1; i >= 0; i--) {
-                if (_filters[i].ForEvents) {
-                    var list = _filters[i].Entities;
-                    for (var j = list.Count - 1; j >= 0; j--) {
-                        RemoveEntity (list[j]);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Detaches component from entity and raise OnComponentDetach event.
         /// </summary>
         /// <param name="entity">Entity.</param>
@@ -348,7 +350,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Process delayed updates.
+        /// Processes delayed updates.
         /// </summary>
         void ProcessDelayedUpdates () {
             var iMax = _delayedUpdates.Count;

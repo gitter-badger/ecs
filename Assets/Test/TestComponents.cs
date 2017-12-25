@@ -8,7 +8,7 @@ namespace LeopotamGroup.Ecs.Tests {
         public string GunName;
     }
 
-    public sealed class DamageEventComponent : IEcsComponent {
+    public struct DamageEvent {
         public int Amount;
     }
 }

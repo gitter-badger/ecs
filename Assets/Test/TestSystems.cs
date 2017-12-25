@@ -15,8 +15,9 @@ namespace LeopotamGroup.Ecs.Tests {
 
         void IEcsUpdateSystem.Update () {
             // send event.
-            var eventData = _world.CreateEvent<DamageEventComponent> ();
+            var eventData = new DamageEvent ();
             eventData.Amount = 10;
+            _world.PublishEvent (eventData);
         }
     }
 
@@ -24,8 +25,6 @@ namespace LeopotamGroup.Ecs.Tests {
         EcsWorld _world;
 
         EcsFilter _filter;
-
-        EcsFilter _damageEvent;
 
         int _weaponComponentId;
 
@@ -35,7 +34,7 @@ namespace LeopotamGroup.Ecs.Tests {
             _world.OnComponentDetach += OnComponentDetach;
 
             // up to 4 types.
-            _filter = _world.GetFilter<WeaponComponent> (false);
+            _filter = _world.GetFilter<WeaponComponent> ();
             // if you need more - you can create it with component mask:
             // var mask = new EcsComponentMask ();
             // mask.SetBit (_world.GetComponentTypeId<A> (), true);
@@ -43,7 +42,8 @@ namespace LeopotamGroup.Ecs.Tests {
             // mask.SetBit (_world.GetComponentTypeId<C> (), true);
             // var filter = _world.GetFilter (mask, false);
 
-            _damageEvent = _world.GetFilter<DamageEventComponent> (true);
+            // Listen to event.
+            _world.SubscribeToEvent<DamageEvent> (OnDamageEvent);
 
             var entity = _world.CreateEntity ();
             _world.AddComponent<HealthComponent> (entity);
@@ -55,6 +55,9 @@ namespace LeopotamGroup.Ecs.Tests {
         }
 
         void IEcsSystem.Destroy () {
+            // No need to listen event anymore.
+            _world.UnsubscribeFromEvent<DamageEvent> (OnDamageEvent);
+
             _world.OnComponentAttach -= OnComponentAttach;
             _world.OnComponentDetach -= OnComponentDetach;
             Debug.LogFormat ("{0} => destroy", GetType ().Name);
@@ -68,15 +71,14 @@ namespace LeopotamGroup.Ecs.Tests {
             // Debug.LogFormat ("{0} => detach", obj.GetType ().Name);
         }
 
+        void OnDamageEvent (DamageEvent eventData) {
+            Debug.Log ("damage event: " + eventData.Amount);
+        }
+
         void IEcsUpdateSystem.Update () {
             foreach (var entity in _filter.Entities) {
                 var weapon = _world.GetComponent<WeaponComponent> (entity, _weaponComponentId);
                 weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
-            }
-
-            foreach (var damageEvent in _damageEvent.Entities) {
-                var damage = _world.GetComponent<DamageEventComponent> (damageEvent);
-                // Debug.Log ("Damage " + damage.Amount);
             }
         }
     }

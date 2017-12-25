@@ -9,19 +9,13 @@ namespace LeopotamGroup.Ecs {
         public readonly EcsComponentMask Mask;
 
         /// <summary>
-        /// Is this filter for events (should be cleared after each update loop) or not.
-        /// </summary>
-        public readonly bool ForEvents;
-
-        /// <summary>
         /// List of filtered entities.
         /// Do not change it manually!
         /// </summary>
         public readonly List<int> Entities = new List<int> (512);
 
-        public EcsFilter (EcsComponentMask mask, bool forEvents) {
+        public EcsFilter (EcsComponentMask mask) {
             Mask = mask;
-            ForEvents = forEvents;
         }
 
         public override string ToString () {
