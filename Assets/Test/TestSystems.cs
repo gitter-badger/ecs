@@ -63,11 +63,11 @@ namespace LeopotamGroup.Ecs.Tests {
             Debug.LogFormat ("{0} => destroy", GetType ().Name);
         }
 
-        void OnComponentAttach (IEcsComponent obj) {
+        void OnComponentAttach (int entity, IEcsComponent component) {
             // Debug.LogFormat ("{0} => attach", obj.GetType ().Name);
         }
 
-        void OnComponentDetach (IEcsComponent obj) {
+        void OnComponentDetach (int entity, IEcsComponent component) {
             // Debug.LogFormat ("{0} => detach", obj.GetType ().Name);
         }
 

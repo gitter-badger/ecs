@@ -3,15 +3,17 @@ using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
     public sealed class EcsWorld {
+        public delegate void OnComponentChangeHandler (int entity, IEcsComponent component);
+
         /// <summary>
         /// Raises on component attaching to entity.
         /// </summary>
-        public event Action<IEcsComponent> OnComponentAttach = delegate { };
+        public event OnComponentChangeHandler OnComponentAttach = delegate { };
 
         /// <summary>
         /// Raises on component detaching from entity.
         /// </summary>
-        public event Action<IEcsComponent> OnComponentDetach = delegate { };
+        public event OnComponentChangeHandler OnComponentDetach = delegate { };
 
         /// <summary>
         /// All registered systems.
@@ -354,7 +356,7 @@ namespace LeopotamGroup.Ecs {
                             while (!entityData.Mask.IsEmpty ()) {
                                 if (entityData.Mask.GetBit (componentId)) {
                                     entityData.Mask.SetBit (componentId, false);
-                                    DetachComponent (entityData, componentId);
+                                    DetachComponent (op.Entity, entityData, componentId);
                                 }
                                 componentId++;
                             }
@@ -366,14 +368,14 @@ namespace LeopotamGroup.Ecs {
                     case DelayedUpdate.Op.AddComponent:
                         if (!entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, true);
-                            OnComponentAttach (entityData.Components[op.Component]);
+                            OnComponentAttach (op.Entity, entityData.Components[op.Component]);
                             UpdateFilters (op.Entity, oldMask, entityData.Mask);
                         }
                         break;
                     case DelayedUpdate.Op.RemoveComponent:
                         if (entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, false);
-                            DetachComponent (entityData, op.Component);
+                            DetachComponent (op.Entity, entityData, op.Component);
                             UpdateFilters (op.Entity, oldMask, entityData.Mask);
                         }
                         break;
@@ -392,12 +394,13 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Detaches component from entity and raise OnComponentDetach event.
         /// </summary>
+        /// <param name="entityId">Entity Id.</param>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Detaching component.</param>
-        void DetachComponent (EcsEntity entity, int componentId) {
+        void DetachComponent (int entityId, EcsEntity entity, int componentId) {
             var comp = entity.Components[componentId];
             entity.Components[componentId] = null;
-            OnComponentDetach (comp);
+            OnComponentDetach (entityId, comp);
             _componentPools[componentId].Recycle (comp);
         }
 
