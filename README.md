@@ -20,38 +20,33 @@ _world.RemoveEntity (entity);
 ## System
 Сontainer for logic for processing filtered entities. User class should implements IEcsSystem interface:
 ```
-class WeaponSystem : IEcsSystem {
+class WeaponSystem : IEcsSystem, IEcsInitSystem {
+    [EcsWorld]
     EcsWorld _world;
 
-    void IEcsSystem.Initialize (EcsWorld world) {
-        _world = world;
-
+    void IEcsInitSystem.Initialize () {
         var entity = _world.CreateEntity ();
         _world.RemoveEntity (entity);
     }
-
-    void IEcsSystem.Destroy () {
-    }
+    void IEcsInitSystem.Destroy () { }
 }
 ```
+With [EcsWorld], [EcsFilter(typeof(X))] and [EcsIndex(typeof(X))] any compatible fields of system class can be auto initialized (auto injection).
 
 ## EcsFilter
 Container for keep filtered entities with specified component list:
 ```
-class WeaponSystem : IEcsSystem, IEcsUpdateSystem {
+class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
+    [EcsWorld]
     EcsWorld _world;
+    [EcsFilter(typeof(WeaponComponent))]
     EcsFilter _filter;
 
-    void IEcsSystem.Initialize (EcsWorld world) {
-        _world = world;
-
-        // we want to filter entities only with WeaponComponent on them.
-        _filter = _world.GetFilter<WeaponComponent> (false);
-        
+    void IEcsInitSystem.Initialize () {
         var newEntity = _world.CreateEntity ();
         _world.AddComponent<WeaponComponent> (newEntity);
     }
-
+    void IEcsInitSystem.Destroy () { }
     void IEcsUpdateSystem.Update () {
         foreach (var entity in _filter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
@@ -63,26 +58,30 @@ class WeaponSystem : IEcsSystem, IEcsUpdateSystem {
 For events processing EcsFilter should be created with flag "forEvents"=true,
 event data is standard class with IEcsComponent implementation:
 ```
-public class DamageComponent : IEcsComponent {
+struct DamageReceived {
     public int Amount;
 }
-class WeaponSystem : IEcsSystem, IEcsUpdateSystem {
+class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
+    [EcsWorld]
     EcsWorld _world;
-    EcsFilter _event;
 
-    void IEcsSystem.Initialize (EcsWorld world) {
-        _world = world;
-
-        _event = _world.GetFilter<DamageComponent> (true);
+    void IEcsSystem.Initialize () {
+        _world.AddEventAction<DamageReceived> (OnDamageReceived);
         
-        var eventData = _world.CreateEvent<DamageComponent> ();
+        var eventData = new DamageReceived ();
         eventData.Amount = 10;
+        _world.SendEvent (eventData);
     }
-
+    void IEcsSystem.Destroy () {
+        _world.RemoveEventAction<DamageReceived> (OnDamageReceived);
+    }
+    void OnDamageReceived (DamageReceived eventData) {
+        Debug.Log("Damage " + e.Amount);
+    }
     void IEcsUpdateSystem.Update () {
         foreach (var eventData in _event.Entities) {
             var damage = _world.GetComponent<DamageComponent> (eventData);
-            Debug.Log("Damage " + damage.Amount);
+            Debug.Log ("Damage " + damage.Amount);
         }
     }
 }
@@ -96,23 +95,26 @@ class Startup : MonoBehaviour {
 
     void OnEnable() {
         // create ecs environment.
-        var world = new EcsWorld ()
+        _world = new EcsWorld ()
             .AddSystem(new WeaponSystem ());
-        world.Initialize();
+        _world.Initialize();
     }
     
     void Update() {
         // process all dependent systems.
-        world.Update ();
+        _world.Update ();
     }
 
     void OnDisable() {
         // destroy ecs environment.
-        world.Destroy ();
-        world = null;
+        _world.Destroy ();
+        _world = null;
     }
 }
 ```
+
+# Examples
+[Snake game](https://github.com/Leopotam/ecs-snake)
 
 # License
 The software released under the terms of the MIT license. Enjoy.

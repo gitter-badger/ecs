@@ -1,5 +1,25 @@
 namespace LeopotamGroup.Ecs {
     /// <summary>
+    /// Base interface for all ecs systems.
+    /// </summary>
+    public interface IEcsSystem { }
+
+    /// <summary>
+    /// Allows custom initialization / deinitialization for ecs system.
+    /// </summary>
+    public interface IEcsInitSystem {
+        /// <summary>
+        /// Initializes system inside EcsWorld instance.
+        /// </summary>
+        void Initialize ();
+
+        /// <summary>
+        /// Destroys all internal allocated data.
+        /// </summary>
+        void Destroy ();
+    }
+
+    /// <summary>
     /// Allows integration to unity Update() state.
     /// </summary>
     public interface IEcsUpdateSystem {
@@ -17,21 +37,5 @@ namespace LeopotamGroup.Ecs {
         /// Will be called on unity FixedUpdate() stage.
         /// </summary>
         void FixedUpdate ();
-    }
-
-    /// <summary>
-    /// Base interface for all ecs systems.
-    /// </summary>
-    public interface IEcsSystem {
-        /// <summary>
-        /// Initializes system inside EcsWorld instance.
-        /// </summary>
-        /// <param name="world">EcsWorld instance.</param>
-        void Initialize (EcsWorld world);
-
-        /// <summary>
-        /// Destroys all internal allocated data.
-        /// </summary>
-        void Destroy ();
     }
 }

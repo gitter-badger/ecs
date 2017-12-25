@@ -70,6 +70,7 @@ namespace LeopotamGroup.Ecs {
                 throw new Exception ("Already initialized, cant add new system.");
             }
             _allSystems.Add (system);
+            EcsInjections.Inject (this, system);
             return this;
         }
 
@@ -79,7 +80,10 @@ namespace LeopotamGroup.Ecs {
         public void Initialize () {
             _inited = true;
             for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
-                _allSystems[i].Initialize (this);
+                var initSystem = _allSystems[i] as IEcsInitSystem;
+                if (initSystem != null) {
+                    initSystem.Initialize ();
+                }
             }
             ProcessDelayedUpdates ();
         }
@@ -94,7 +98,10 @@ namespace LeopotamGroup.Ecs {
             ProcessDelayedUpdates ();
 
             for (var i = _allSystems.Count - 1; i >= 0; i--) {
-                _allSystems[i].Destroy ();
+                var initSystem = _allSystems[i] as IEcsInitSystem;
+                if (initSystem != null) {
+                    initSystem.Destroy ();
+                }
             }
 
             _events.UnsubscribeAndClearAllEvents ();
@@ -211,7 +218,7 @@ namespace LeopotamGroup.Ecs {
         /// Subscribes to event.
         /// </summary>
         /// <param name="eventData">Event callback.</param>
-        public void SubscribeToEvent<T> (Action<T> cb) where T : struct {
+        public void AddEventAction<T> (Action<T> cb) where T : struct {
             _events.Subscribe (cb);
         }
 
@@ -219,7 +226,7 @@ namespace LeopotamGroup.Ecs {
         /// Unsubscribes from event.
         /// </summary>
         /// <param name="eventData">Event callback.</param>
-        public void UnsubscribeFromEvent<T> (Action<T> cb) where T : struct {
+        public void RemoveEventAction<T> (Action<T> cb) where T : struct {
             _events.Unsubscribe (cb);
         }
 
@@ -227,7 +234,7 @@ namespace LeopotamGroup.Ecs {
         /// Publishes event with custom data.
         /// </summary>
         /// <param name="eventData">Event data.</param>
-        public void PublishEvent<T> (T eventData) where T : struct {
+        public void SendEvent<T> (T eventData) where T : struct {
             _events.Publish (eventData);
         }
 
@@ -237,6 +244,23 @@ namespace LeopotamGroup.Ecs {
         public int GetComponentIndex<T> () where T : class, IEcsComponent {
             int retVal;
             var type = typeof (T).GetHashCode ();
+            if (!_componentIds.TryGetValue (type, out retVal)) {
+                retVal = _componentIds.Count;
+                _componentIds[type] = retVal;
+            }
+            return retVal;
+        }
+
+        /// <summary>
+        /// Gets component index. Slower than generic version, use carefully!
+        /// </summary>
+        /// <param name="componentType">Component type.</param>
+        public int GetComponentIndex (Type componentType) {
+            if (componentType == null || !typeof (IEcsComponent).IsAssignableFrom (componentType) || !componentType.IsClass) {
+                throw new Exception ("Invalid component type");
+            }
+            int retVal;
+            var type = componentType.GetHashCode ();
             if (!_componentIds.TryGetValue (type, out retVal)) {
                 retVal = _componentIds.Count;
                 _componentIds[type] = retVal;
