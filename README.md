@@ -1,8 +1,8 @@
-# Test Entity Component System implementation.
+# Another one Entity Component System framework.
 Performance and zero memory allocation / no gc - main goals of this project. 
 
 ## Component
-Container for user data without / with small logic inside. User class should implements IEcsComponent interface:
+Container for user data without / with small logic inside. User class should implements **IEcsComponent** interface:
 ```
 class WeaponComponent: IEcsComponent {
     public int Ammo;
@@ -18,7 +18,7 @@ _world.RemoveEntity (entity);
 ```
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements IEcsSystem interface:
+Сontainer for logic for processing filtered entities. User class should implements **IEcsSystem** interface:
 ```
 class WeaponSystem : IEcsSystem, IEcsInitSystem {
     [EcsWorld]
@@ -31,7 +31,9 @@ class WeaponSystem : IEcsSystem, IEcsInitSystem {
     void IEcsInitSystem.Destroy () { }
 }
 ```
-With [EcsWorld], [EcsFilter(typeof(X))] and [EcsIndex(typeof(X))] any compatible fields of system class can be auto initialized (auto injection).
+Additional **IEcsInitSystem**, **IEcsUpdateSystem** and **IEcsFixedUpdateSystem** interfaces allows to integrate ecs-system to different execution workflow points.
+
+With **[EcsWorld]**, **[EcsFilter(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom IEcsSystem-class can be auto initialized (auto injected).
 
 ## EcsFilter
 Container for keep filtered entities with specified component list:
@@ -55,8 +57,7 @@ class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
     }
 }
 ```
-For events processing EcsFilter should be created with flag "forEvents"=true,
-event data is standard class with IEcsComponent implementation:
+For events processing any ecs-system can subscribes callback to receive specified type of event data. Event data should be implemented as **struct**:
 ```
 struct DamageReceived {
     public int Amount;
