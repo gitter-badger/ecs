@@ -28,12 +28,13 @@ class WeaponSystem : IEcsSystem, IEcsInitSystem {
         var entity = _world.CreateEntity ();
         _world.RemoveEntity (entity);
     }
+
     void IEcsInitSystem.Destroy () { }
 }
 ```
 Additional **IEcsInitSystem**, **IEcsUpdateSystem** and **IEcsFixedUpdateSystem** interfaces allows to integrate ecs-system to different execution workflow points.
 
-With **[EcsWorld]**, **[EcsFilter(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom IEcsSystem-class can be auto initialized (auto injected).
+With **[EcsWorld]**, **[EcsFilterInclude(typeof(X))]**, **[EcsFilterExclude(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom IEcsSystem-class can be auto initialized (auto injected).
 
 ## EcsFilter
 Container for keep filtered entities with specified component list:
@@ -41,14 +42,19 @@ Container for keep filtered entities with specified component list:
 class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
     [EcsWorld]
     EcsWorld _world;
-    [EcsFilter(typeof(WeaponComponent))]
+
+    // We wants to get entities with WeaponComponent and without HealthComponent.
+    [EcsFilterInclude(typeof(WeaponComponent))]
+    [EcsFilterInclude(typeof(HealthComponent))]
     EcsFilter _filter;
 
     void IEcsInitSystem.Initialize () {
         var newEntity = _world.CreateEntity ();
         _world.AddComponent<WeaponComponent> (newEntity);
     }
+
     void IEcsInitSystem.Destroy () { }
+
     void IEcsUpdateSystem.Update () {
         foreach (var entity in _filter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
@@ -62,6 +68,7 @@ For events processing any ecs-system can subscribes callback to receive specifie
 struct DamageReceived {
     public int Amount;
 }
+
 class WeaponSystem : IEcsSystem, IEcsInitSystem {
     [EcsWorld]
     EcsWorld _world;
@@ -73,9 +80,11 @@ class WeaponSystem : IEcsSystem, IEcsInitSystem {
         eventData.Amount = 10;
         _world.SendEvent (eventData);
     }
+
     void IEcsSystem.Destroy () {
         _world.RemoveEventAction<DamageReceived> (OnDamageReceived);
     }
+    
     void OnDamageReceived (DamageReceived eventData) {
         Debug.Log("Damage " + e.Amount);
     }
