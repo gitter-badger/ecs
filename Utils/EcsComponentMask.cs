@@ -1,3 +1,9 @@
+// ----------------------------------------------------------------------------
+// The MIT License
+// Simple Entity Component System framework https://github.com/Leopotam/ecs
+// Copyright (c) 2017 Leopotam <leopotam@gmail.com>
+// ----------------------------------------------------------------------------
+
 namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Mask for components selection.
@@ -56,8 +62,9 @@ namespace LeopotamGroup.Ecs {
             return _raw0 == a._raw0 && _raw1 == a._raw1;
         }
 
-        public bool IsCompatible (EcsComponentMask a) {
-            return (_raw0 & a._raw0) == a._raw0 && (_raw1 & a._raw1) == a._raw1;
+        public bool IsCompatible (EcsComponentMask include, EcsComponentMask exclude) {
+            return (_raw0 & include._raw0) == include._raw0 && (_raw1 & include._raw1) == include._raw1 &&
+                (_raw0 & exclude._raw0) == 0 && (_raw1 & exclude._raw1) == 0;
         }
 
         [System.Diagnostics.Conditional ("DEBUG")]

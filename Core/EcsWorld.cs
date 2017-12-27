@@ -1,3 +1,9 @@
+// ----------------------------------------------------------------------------
+// The MIT License
+// Simple Entity Component System framework https://github.com/Leopotam/ecs
+// Copyright (c) 2017 Leopotam <leopotam@gmail.com>
+// ----------------------------------------------------------------------------
+
 using System;
 using System.Collections.Generic;
 
@@ -269,60 +275,23 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Gets filter for specific component.
-        /// </summary>
-        public EcsFilter GetFilter<A> () where A : class, IEcsComponent {
-            var mask = new EcsComponentMask (GetComponentIndex<A> ());
-            return GetFilter (mask);
-        }
-
-        /// <summary>
         /// Gets filter for specific components.
         /// </summary>
-        public EcsFilter GetFilter<A, B> () where A : class, IEcsComponent where B : class, IEcsComponent {
-            var mask = new EcsComponentMask ();
-            mask.SetBit (GetComponentIndex<A> (), true);
-            mask.SetBit (GetComponentIndex<B> (), true);
-            return GetFilter (mask);
-        }
-
-        /// <summary>
-        /// Gets filter for specific components.
-        /// </summary>
-        public EcsFilter GetFilter<A, B, C> () where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent {
-            var mask = new EcsComponentMask ();
-            mask.SetBit (GetComponentIndex<A> (), true);
-            mask.SetBit (GetComponentIndex<B> (), true);
-            mask.SetBit (GetComponentIndex<C> (), true);
-            return GetFilter (mask);
-        }
-
-        /// <summary>
-        /// Gets filter for specific components.
-        /// </summary>
-        public EcsFilter GetFilter<A, B, C, D> () where A : class, IEcsComponent where B : class, IEcsComponent where C : class, IEcsComponent where D : class, IEcsComponent {
-            var mask = new EcsComponentMask ();
-            mask.SetBit (GetComponentIndex<A> (), true);
-            mask.SetBit (GetComponentIndex<B> (), true);
-            mask.SetBit (GetComponentIndex<C> (), true);
-            mask.SetBit (GetComponentIndex<D> (), true);
-            return GetFilter (mask);
-        }
-
-        /// <summary>
-        /// Gets filter for specific components.
-        /// </summary>
-        /// <param name="mask">Component selection.</param>
-        public EcsFilter GetFilter (EcsComponentMask mask) {
+        /// <param name="include">Component mask for required components.</param>
+        /// <param name="include">Component mask for denied components.</param>
+        public EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
             var i = _filters.Count - 1;
             for (; i >= 0; i--) {
-                if (_filters[i].Mask.IsEquals (mask)) {
+                if (_filters[i].IncludeMask.IsEquals (include) && _filters[i].ExcludeMask.IsEquals (exclude)) {
                     break;
                 }
             }
             if (i == -1) {
+                if (_inited) {
+                    throw new Exception ("Already initialized, cant add new filter.");
+                }
                 i = _filters.Count;
-                _filters.Add (new EcsFilter (mask));
+                _filters.Add (new EcsFilter (include, exclude));
             }
             return _filters[i];
         }
@@ -435,15 +404,17 @@ namespace LeopotamGroup.Ecs {
         /// <param name="oldMask">Old component state.</param>
         /// <param name="newMask">New component state.</param>
         void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
+            EcsFilter filter;
             for (var i = _filters.Count - 1; i >= 0; i--) {
-                var isNewMaskCompatible = newMask.IsCompatible (_filters[i].Mask);
-                if (oldMask.IsCompatible (_filters[i].Mask)) {
+                filter = _filters[i];
+                var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
+                if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                     if (!isNewMaskCompatible) {
-                        _filters[i].Entities.Remove (entity);
+                        filter.Entities.Remove (entity);
                     }
                 } else {
                     if (isNewMaskCompatible) {
-                        _filters[i].Entities.Add (entity);
+                        filter.Entities.Add (entity);
                     }
                 }
             }
