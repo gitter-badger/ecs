@@ -62,7 +62,7 @@ For events processing any ecs-system can subscribes callback to receive specifie
 struct DamageReceived {
     public int Amount;
 }
-class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
+class WeaponSystem : IEcsSystem, IEcsInitSystem {
     [EcsWorld]
     EcsWorld _world;
 
@@ -78,12 +78,6 @@ class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
     }
     void OnDamageReceived (DamageReceived eventData) {
         Debug.Log("Damage " + e.Amount);
-    }
-    void IEcsUpdateSystem.Update () {
-        foreach (var eventData in _event.Entities) {
-            var damage = _world.GetComponent<DamageComponent> (eventData);
-            Debug.Log ("Damage " + damage.Amount);
-        }
     }
 }
 ```
