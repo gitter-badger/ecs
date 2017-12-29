@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
     public sealed class EcsWorld {
@@ -57,24 +58,38 @@ namespace LeopotamGroup.Ecs {
         readonly List<EcsFilter> _filters = new List<EcsFilter> (64);
 
         /// <summary>
+        /// List of requested react filters.
+        /// </summary>
+        readonly List<EcsFilter> _reactFilters = new List<EcsFilter> (64);
+
+        /// <summary>
         /// Events processing.
         /// </summary>
         /// <returns></returns>
         readonly EcsEvents _events = new EcsEvents ();
 
+#if DEBUG
         /// <summary>
         /// Is Initialize method was called?
         /// </summary>
         bool _inited;
 
         /// <summary>
+        /// In react system update loop.
+        /// </summary>
+        bool _inReact;
+#endif
+
+        /// <summary>
         /// Adds new system to processing.
         /// </summary>
         /// <param name="system">System instance.</param>
         public EcsWorld AddSystem (IEcsSystem system) {
+#if DEBUG
             if (_inited) {
                 throw new Exception ("Already initialized, cant add new system.");
             }
+#endif
             _allSystems.Add (system);
             EcsInjections.Inject (this, system);
             return this;
@@ -84,13 +99,17 @@ namespace LeopotamGroup.Ecs {
         /// Closes registration for new external data, initialize all registered systems.
         /// </summary>
         public void Initialize () {
+#if DEBUG
             _inited = true;
+#endif
             for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
                 var initSystem = _allSystems[i] as IEcsInitSystem;
                 if (initSystem != null) {
                     initSystem.Initialize ();
                 }
             }
+            ProcessDelayedUpdates ();
+            ProcessReactSystems ();
             ProcessDelayedUpdates ();
         }
 
@@ -101,6 +120,8 @@ namespace LeopotamGroup.Ecs {
             for (int i = 0, iMax = _entities.Count; i < iMax; i++) {
                 RemoveEntity (i);
             }
+            ProcessDelayedUpdates ();
+            ProcessReactSystems ();
             ProcessDelayedUpdates ();
 
             for (var i = _allSystems.Count - 1; i >= 0; i--) {
@@ -117,6 +138,7 @@ namespace LeopotamGroup.Ecs {
             _entities.Clear ();
             _reservedEntityIds.Clear ();
             _filters.Clear ();
+            _reactFilters.Clear ();
         }
 
         /// <summary>
@@ -130,6 +152,8 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             ProcessDelayedUpdates ();
+            ProcessReactSystems ();
+            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -142,6 +166,8 @@ namespace LeopotamGroup.Ecs {
                     updateSystem.FixedUpdate ();
                 }
             }
+            ProcessDelayedUpdates ();
+            ProcessReactSystems ();
             ProcessDelayedUpdates ();
         }
 
@@ -176,8 +202,11 @@ namespace LeopotamGroup.Ecs {
         /// Adds component to entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        public T AddComponent<T> (int entity) where T : class, IEcsComponent {
-            var componentId = GetComponentIndex<T> ();
+        /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
+        public T AddComponent<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+            if (componentId == -1) {
+                componentId = GetComponentIndex<T> ();
+            }
             var entityData = _entities[entity];
             if (entityData.Mask.GetBit (componentId)) {
                 return entityData.Components[componentId] as T;
@@ -203,8 +232,12 @@ namespace LeopotamGroup.Ecs {
         /// Removes component from entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        public void RemoveComponent<T> (int entity) where T : class, IEcsComponent {
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, GetComponentIndex<T> ()));
+        /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
+        public void RemoveComponent<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+            if (componentId == -1) {
+                componentId = GetComponentIndex<T> ();
+            }
+            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, componentId));
         }
 
         /// <summary>
@@ -218,6 +251,33 @@ namespace LeopotamGroup.Ecs {
             }
             var entityData = _entities[entity];
             return componentId < entityData.ComponentsCount ? entityData.Components[componentId] as T : null;
+        }
+
+        /// <summary>
+        /// Marks component as changed for process it at react systems.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
+        public void MarkComponentAsChanged<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+#if DEBUG
+            if (_inReact) {
+                throw new Exception ("Cant mark component as changed in react system.");
+            }
+#endif
+            if (componentId == -1) {
+                componentId = GetComponentIndex<T> ();
+            }
+            // cant check mask - AddComponent mask fix can be delayed if called right before this method.
+            var entityData = _entities[entity];
+            if (componentId >= entityData.ComponentsCount || entityData.Components[componentId] == null) {
+                throw new Exception (string.Format ("Component {0} not exists on entity {1}.", typeof (T).Name, entity));
+            }
+            for (var i = _reactFilters.Count - 1; i >= 0; i--) {
+                var filter = _reactFilters[i];
+                if (filter.IncludeMask.GetBit (componentId) && filter.Entities.IndexOf (entity) == -1) {
+                    filter.Entities.Add (entity);
+                }
+            }
         }
 
         /// <summary>
@@ -279,21 +339,24 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="include">Component mask for required components.</param>
         /// <param name="include">Component mask for denied components.</param>
-        public EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
-            var i = _filters.Count - 1;
+        internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude, bool isReact = false) {
+            var list = isReact ? _reactFilters : _filters;
+            var i = list.Count - 1;
             for (; i >= 0; i--) {
-                if (_filters[i].IncludeMask.IsEquals (include) && _filters[i].ExcludeMask.IsEquals (exclude)) {
+                if (_filters[i].IncludeMask.IsEquals (include) && list[i].ExcludeMask.IsEquals (exclude)) {
                     break;
                 }
             }
             if (i == -1) {
+#if DEBUG
                 if (_inited) {
                     throw new Exception ("Already initialized, cant add new filter.");
                 }
-                i = _filters.Count;
-                _filters.Add (new EcsFilter (include, exclude));
+#endif
+                i = list.Count;
+                list.Add (new EcsFilter (include, exclude));
             }
-            return _filters[i];
+            return list[i];
         }
 
         /// <summary>
@@ -326,6 +389,7 @@ namespace LeopotamGroup.Ecs {
                 AllEntities = _entities.Count,
                 ReservedEntities = _reservedEntityIds.Count,
                 Filters = _filters.Count,
+                ReactFilters = _reactFilters.Count,
                 Components = _componentIds.Count,
                 DelayedUpdates = _delayedUpdates.Count
             };
@@ -333,7 +397,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Processes delayed updates. Use carefully!
+        /// Manually processes delayed updates. Use carefully!
         /// </summary>
         public void ProcessDelayedUpdates () {
             var iMax = _delayedUpdates.Count;
@@ -385,6 +449,27 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
+        /// Manually processes react systems. Use carefully!
+        /// </summary>
+        public void ProcessReactSystems () {
+#if DEBUG
+            _inReact = true;
+#endif
+            for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
+                var reactSystem = _allSystems[i] as IEcsReactSystem;
+                if (reactSystem != null) {
+                    reactSystem.React ();
+                }
+            }
+            for (var i = _reactFilters.Count - 1; i >= 0; i--) {
+                _reactFilters[i].Entities.Clear ();
+            }
+#if DEBUG
+            _inReact = false;
+#endif
+        }
+
+        /// <summary>
         /// Detaches component from entity and raise OnComponentDetach event.
         /// </summary>
         /// <param name="entityId">Entity Id.</param>
@@ -416,6 +501,14 @@ namespace LeopotamGroup.Ecs {
                     if (isNewMaskCompatible) {
                         filter.Entities.Add (entity);
                     }
+                }
+            }
+            // react filters cleanup.
+            for (var i = _reactFilters.Count - 1; i >= 0; i--) {
+                filter = _reactFilters[i];
+                if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask) &&
+                    !newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
+                    filter.Entities.Remove (entity);
                 }
             }
         }

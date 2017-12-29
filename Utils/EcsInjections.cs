@@ -7,49 +7,7 @@
 using System;
 using System.Reflection;
 
-namespace LeopotamGroup.Ecs {
-    /// <summary>
-    /// Processes injection to EcsWorld field.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Field)]
-    public sealed class EcsWorldAttribute : Attribute { }
-
-    /// <summary>
-    /// Processes injection to EcsFilter field - declares required components.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Field)]
-    public sealed class EcsFilterIncludeAttribute : Attribute {
-        public readonly Type[] Components;
-
-        public EcsFilterIncludeAttribute (params Type[] components) {
-            Components = components;
-        }
-    }
-
-    /// <summary>
-    /// Processes injection to EcsFilter field - declares denied components.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Field)]
-    public sealed class EcsFilterExcludeAttribute : Attribute {
-        public readonly Type[] Components;
-
-        public EcsFilterExcludeAttribute (params Type[] components) {
-            Components = components;
-        }
-    }
-
-    /// <summary>
-    /// Processes injection to int field for component index of specified type.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Field)]
-    public sealed class EcsIndexAttribute : Attribute {
-        public readonly Type Component;
-
-        public EcsIndexAttribute (Type component) {
-            Component = component;
-        }
-    }
-
+namespace LeopotamGroup.Ecs.Internals {
     /// <summary>
     /// Processes dependency injection to ecs systems. For internal use only.
     /// </summary>
@@ -64,6 +22,8 @@ namespace LeopotamGroup.Ecs {
             var attrEcsWorld = typeof (EcsWorldAttribute);
             var attrEcsFilterInclude = typeof (EcsFilterIncludeAttribute);
             var attrEcsFilterExclude = typeof (EcsFilterExcludeAttribute);
+            var attrEcsReactFilterInclude = typeof (EcsReactFilterIncludeAttribute);
+            var attrEcsReactFilterExclude = typeof (EcsReactFilterExcludeAttribute);
             var attrEcsIndex = typeof (EcsIndexAttribute);
 
             foreach (var f in type.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)) {
@@ -75,33 +35,60 @@ namespace LeopotamGroup.Ecs {
                 // [EcsFilterInclude]
                 if (f.FieldType == ecsFilter && !f.IsStatic) {
                     var includeMask = new EcsComponentMask ();
-                    if (Attribute.IsDefined (f, attrEcsFilterInclude)) {
+                    var standardFilterIncDefined = Attribute.IsDefined (f, attrEcsFilterInclude);
+                    if (standardFilterIncDefined) {
                         var components = ((EcsFilterIncludeAttribute) Attribute.GetCustomAttribute (f, attrEcsFilterInclude)).Components;
                         for (var i = 0; i < components.Length; i++) {
                             includeMask.SetBit (world.GetComponentIndex (components[i]), true);
                         }
-#if DEBUG
-                        if (includeMask.IsEmpty ()) {
-                            throw new Exception ("Include filter cant be empty.");
-                        }
-#endif
                     }
+                    var reactFilterIncDefined = Attribute.IsDefined (f, attrEcsReactFilterInclude);
+                    if (reactFilterIncDefined) {
+                        var components = ((EcsReactFilterIncludeAttribute) Attribute.GetCustomAttribute (f, attrEcsReactFilterInclude)).Components;
+                        for (var i = 0; i < components.Length; i++) {
+                            includeMask.SetBit (world.GetComponentIndex (components[i]), true);
+                        }
+                    }
+
                     var excludeMask = new EcsComponentMask ();
-                    if (Attribute.IsDefined (f, attrEcsFilterExclude)) {
+                    var standardFilterExcDefined = Attribute.IsDefined (f, attrEcsFilterExclude);
+                    if (standardFilterExcDefined) {
                         var components = ((EcsFilterExcludeAttribute) Attribute.GetCustomAttribute (f, attrEcsFilterExclude)).Components;
                         for (var i = 0; i < components.Length; i++) {
                             excludeMask.SetBit (world.GetComponentIndex (components[i]), true);
                         }
                     }
-#if DEBUG
-                    if (includeMask.IsEmpty () && !excludeMask.IsEmpty ()) {
-                        throw new Exception ("Exclude filter cant be applied for empty include filter.");
+                    var reactFilterExcDefined = Attribute.IsDefined (f, attrEcsReactFilterExclude);
+                    if (reactFilterExcDefined) {
+                        var components = ((EcsReactFilterExcludeAttribute) Attribute.GetCustomAttribute (f, attrEcsReactFilterExclude)).Components;
+                        for (var i = 0; i < components.Length; i++) {
+                            excludeMask.SetBit (world.GetComponentIndex (components[i]), true);
+                        }
                     }
-                    if (includeMask.IsEquals (excludeMask)) {
-                        throw new Exception ("Exclude and include filters are equals.");
+#if DEBUG
+                    if (standardFilterIncDefined && reactFilterIncDefined) {
+                        throw new Exception ("EcsFilterInclude and EcsReactFilterInclude cant be applied to one field.");
+                    }
+                    if ((standardFilterIncDefined || reactFilterIncDefined) && includeMask.IsEmpty ()) {
+                        throw new Exception ("Include filter cant be empty.");
+                    }
+                    if (standardFilterExcDefined && reactFilterExcDefined) {
+                        throw new Exception ("EcsFilterExclude and EcsReactFilterExclude cant be applied to one field.");
+                    }
+                    if (standardFilterExcDefined && reactFilterExcDefined) {
+                        throw new Exception ("EcsFilterExclude and EcsReactFilterExclude cant be applied to one field.");
+                    }
+                    if ((standardFilterExcDefined || reactFilterExcDefined) && excludeMask.IsEmpty ()) {
+                        throw new Exception ("Include filter cant be empty.");
+                    }
+                    if ((!standardFilterIncDefined && standardFilterExcDefined) || (!reactFilterIncDefined && reactFilterExcDefined)) {
+                        throw new Exception ("EcsFilterExclude or EcsReactFilterExclude can be applied only as pair to EcsFilterInclude or EcsReactFilterInclude.");
+                    }
+                    if (includeMask.IsIntersects (excludeMask)) {
+                        throw new Exception ("Exclude and include filters are intersected.");
                     }
 #endif
-                    f.SetValue (system, world.GetFilter (includeMask, excludeMask));
+                    f.SetValue (system, world.GetFilter (includeMask, excludeMask, reactFilterIncDefined));
                 }
                 // [EcsIndex]
                 if (f.FieldType == ecsIndex && !f.IsStatic && Attribute.IsDefined (f, attrEcsIndex)) {

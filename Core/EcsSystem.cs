@@ -44,4 +44,11 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         void FixedUpdate ();
     }
+
+    /// <summary>
+    /// Allows integration to react updates loop.
+    /// </summary>
+    public interface IEcsReactSystem {
+        void React ();
+    }
 }

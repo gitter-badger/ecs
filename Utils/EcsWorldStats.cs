@@ -23,6 +23,10 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public int Filters;
         /// <summary>
+        /// Amount of registered react filters.
+        /// </summary>
+        public int ReactFilters;
+        /// <summary>
         /// Amount of registered component types.
         /// </summary>
         public int Components;

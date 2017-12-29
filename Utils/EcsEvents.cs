@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace LeopotamGroup.Ecs {
+namespace LeopotamGroup.Ecs.Internals {
     /// <summary>
     /// Events processing helper. For internal use.
     /// </summary>

@@ -8,7 +8,7 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Mask for components selection.
     /// </summary>
-    public struct EcsComponentMask {
+    struct EcsComponentMask {
         ulong _raw0;
 
         ulong _raw1;
@@ -65,6 +65,10 @@ namespace LeopotamGroup.Ecs {
         public bool IsCompatible (EcsComponentMask include, EcsComponentMask exclude) {
             return (_raw0 & include._raw0) == include._raw0 && (_raw1 & include._raw1) == include._raw1 &&
                 (_raw0 & exclude._raw0) == 0 && (_raw1 & exclude._raw1) == 0;
+        }
+
+        public bool IsIntersects (EcsComponentMask excludeMask) {
+            return (_raw0 & excludeMask._raw0) != 0 || (_raw1 & excludeMask._raw1) != 0;
         }
 
         [System.Diagnostics.Conditional ("DEBUG")]

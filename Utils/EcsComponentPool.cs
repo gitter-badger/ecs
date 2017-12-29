@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace LeopotamGroup.Ecs {
+namespace LeopotamGroup.Ecs.Internals {
     /// <summary>
     /// Components pool container.
     /// </summary>

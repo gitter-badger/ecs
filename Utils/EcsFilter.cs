@@ -12,13 +12,13 @@ namespace LeopotamGroup.Ecs {
         /// Components mask for filtering entities with required components.
         /// Do not change it manually!
         /// </summary>
-        public readonly EcsComponentMask IncludeMask;
+        internal readonly EcsComponentMask IncludeMask;
 
         /// <summary>
         /// Components mask for filtering entities with denied components.
         /// Do not change it manually!
         /// </summary>
-        public readonly EcsComponentMask ExcludeMask;
+        internal readonly EcsComponentMask ExcludeMask;
 
         /// <summary>
         /// List of filtered entities.
@@ -26,7 +26,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public readonly List<int> Entities = new List<int> (512);
 
-        public EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {
+        internal EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {
             IncludeMask = include;
             ExcludeMask = exclude;
         }
