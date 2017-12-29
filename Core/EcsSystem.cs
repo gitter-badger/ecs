@@ -4,6 +4,8 @@
 // Copyright (c) 2017 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Base interface for all ecs systems.
@@ -49,6 +51,6 @@ namespace LeopotamGroup.Ecs {
     /// Allows integration to react updates loop.
     /// </summary>
     public interface IEcsReactSystem {
-        void React ();
+        void React (List<int> entities);
     }
 }

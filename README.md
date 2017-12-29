@@ -99,15 +99,13 @@ class Startup : MonoBehaviour {
 # Reaction on component changes
 With attributes **[EcsReactFilterInclude]** / **[EcsReactFilterExclude]** and **IEcsReactSystem** interface reaction on component changes can be added to any ecs-system:
 ```
+[EcsReactFilterInclude (typeof (WeaponComponent), typeof (HealthComponent))]
 public sealed class TestReactSystem : IEcsSystem, IEcsInitSystem, IEcsReactSystem, IEcsUpdateSystem {
     [EcsWorld]
     EcsWorld _world;
 
     [EcsFilterInclude (typeof (WeaponComponent))]
     EcsFilter _weaponFilter;
-
-    [EcsReactFilterInclude (typeof (WeaponComponent), typeof (HealthComponent))]
-    EcsFilter _reactFilter;
 
     void IEcsInitSystem.Initialize () {
         var entity = _world.CreateEntity ();
@@ -117,19 +115,19 @@ public sealed class TestReactSystem : IEcsSystem, IEcsInitSystem, IEcsReactSyste
 
     void IEcsInitSystem.Destroy () { }
 
-    void IEcsReactSystem.React () {
-        foreach (var entity in _reactFilter.Entities) {
-            Debug.Log ("weapon changed somehow, healing!");
-            var health = _world.GetComponent<HealthComponent> (entity);
-            health.Health = Mathf.Min (100, health.Health + 1);
-        }
-    }
-
     void IEcsUpdateSystem.Update () {
         foreach (var entity in _weaponFilter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
             weapon.Ammo = Mathf.Max (0, weapon.Ammo - 1);
             _world.MarkComponentAsChanged<WeaponComponent> (entity);
+        }
+    }
+
+    void IEcsReactSystem.React (List<int> entities) {
+        foreach (var entity in entities) {
+            // Debug.Log ("weapon changed somehow, healing!");
+            var health = _world.GetComponent<HealthComponent> (entity);
+            health.Health = Mathf.Min (100, health.Health + 1);
         }
     }
 }

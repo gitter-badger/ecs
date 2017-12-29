@@ -60,7 +60,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of requested react filters.
         /// </summary>
-        readonly List<EcsFilter> _reactFilters = new List<EcsFilter> (64);
+        readonly List<EcsReactFilter> _reactFilters = new List<EcsReactFilter> (64);
 
         /// <summary>
         /// Events processing.
@@ -106,11 +106,11 @@ namespace LeopotamGroup.Ecs {
                 var initSystem = _allSystems[i] as IEcsInitSystem;
                 if (initSystem != null) {
                     initSystem.Initialize ();
+                    ProcessDelayedUpdates ();
+                    ProcessReactSystems ();
+                    ProcessDelayedUpdates ();
                 }
             }
-            ProcessDelayedUpdates ();
-            ProcessReactSystems ();
-            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -149,11 +149,11 @@ namespace LeopotamGroup.Ecs {
                 var updateSystem = _allSystems[i] as IEcsUpdateSystem;
                 if (updateSystem != null) {
                     updateSystem.Update ();
+                    ProcessDelayedUpdates ();
+                    ProcessReactSystems ();
+                    ProcessDelayedUpdates ();
                 }
             }
-            ProcessDelayedUpdates ();
-            ProcessReactSystems ();
-            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -164,11 +164,11 @@ namespace LeopotamGroup.Ecs {
                 var updateSystem = _allSystems[i] as IEcsFixedUpdateSystem;
                 if (updateSystem != null) {
                     updateSystem.FixedUpdate ();
+                    ProcessDelayedUpdates ();
+                    ProcessReactSystems ();
+                    ProcessDelayedUpdates ();
                 }
             }
-            ProcessDelayedUpdates ();
-            ProcessReactSystems ();
-            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -339,24 +339,37 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="include">Component mask for required components.</param>
         /// <param name="include">Component mask for denied components.</param>
-        internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude, bool isReact = false) {
-            var list = isReact ? _reactFilters : _filters;
-            var i = list.Count - 1;
+        internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
+            var i = _filters.Count - 1;
             for (; i >= 0; i--) {
-                if (_filters[i].IncludeMask.IsEquals (include) && list[i].ExcludeMask.IsEquals (exclude)) {
+                if (this._filters[i].IncludeMask.IsEquals (include) && _filters[i].ExcludeMask.IsEquals (exclude)) {
                     break;
                 }
             }
             if (i == -1) {
-#if DEBUG
-                if (_inited) {
-                    throw new Exception ("Already initialized, cant add new filter.");
-                }
-#endif
-                i = list.Count;
-                list.Add (new EcsFilter (include, exclude));
+                i = _filters.Count;
+                _filters.Add (new EcsFilter (include, exclude));
             }
-            return list[i];
+            return _filters[i];
+        }
+
+        /// <summary>
+        /// Gets react filter for specific components.
+        /// </summary>
+        /// <param name="include">Component mask for required components.</param>
+        /// <param name="include">Component mask for denied components.</param>
+        internal EcsReactFilter GetReactFilter (EcsComponentMask include, EcsComponentMask exclude) {
+            var i = _reactFilters.Count - 1;
+            for (; i >= 0; i--) {
+                if (_filters[i].IncludeMask.IsEquals (include) && _reactFilters[i].ExcludeMask.IsEquals (exclude)) {
+                    break;
+                }
+            }
+            if (i == -1) {
+                i = _reactFilters.Count;
+                _reactFilters.Add (new EcsReactFilter (include, exclude));
+            }
+            return _reactFilters[i];
         }
 
         /// <summary>
@@ -449,20 +462,20 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Manually processes react systems. Use carefully!
+        /// Manually processes react systems.
         /// </summary>
-        public void ProcessReactSystems () {
+        void ProcessReactSystems () {
 #if DEBUG
             _inReact = true;
 #endif
-            for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
-                var reactSystem = _allSystems[i] as IEcsReactSystem;
-                if (reactSystem != null) {
-                    reactSystem.React ();
+            for (int i = 0, iMax = _reactFilters.Count; i < iMax; i++) {
+                var filter = _reactFilters[i];
+                if (filter.Entities.Count > 0) {
+                    for (int j = 0, jMax = filter.Systems.Count; j < jMax; j++) {
+                        filter.Systems[j].React (filter.Entities);
+                    }
+                    filter.Entities.Clear ();
                 }
-            }
-            for (var i = _reactFilters.Count - 1; i >= 0; i--) {
-                _reactFilters[i].Entities.Clear ();
             }
 #if DEBUG
             _inReact = false;
@@ -489,9 +502,8 @@ namespace LeopotamGroup.Ecs {
         /// <param name="oldMask">Old component state.</param>
         /// <param name="newMask">New component state.</param>
         void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
-            EcsFilter filter;
             for (var i = _filters.Count - 1; i >= 0; i--) {
-                filter = _filters[i];
+                var filter = _filters[i];
                 var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
                 if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                     if (!isNewMaskCompatible) {
@@ -505,7 +517,7 @@ namespace LeopotamGroup.Ecs {
             }
             // react filters cleanup.
             for (var i = _reactFilters.Count - 1; i >= 0; i--) {
-                filter = _reactFilters[i];
+                var filter = _reactFilters[i];
                 if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask) &&
                     !newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                     filter.Entities.Remove (entity);

@@ -40,7 +40,7 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Processes injection to EcsFilter field - declares required components for react filter.
     /// </summary>
-    [AttributeUsage (AttributeTargets.Field)]
+    [AttributeUsage (AttributeTargets.Class)]
     public sealed class EcsReactFilterIncludeAttribute : Attribute {
         public readonly Type[] Components;
 
@@ -52,7 +52,7 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Processes injection to EcsFilter field - declares denied components for react filter.
     /// </summary>
-    [AttributeUsage (AttributeTargets.Field)]
+    [AttributeUsage (AttributeTargets.Class)]
     public sealed class EcsReactFilterExcludeAttribute : Attribute {
         public readonly Type[] Components;
 
