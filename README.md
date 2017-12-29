@@ -1,6 +1,8 @@
 # Another one Entity Component System framework
 Performance and zero memory allocation / no gc - main goals of this project.
 
+> Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
+
 # Main parts of ecs
 
 ## Component
