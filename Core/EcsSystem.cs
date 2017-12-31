@@ -1,10 +1,8 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
-
-using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
     /// <summary>
@@ -45,12 +43,5 @@ namespace LeopotamGroup.Ecs {
         /// Will be called on unity FixedUpdate() stage.
         /// </summary>
         void FixedUpdate ();
-    }
-
-    /// <summary>
-    /// Allows integration to react updates loop.
-    /// </summary>
-    public interface IEcsReactSystem {
-        void React (List<int> entities);
     }
 }

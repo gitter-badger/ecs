@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 namespace LeopotamGroup.Ecs {
@@ -22,10 +22,6 @@ namespace LeopotamGroup.Ecs {
         /// Amount of registered filters.
         /// </summary>
         public int Filters;
-        /// <summary>
-        /// Amount of registered react filters.
-        /// </summary>
-        public int ReactFilters;
         /// <summary>
         /// Amount of registered component types.
         /// </summary>

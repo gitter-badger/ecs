@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -10,17 +10,17 @@ using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
     public sealed class EcsWorld {
-        public delegate void OnComponentChangeHandler (int entity, IEcsComponent component);
+        public delegate void OnEntityComponentChangeHandler (int entity, int componentId);
 
         /// <summary>
-        /// Raises on component attaching to entity.
+        /// Raises on component attached to entity.
         /// </summary>
-        public event OnComponentChangeHandler OnComponentAttach = delegate { };
+        public event OnEntityComponentChangeHandler OnEntityComponentAdded = delegate { };
 
         /// <summary>
-        /// Raises on component detaching from entity.
+        /// Raises on component detached from entity.
         /// </summary>
-        public event OnComponentChangeHandler OnComponentDetach = delegate { };
+        public event OnEntityComponentChangeHandler OnEntityComponentRemoved = delegate { };
 
         /// <summary>
         /// All registered systems.
@@ -58,11 +58,6 @@ namespace LeopotamGroup.Ecs {
         readonly List<EcsFilter> _filters = new List<EcsFilter> (64);
 
         /// <summary>
-        /// List of requested react filters.
-        /// </summary>
-        readonly List<EcsReactFilter> _reactFilters = new List<EcsReactFilter> (64);
-
-        /// <summary>
         /// Events processing.
         /// </summary>
         /// <returns></returns>
@@ -73,11 +68,6 @@ namespace LeopotamGroup.Ecs {
         /// Is Initialize method was called?
         /// </summary>
         bool _inited;
-
-        /// <summary>
-        /// In react system update loop.
-        /// </summary>
-        bool _inReact;
 #endif
 
         /// <summary>
@@ -107,8 +97,6 @@ namespace LeopotamGroup.Ecs {
                 if (initSystem != null) {
                     initSystem.Initialize ();
                     ProcessDelayedUpdates ();
-                    ProcessReactSystems ();
-                    ProcessDelayedUpdates ();
                 }
             }
         }
@@ -120,8 +108,6 @@ namespace LeopotamGroup.Ecs {
             for (int i = 0, iMax = _entities.Count; i < iMax; i++) {
                 RemoveEntity (i);
             }
-            ProcessDelayedUpdates ();
-            ProcessReactSystems ();
             ProcessDelayedUpdates ();
 
             for (var i = _allSystems.Count - 1; i >= 0; i--) {
@@ -138,7 +124,6 @@ namespace LeopotamGroup.Ecs {
             _entities.Clear ();
             _reservedEntityIds.Clear ();
             _filters.Clear ();
-            _reactFilters.Clear ();
         }
 
         /// <summary>
@@ -149,8 +134,6 @@ namespace LeopotamGroup.Ecs {
                 var updateSystem = _allSystems[i] as IEcsUpdateSystem;
                 if (updateSystem != null) {
                     updateSystem.Update ();
-                    ProcessDelayedUpdates ();
-                    ProcessReactSystems ();
                     ProcessDelayedUpdates ();
                 }
             }
@@ -164,8 +147,6 @@ namespace LeopotamGroup.Ecs {
                 var updateSystem = _allSystems[i] as IEcsFixedUpdateSystem;
                 if (updateSystem != null) {
                     updateSystem.FixedUpdate ();
-                    ProcessDelayedUpdates ();
-                    ProcessReactSystems ();
                     ProcessDelayedUpdates ();
                 }
             }
@@ -254,33 +235,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Marks component as changed for process it at react systems.
-        /// </summary>
-        /// <param name="entity">Entity.</param>
-        /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public void MarkComponentAsChanged<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
-#if DEBUG
-            if (_inReact) {
-                throw new Exception ("Cant mark component as changed in react system.");
-            }
-#endif
-            if (componentId == -1) {
-                componentId = GetComponentIndex<T> ();
-            }
-            // cant check mask - AddComponent mask fix can be delayed if called right before this method.
-            var entityData = _entities[entity];
-            if (componentId >= entityData.ComponentsCount || entityData.Components[componentId] == null) {
-                throw new Exception (string.Format ("Component {0} not exists on entity {1}.", typeof (T).Name, entity));
-            }
-            for (var i = _reactFilters.Count - 1; i >= 0; i--) {
-                var filter = _reactFilters[i];
-                if (filter.IncludeMask.GetBit (componentId) && filter.Entities.IndexOf (entity) == -1) {
-                    filter.Entities.Add (entity);
-                }
-            }
-        }
-
-        /// <summary>
         /// Subscribes to event.
         /// </summary>
         /// <param name="eventData">Event callback.</param>
@@ -354,25 +308,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Gets react filter for specific components.
-        /// </summary>
-        /// <param name="include">Component mask for required components.</param>
-        /// <param name="include">Component mask for denied components.</param>
-        internal EcsReactFilter GetReactFilter (EcsComponentMask include, EcsComponentMask exclude) {
-            var i = _reactFilters.Count - 1;
-            for (; i >= 0; i--) {
-                if (_filters[i].IncludeMask.IsEquals (include) && _reactFilters[i].ExcludeMask.IsEquals (exclude)) {
-                    break;
-                }
-            }
-            if (i == -1) {
-                i = _reactFilters.Count;
-                _reactFilters.Add (new EcsReactFilter (include, exclude));
-            }
-            return _reactFilters[i];
-        }
-
-        /// <summary>
         /// Gets all components on entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
@@ -402,7 +337,6 @@ namespace LeopotamGroup.Ecs {
                 AllEntities = _entities.Count,
                 ReservedEntities = _reservedEntityIds.Count,
                 Filters = _filters.Count,
-                ReactFilters = _reactFilters.Count,
                 Components = _componentIds.Count,
                 DelayedUpdates = _delayedUpdates.Count
             };
@@ -412,7 +346,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Manually processes delayed updates. Use carefully!
         /// </summary>
-        public void ProcessDelayedUpdates () {
+        void ProcessDelayedUpdates () {
             var iMax = _delayedUpdates.Count;
             for (var i = 0; i < iMax; i++) {
                 var op = _delayedUpdates[i];
@@ -438,7 +372,7 @@ namespace LeopotamGroup.Ecs {
                     case DelayedUpdate.Op.AddComponent:
                         if (!entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, true);
-                            OnComponentAttach (op.Entity, entityData.Components[op.Component]);
+                            OnEntityComponentAdded (op.Entity, op.Component);
                             UpdateFilters (op.Entity, oldMask, entityData.Mask);
                         }
                         break;
@@ -462,27 +396,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Manually processes react systems.
-        /// </summary>
-        void ProcessReactSystems () {
-#if DEBUG
-            _inReact = true;
-#endif
-            for (int i = 0, iMax = _reactFilters.Count; i < iMax; i++) {
-                var filter = _reactFilters[i];
-                if (filter.Entities.Count > 0) {
-                    for (int j = 0, jMax = filter.Systems.Count; j < jMax; j++) {
-                        filter.Systems[j].React (filter.Entities);
-                    }
-                    filter.Entities.Clear ();
-                }
-            }
-#if DEBUG
-            _inReact = false;
-#endif
-        }
-
-        /// <summary>
         /// Detaches component from entity and raise OnComponentDetach event.
         /// </summary>
         /// <param name="entityId">Entity Id.</param>
@@ -491,7 +404,7 @@ namespace LeopotamGroup.Ecs {
         void DetachComponent (int entityId, EcsEntity entity, int componentId) {
             var comp = entity.Components[componentId];
             entity.Components[componentId] = null;
-            OnComponentDetach (entityId, comp);
+            OnEntityComponentRemoved (entityId, componentId);
             _componentPools[componentId].Recycle (comp);
         }
 
@@ -507,20 +420,20 @@ namespace LeopotamGroup.Ecs {
                 var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
                 if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                     if (!isNewMaskCompatible) {
+#if DEBUG
+                        if (filter.Entities.IndexOf (entity) == -1) {
+                            throw new Exception (
+                                string.Format ("Something wrong - entity {0} should be in filter {1}, but not exits.", entity, filter));
+                        }
+#endif
                         filter.Entities.Remove (entity);
+                        filter.RaiseOnEntityRemoved (entity);
                     }
                 } else {
                     if (isNewMaskCompatible) {
                         filter.Entities.Add (entity);
+                        filter.RaiseOnEntityAdded (entity);
                     }
-                }
-            }
-            // react filters cleanup.
-            for (var i = _reactFilters.Count - 1; i >= 0; i--) {
-                var filter = _reactFilters[i];
-                if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask) &&
-                    !newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
-                    filter.Entities.Remove (entity);
                 }
             }
         }

@@ -98,11 +98,10 @@ class Startup : MonoBehaviour {
 }
 ```
 
-# Reaction on component changes
-With attributes **[EcsReactFilterInclude]** / **[EcsReactFilterExclude]** and **IEcsReactSystem** interface reaction on component changes can be added to any ecs-system:
+# Reaction on component / filter changes
+With events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world and **OnFilterEntityAdded** / **OnFilterEntityRemoved** at ecs-filter reaction on component / filter changes can be added to any ecs-system:
 ```
-[EcsReactFilterInclude (typeof (WeaponComponent), typeof (HealthComponent))]
-public sealed class TestReactSystem : IEcsSystem, IEcsInitSystem, IEcsReactSystem, IEcsUpdateSystem {
+public sealed class TestSystem1 : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
     [EcsWorld]
     EcsWorld _world;
 
@@ -110,31 +109,35 @@ public sealed class TestReactSystem : IEcsSystem, IEcsInitSystem, IEcsReactSyste
     EcsFilter _weaponFilter;
 
     void IEcsInitSystem.Initialize () {
+        _world.OnEntityComponentAdded += OnEntityComponentAdded;
+        _weaponFilter.OnEntityAdded += OnFilterEntityAdded;
+
         var entity = _world.CreateEntity ();
         _world.AddComponent<WeaponComponent> (entity);
         _world.AddComponent<HealthComponent> (entity);
     }
 
-    void IEcsInitSystem.Destroy () { }
+    void IEcsInitSystem.Destroy () {
+        _world.OnEntityComponentAdded -= OnEntityComponentAdded;
+        _weaponFilter.OnEntityAdded -= OnFilterEntityAdded;
+    }
+
+    void OnEntityComponentAdded(int entityId, int componentId) {
+        // Component "componentId" was added to entity "entityId".
+    }
+
+    void OnFilterEntityAdded(int entityId) {
+        // Entity "entityId" was added to _weaponFilter.
+    }
 
     void IEcsUpdateSystem.Update () {
         foreach (var entity in _weaponFilter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
             weapon.Ammo = Mathf.Max (0, weapon.Ammo - 1);
-            _world.MarkComponentAsChanged<WeaponComponent> (entity);
-        }
-    }
-
-    void IEcsReactSystem.React (List<int> entities) {
-        foreach (var entity in entities) {
-            // Debug.Log ("weapon changed somehow, healing!");
-            var health = _world.GetComponent<HealthComponent> (entity);
-            health.Health = Mathf.Min (100, health.Health + 1);
         }
     }
 }
 ```
-> Important: all react systems will be processed on each **world.Update()** and **world.FixedUpdate()** call even if react filters are empty. Calls of world.MarkComponentAsChanged() method denied inside IEcsReact.React() method calls.
 
 # Instant events
 For instant events processing any ecs-system can subscribes callback to receive specified type of event data. Event data should be implemented as **struct**:
