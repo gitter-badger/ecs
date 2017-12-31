@@ -3,6 +3,8 @@ Performance and zero memory allocation / no gc - main goals of this project.
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
+> **Its early work-in-progress stage, not recommended to use in real projects, any api / behaviour can change later.**
+
 # Main parts of ecs
 
 ## Component
