@@ -14,7 +14,9 @@ namespace LeopotamGroup.Ecs {
         ulong _raw1;
 
         public EcsComponentMask (int bitId) {
-            CheckBitId (bitId);
+#if DEBUG && !ECS_PERF_TEST
+            if (bitId < 0 || bitId >= 128) { throw new System.Exception ("Invalid bit"); }
+#endif
             if (bitId >= 64) {
                 _raw0 = 0;
                 _raw1 = 1UL << (bitId - 64);
@@ -29,7 +31,9 @@ namespace LeopotamGroup.Ecs {
         }
 
         public void SetBit (int bitId, bool state) {
-            CheckBitId (bitId);
+#if DEBUG && !ECS_PERF_TEST
+            if (bitId < 0 || bitId >= 128) { throw new System.Exception ("Invalid bit"); }
+#endif
             if (state) {
                 if (bitId >= 64) {
                     _raw1 |= 1UL << (bitId - 64);
@@ -50,7 +54,9 @@ namespace LeopotamGroup.Ecs {
         }
 
         public bool GetBit (int bitId) {
-            CheckBitId (bitId);
+#if DEBUG && !ECS_PERF_TEST
+            if (bitId < 0 || bitId >= 128) { throw new System.Exception ("Invalid bit"); }
+#endif
             if (bitId >= 64) {
                 return (_raw1 & (1UL << (bitId - 64))) != 0;
             } else {
@@ -69,13 +75,6 @@ namespace LeopotamGroup.Ecs {
 
         public bool IsIntersects (EcsComponentMask excludeMask) {
             return (_raw0 & excludeMask._raw0) != 0 || (_raw1 & excludeMask._raw1) != 0;
-        }
-
-        [System.Diagnostics.Conditional ("DEBUG")]
-        static void CheckBitId (int bitId) {
-            if (bitId < 0 || bitId >= 128) {
-                throw new System.Exception ("Invalid bit");
-            }
         }
     }
 }

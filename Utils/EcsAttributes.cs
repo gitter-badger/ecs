@@ -38,30 +38,6 @@ namespace LeopotamGroup.Ecs {
     }
 
     /// <summary>
-    /// Processes injection to EcsFilter field - declares required components for react filter.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Class)]
-    public sealed class EcsReactFilterIncludeAttribute : Attribute {
-        public readonly Type[] Components;
-
-        public EcsReactFilterIncludeAttribute (params Type[] components) {
-            Components = components;
-        }
-    }
-
-    /// <summary>
-    /// Processes injection to EcsFilter field - declares denied components for react filter.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Class)]
-    public sealed class EcsReactFilterExcludeAttribute : Attribute {
-        public readonly Type[] Components;
-
-        public EcsReactFilterExcludeAttribute (params Type[] components) {
-            Components = components;
-        }
-    }
-
-    /// <summary>
     /// Processes injection to int field for component index of specified type.
     /// </summary>
     [AttributeUsage (AttributeTargets.Field)]

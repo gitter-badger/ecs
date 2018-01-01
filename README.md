@@ -1,5 +1,5 @@
 # Another one Entity Component System framework
-Performance and zero memory allocation / no gc - main goals of this project.
+Performance and zero memory allocation / no gc work - main goals of this project.
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
@@ -24,30 +24,55 @@ _world.RemoveEntity (entity);
 ```
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements **IEcsSystem** interface:
+Сontainer for logic for processing filtered entities. User class should implements **IEcsSystem**, **IEcsInitSystem** or **IEcsRunSystem** interfaces:
 ```
-class WeaponSystem : IEcsSystem, IEcsInitSystem {
+class WeaponSystem : IEcsInitSystem {
+    void IEcsInitSystem.Initialize () {
+        // Will be called once during world initialization.
+    }
+
+    void IEcsInitSystem.Destroy () {
+        // Will be called once during world destruction.
+    }
+}
+```
+
+```
+class HealthSystem : IEcsRunSystem {
+    EcsRunSystemType IEcsRunSystem.GetRunSystemType () {
+        // Should returns type of run system,
+        // when Run method will be called - Update() or FixedUpdate.
+        return EcsRunSystemType.Update;
+    }
+
+    void IEcsRunSystem.Run () {
+        // Will be called each FixedUpdate().
+    }
+}
+```
+
+# Data injection
+With **[EcsWorld]**, **[EcsFilterInclude(typeof(X))]**, **[EcsFilterExclude(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom IEcsSystem-class can be auto initialized (auto injected):
+```
+class HealthSystem : IEcsSystem {
     [EcsWorld]
     EcsWorld _world;
 
-    void IEcsInitSystem.Initialize () {
-        var entity = _world.CreateEntity ();
-        _world.RemoveEntity (entity);
-    }
+    [EcsFilterInclude(typeof(WeaponComponent))]
+    EcsFilter _weaponFilter;
 
-    void IEcsInitSystem.Destroy () { }
+    [EcsIndex(typeof(WeaponComponent))]
+    int _weaponId;
 }
 ```
-Additional **IEcsInitSystem**, **IEcsUpdateSystem** and **IEcsFixedUpdateSystem** interfaces allows to integrate ecs-system to different execution workflow points.
-
-With **[EcsWorld]**, **[EcsFilterInclude(typeof(X))]**, **[EcsFilterExclude(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom IEcsSystem-class can be auto initialized (auto injected).
 
 # Special classes
 
 ## EcsFilter
 Container for keep filtered entities with specified component list:
 ```
-class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
+[EcsRunUpdate]
+class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     [EcsWorld]
     EcsWorld _world;
 
@@ -63,7 +88,7 @@ class WeaponSystem : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
 
     void IEcsInitSystem.Destroy () { }
 
-    void IEcsUpdateSystem.Update () {
+    void IEcsRunSystem.Run () {
         foreach (var entity in _filter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
             weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
@@ -87,7 +112,12 @@ class Startup : MonoBehaviour {
     
     void Update() {
         // process all dependent systems.
-        _world.Update ();
+        _world.RunUpdate ();
+    }
+
+    void FixedUpdate() {
+        // process all dependent systems.
+        _world.RunFixedUpdate ();
     }
 
     void OnDisable() {
@@ -99,9 +129,9 @@ class Startup : MonoBehaviour {
 ```
 
 # Reaction on component / filter changes
-With events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world and **OnFilterEntityAdded** / **OnFilterEntityRemoved** at ecs-filter reaction on component / filter changes can be added to any ecs-system:
+Events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world instance and **OnFilterEntityAdded** / **OnFilterEntityRemoved** at ecs-filter instance allows to add reaction on component / filter changes for any ecs-system:
 ```
-public sealed class TestSystem1 : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
+public sealed class TestSystem1 : IEcsInitSystem {
     [EcsWorld]
     EcsWorld _world;
 
@@ -128,13 +158,6 @@ public sealed class TestSystem1 : IEcsSystem, IEcsInitSystem, IEcsUpdateSystem {
 
     void OnFilterEntityAdded(int entityId) {
         // Entity "entityId" was added to _weaponFilter.
-    }
-
-    void IEcsUpdateSystem.Update () {
-        foreach (var entity in _weaponFilter.Entities) {
-            var weapon = _world.GetComponent<WeaponComponent> (entity);
-            weapon.Ammo = Mathf.Max (0, weapon.Ammo - 1);
-        }
     }
 }
 ```

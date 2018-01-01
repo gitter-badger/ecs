@@ -48,7 +48,7 @@ namespace LeopotamGroup.Ecs.Internals {
                             excludeMask.SetBit (world.GetComponentIndex (components[i]), true);
                         }
                     }
-#if DEBUG
+#if DEBUG && !ECS_PERF_TEST
                     if (standardFilterIncDefined && includeMask.IsEmpty ()) {
                         throw new Exception ("Include filter cant be empty at system: " + type.Name);
                     }

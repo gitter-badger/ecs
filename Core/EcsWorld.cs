@@ -23,9 +23,19 @@ namespace LeopotamGroup.Ecs {
         public event OnEntityComponentChangeHandler OnEntityComponentRemoved = delegate { };
 
         /// <summary>
-        /// All registered systems.
+        /// Registered IEcsInitSystem systems.
         /// </summary>
-        readonly List<IEcsSystem> _allSystems = new List<IEcsSystem> (64);
+        readonly List<IEcsInitSystem> _initSystems = new List<IEcsInitSystem> (16);
+
+        /// <summary>
+        /// Registered IEcsRunSystem systems with [EcsRunUpdate].
+        /// </summary>
+        readonly List<IEcsRunSystem> _runUpdateSystems = new List<IEcsRunSystem> (32);
+
+        /// <summary>
+        /// Registered IEcsRunSystem systems with [EcsRunFixedUpdate].
+        /// </summary>
+        readonly List<IEcsRunSystem> _runFixedUpdateSystems = new List<IEcsRunSystem> (16);
 
         /// <summary>
         /// Dictionary for fast search component (type.hashcode) -> type id.
@@ -63,7 +73,7 @@ namespace LeopotamGroup.Ecs {
         /// <returns></returns>
         readonly EcsEvents _events = new EcsEvents ();
 
-#if DEBUG
+#if DEBUG && !ECS_PERF_TEST
         /// <summary>
         /// Is Initialize method was called?
         /// </summary>
@@ -75,13 +85,29 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="system">System instance.</param>
         public EcsWorld AddSystem (IEcsSystem system) {
-#if DEBUG
+#if DEBUG && !ECS_PERF_TEST
             if (_inited) {
                 throw new Exception ("Already initialized, cant add new system.");
             }
 #endif
-            _allSystems.Add (system);
             EcsInjections.Inject (this, system);
+
+            var initSystem = system as IEcsInitSystem;
+            if (initSystem != null) {
+                _initSystems.Add (initSystem);
+            }
+
+            var runSystem = system as IEcsRunSystem;
+            if (runSystem != null) {
+                switch (runSystem.GetRunSystemType ()) {
+                    case EcsRunSystemType.Update:
+                        _runUpdateSystems.Add (runSystem);
+                        break;
+                    case EcsRunSystemType.FixedUpdate:
+                        _runFixedUpdateSystems.Add (runSystem);
+                        break;
+                }
+            }
             return this;
         }
 
@@ -89,15 +115,12 @@ namespace LeopotamGroup.Ecs {
         /// Closes registration for new external data, initialize all registered systems.
         /// </summary>
         public void Initialize () {
-#if DEBUG
+#if DEBUG && !ECS_PERF_TEST
             _inited = true;
 #endif
-            for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
-                var initSystem = _allSystems[i] as IEcsInitSystem;
-                if (initSystem != null) {
-                    initSystem.Initialize ();
-                    ProcessDelayedUpdates ();
-                }
+            for (var i = 0; i < _initSystems.Count; i++) {
+                _initSystems[i].Initialize ();
+                ProcessDelayedUpdates ();
             }
         }
 
@@ -110,15 +133,14 @@ namespace LeopotamGroup.Ecs {
             }
             ProcessDelayedUpdates ();
 
-            for (var i = _allSystems.Count - 1; i >= 0; i--) {
-                var initSystem = _allSystems[i] as IEcsInitSystem;
-                if (initSystem != null) {
-                    initSystem.Destroy ();
-                }
+            for (var i = 0; i < _initSystems.Count; i++) {
+                _initSystems[i].Destroy ();
             }
 
             _events.UnsubscribeAndClearAllEvents ();
-            _allSystems.Clear ();
+            _initSystems.Clear ();
+            _runUpdateSystems.Clear ();
+            _runFixedUpdateSystems.Clear ();
             _componentIds.Clear ();
             _componentPools.Clear ();
             _entities.Clear ();
@@ -127,28 +149,22 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Processes all IEcsUpdateSystem systems.
+        /// Processes all IEcsRunSystem systems with [EcsRunUpdate] attribute.
         /// </summary>
-        public void Update () {
-            for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
-                var updateSystem = _allSystems[i] as IEcsUpdateSystem;
-                if (updateSystem != null) {
-                    updateSystem.Update ();
-                    ProcessDelayedUpdates ();
-                }
+        public void RunUpdate () {
+            for (var i = 0; i < _runUpdateSystems.Count; i++) {
+                _runUpdateSystems[i].Run ();
+                ProcessDelayedUpdates ();
             }
         }
 
         /// <summary>
-        /// Processes all IEcsFixedUpdateSystem systems.
+        /// Processes all IEcsRunSystem systems with [EcsRunFixedUpdate] attribute.
         /// </summary>
-        public void FixedUpdate () {
-            for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
-                var updateSystem = _allSystems[i] as IEcsFixedUpdateSystem;
-                if (updateSystem != null) {
-                    updateSystem.FixedUpdate ();
-                    ProcessDelayedUpdates ();
-                }
+        public void RunFixedUpdate () {
+            for (var i = 0; i < _runFixedUpdateSystems.Count; i++) {
+                _runFixedUpdateSystems[i].Run ();
+                ProcessDelayedUpdates ();
             }
         }
 
@@ -333,7 +349,9 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public EcsWorldStats GetStats () {
             var stats = new EcsWorldStats () {
-                AllSystems = _allSystems.Count,
+                InitSystems = _initSystems.Count,
+                RunUpdateSystems = _runUpdateSystems.Count,
+                RunFixedUpdateSystems = _runFixedUpdateSystems.Count,
                 AllEntities = _entities.Count,
                 ReservedEntities = _reservedEntityIds.Count,
                 Filters = _filters.Count,
@@ -420,7 +438,7 @@ namespace LeopotamGroup.Ecs {
                 var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
                 if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                     if (!isNewMaskCompatible) {
-#if DEBUG
+#if DEBUG && !ECS_PERF_TEST
                         if (filter.Entities.IndexOf (entity) == -1) {
                             throw new Exception (
                                 string.Format ("Something wrong - entity {0} should be in filter {1}, but not exits.", entity, filter));

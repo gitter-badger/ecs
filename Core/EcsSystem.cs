@@ -13,7 +13,7 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Allows custom initialization / deinitialization for ecs system.
     /// </summary>
-    public interface IEcsInitSystem {
+    public interface IEcsInitSystem : IEcsSystem {
         /// <summary>
         /// Initializes system inside EcsWorld instance.
         /// </summary>
@@ -26,22 +26,22 @@ namespace LeopotamGroup.Ecs {
     }
 
     /// <summary>
-    /// Allows integration to unity Update() state.
+    /// Allows custom logic processing.
     /// </summary>
-    public interface IEcsUpdateSystem {
+    public interface IEcsRunSystem : IEcsSystem {
         /// <summary>
-        /// Will be called on unity Update() stage.
+        /// Returns update type (Update(), FixedUpdate(), etc).
         /// </summary>
-        void Update ();
+        EcsRunSystemType GetRunSystemType ();
+
+        /// <summary>
+        /// Custom logic.
+        /// </summary>
+        void Run ();
     }
 
-    /// <summary>
-    /// Allows integration to unity FixedUpdate() state.
-    /// </summary>
-    public interface IEcsFixedUpdateSystem {
-        /// <summary>
-        /// Will be called on unity FixedUpdate() stage.
-        /// </summary>
-        void FixedUpdate ();
+    public enum EcsRunSystemType {
+        Update,
+        FixedUpdate
     }
 }
