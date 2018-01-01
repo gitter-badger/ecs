@@ -23,6 +23,11 @@ namespace LeopotamGroup.Ecs {
         public event OnEntityComponentChangeHandler OnEntityComponentRemoved = delegate { };
 
         /// <summary>
+        /// Registered IEcsPreInitSystem systems.
+        /// </summary>
+        readonly List<IEcsPreInitSystem> _preInitSystems = new List<IEcsPreInitSystem> (16);
+
+        /// <summary>
         /// Registered IEcsInitSystem systems.
         /// </summary>
         readonly List<IEcsInitSystem> _initSystems = new List<IEcsInitSystem> (16);
@@ -92,6 +97,11 @@ namespace LeopotamGroup.Ecs {
 #endif
             EcsInjections.Inject (this, system);
 
+            var preInitSystem = system as IEcsPreInitSystem;
+            if (preInitSystem != null) {
+                _preInitSystems.Add (preInitSystem);
+            }
+
             var initSystem = system as IEcsInitSystem;
             if (initSystem != null) {
                 _initSystems.Add (initSystem);
@@ -118,6 +128,10 @@ namespace LeopotamGroup.Ecs {
 #if DEBUG && !ECS_PERF_TEST
             _inited = true;
 #endif
+            for (var i = 0; i < _preInitSystems.Count; i++) {
+                _preInitSystems[i].PreInitialize ();
+                ProcessDelayedUpdates ();
+            }
             for (var i = 0; i < _initSystems.Count; i++) {
                 _initSystems[i].Initialize ();
                 ProcessDelayedUpdates ();
@@ -133,6 +147,9 @@ namespace LeopotamGroup.Ecs {
             }
             ProcessDelayedUpdates ();
 
+            for (var i = 0; i < _preInitSystems.Count; i++) {
+                _preInitSystems[i].PreDestroy ();
+            }
             for (var i = 0; i < _initSystems.Count; i++) {
                 _initSystems[i].Destroy ();
             }
@@ -248,6 +265,18 @@ namespace LeopotamGroup.Ecs {
             }
             var entityData = _entities[entity];
             return componentId < entityData.ComponentsCount ? entityData.Components[componentId] as T : null;
+        }
+
+        /// <summary>
+        /// Updates component on entity - OnUpdated event will be raised on compatible filters.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
+        public void UpdateComponent<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+            if (componentId == -1) {
+                componentId = GetComponentIndex<T> ();
+            }
+            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, componentId));
         }
 
         /// <summary>
@@ -401,6 +430,14 @@ namespace LeopotamGroup.Ecs {
                             UpdateFilters (op.Entity, oldMask, entityData.Mask);
                         }
                         break;
+                    case DelayedUpdate.Op.UpdateComponent:
+                        for (var filterId = 0; filterId < _filters.Count; filterId++) {
+                            var filter = _filters[filterId];
+                            if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
+                                filter.RaiseOnEntityUpdated (op.Entity);
+                            }
+                        }
+                        break;
                 }
             }
             if (iMax > 0) {
@@ -460,7 +497,8 @@ namespace LeopotamGroup.Ecs {
             public enum Op {
                 RemoveEntity,
                 AddComponent,
-                RemoveComponent
+                RemoveComponent,
+                UpdateComponent
             }
             public Op Type;
             public int Entity;

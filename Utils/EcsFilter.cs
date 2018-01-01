@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
     public sealed class EcsFilter {
-        public delegate void OnEntitiesChangeHandler (int entity);
+        public delegate void OnFilterEntitiesChangeHandler (int entity);
 
         /// <summary>
         /// Components mask for filtering entities with required components.
@@ -31,19 +31,29 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Raises on entity added to filter.
         /// </summary>
-        public event OnEntitiesChangeHandler OnEntityAdded = delegate { };
+        public event OnFilterEntitiesChangeHandler OnEntityAdded = delegate { };
 
         /// <summary>
         /// Raises on entity removed from filter.
         /// </summary>
-        public event OnEntitiesChangeHandler OnEntityRemoved = delegate { };
+        public event OnFilterEntitiesChangeHandler OnEntityRemoved = delegate { };
+
+        /// <summary>
+        /// Raises on entity changed inplace.
+        /// </summary>
+        public event OnFilterEntitiesChangeHandler OnEntityUpdated = delegate { };
 
         internal void RaiseOnEntityAdded (int entity) {
+            UnityEngine.Debug.Log ("FILTER-ENTITY-ADDED");
             OnEntityAdded (entity);
         }
 
         internal void RaiseOnEntityRemoved (int entity) {
             OnEntityRemoved (entity);
+        }
+
+        internal void RaiseOnEntityUpdated (int entity) {
+            OnEntityUpdated (entity);
         }
 
         internal EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {

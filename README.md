@@ -24,11 +24,19 @@ _world.RemoveEntity (entity);
 ```
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements **IEcsSystem**, **IEcsInitSystem** or **IEcsRunSystem** interfaces:
+Сontainer for logic for processing filtered entities. User class should implements **IEcsPreInitSystem**, **IEcsInitSystem** or **IEcsRunSystem** interfaces:
 ```
-class WeaponSystem : IEcsInitSystem {
+class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem {
+    void IEcsPreInitSystem.PreInitialize () {
+        // Will be called once during world initialization before IEcsInitSystem.Initialize().
+    }
+
     void IEcsInitSystem.Initialize () {
         // Will be called once during world initialization.
+    }
+
+    void IEcsPreInitSystem.PreDestroy () {
+        // Will be called once during world destruction before IEcsInitSystem.Destroy().
     }
 
     void IEcsInitSystem.Destroy () {
@@ -129,7 +137,7 @@ class Startup : MonoBehaviour {
 ```
 
 # Reaction on component / filter changes
-Events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world instance and **OnFilterEntityAdded** / **OnFilterEntityRemoved** at ecs-filter instance allows to add reaction on component / filter changes for any ecs-system:
+Events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world instance and **OnFilterEntityAdded** / **OnFilterEntityRemoved** / **OnFilterEntityUpdated** at ecs-filter instance allows to add reaction on component / filter changes to any ecs-system:
 ```
 public sealed class TestSystem1 : IEcsInitSystem {
     [EcsWorld]
@@ -141,6 +149,7 @@ public sealed class TestSystem1 : IEcsInitSystem {
     void IEcsInitSystem.Initialize () {
         _world.OnEntityComponentAdded += OnEntityComponentAdded;
         _weaponFilter.OnEntityAdded += OnFilterEntityAdded;
+        _weaponFilter.OnEntityUpdated += OnFilterEntityUpdated;
 
         var entity = _world.CreateEntity ();
         _world.AddComponent<WeaponComponent> (entity);
@@ -158,6 +167,45 @@ public sealed class TestSystem1 : IEcsInitSystem {
 
     void OnFilterEntityAdded(int entityId) {
         // Entity "entityId" was added to _weaponFilter.
+    }
+
+    void OnEntityComponentUpdated(int entityId, int componentId) {
+        // Component "componentId" was updated inplace on entity "entityId".
+    }
+}
+```
+
+There is special predefined helper-class - EcsReactSystem:
+```
+public sealed class TestReactSystem : EcsReactSystem {
+    [EcsWorld]
+    EcsWorld _world;
+
+    [EcsFilterInclude (typeof (WeaponComponent))]
+    EcsFilter _weaponFilter;
+
+    // Should returns filter that react system will watch for.
+    public override EcsFilter GetReactFilter () {
+        return _weaponFilter;
+    }
+
+    // On which event at filter this react-system should be alerted -
+    // "new entity in filter" or "entity inplace update".
+    public override EcsReactSystemType GetReactSystemType () {
+        return EcsReactSystemType.OnUpdate;
+    }
+
+    // EcsReactSystem is IEcsRunSystem and should provides additional info.
+    public override EcsRunSystemType GetRunSystemType () {
+        return EcsRunSystemType.Update;
+    }
+
+    // Filtered entities processing, will be raised only if entities presents.
+    public override void RunReact (List<int> entities) {
+        foreach (var entity in entities) {
+            var weapon = _world.GetComponent<WeaponComponent> (entity);
+            Debug.LogFormat ("Weapon updated on {0}", entity);
+        }
     }
 }
 ```
