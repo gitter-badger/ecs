@@ -44,7 +44,6 @@ namespace LeopotamGroup.Ecs {
         public event OnFilterEntitiesChangeHandler OnEntityUpdated = delegate { };
 
         internal void RaiseOnEntityAdded (int entity) {
-            UnityEngine.Debug.Log ("FILTER-ENTITY-ADDED");
             OnEntityAdded (entity);
         }
 
