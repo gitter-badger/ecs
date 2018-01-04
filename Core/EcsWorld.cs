@@ -393,7 +393,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Manually processes delayed updates. Use carefully!
         /// </summary>
-        void ProcessDelayedUpdates () {
+        public void ProcessDelayedUpdates () {
             var iMax = _delayedUpdates.Count;
             for (var i = 0; i < iMax; i++) {
                 var op = _delayedUpdates[i];
