@@ -86,7 +86,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 
     // We wants to get entities with WeaponComponent and without HealthComponent.
     [EcsFilterInclude(typeof(WeaponComponent))]
-    [EcsFilterInclude(typeof(HealthComponent))]
+    [EcsFilterExclude(typeof(HealthComponent))]
     EcsFilter _filter;
 
     void IEcsInitSystem.Initialize () {
