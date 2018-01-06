@@ -197,6 +197,7 @@ namespace LeopotamGroup.Ecs {
             _entities.Clear ();
             _reservedEntityIds.Clear ();
             _filters.Clear ();
+            _sharedData.Clear ();
         }
 
         /// <summary>
