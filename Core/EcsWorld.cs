@@ -78,6 +78,11 @@ namespace LeopotamGroup.Ecs {
         /// <returns></returns>
         readonly EcsEvents _events = new EcsEvents ();
 
+        /// <summary>
+        /// Shared data, useful for ScriptableObjects / assets sharing.
+        /// </summary>
+        readonly Dictionary<int, object> _sharedData = new Dictionary<int, object> (32);
+
 #if DEBUG && !ECS_PERF_TEST
         /// <summary>
         /// Is Initialize method was called?
@@ -119,6 +124,35 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             return this;
+        }
+
+        /// <summary>
+        /// Sets shared data by key. Exists data will be overwritten.
+        /// </summary>
+        /// <param name="key">Key.</param>
+        public EcsWorld SetSharedData (string key, object data) {
+#if DEBUG && !ECS_PERF_TEST
+            if (key == null || data == null) {
+                throw new ArgumentNullException ("Invalid parameters");
+            }
+#endif
+            _sharedData[key.GetHashCode ()] = data;
+            return this;
+        }
+
+        /// <summary>
+        /// Get shared data by key.
+        /// </summary>
+        /// <param name="key">Key.</param>
+        public object GetSharedData (string key) {
+#if DEBUG && !ECS_PERF_TEST
+            if (key == null) {
+                throw new ArgumentNullException ("Invalid parameter");
+            }
+#endif
+            object retVal;
+            _sharedData.TryGetValue (key.GetHashCode (), out retVal);
+            return retVal;
         }
 
         /// <summary>
@@ -222,7 +256,7 @@ namespace LeopotamGroup.Ecs {
                 componentId = GetComponentIndex<T> ();
             }
             var entityData = _entities[entity];
-            if (entityData.Components[componentId] != null) {
+            if (componentId < entityData.ComponentsCount && entityData.Components[componentId] != null) {
                 return entityData.Components[componentId] as T;
             }
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, componentId));
