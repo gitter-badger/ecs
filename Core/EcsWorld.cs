@@ -222,7 +222,7 @@ namespace LeopotamGroup.Ecs {
                 componentId = GetComponentIndex<T> ();
             }
             var entityData = _entities[entity];
-            if (entityData.Mask.GetBit (componentId)) {
+            if (entityData.Components[componentId] != null) {
                 return entityData.Components[componentId] as T;
             }
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, componentId));
