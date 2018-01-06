@@ -94,29 +94,33 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
-        void OnEntityRemoved (int entity) {
-            _entities.Remove (entity);
-        }
-
         void IEcsPreInitSystem.PreInitialize () {
             _reactFilter = GetReactFilter ();
             _type = GetReactSystemType ();
-            if ((_type & EcsReactSystemType.OnAdd) != 0) {
-                _reactFilter.OnEntityAdded += OnEntityAdded;
-                _reactFilter.OnEntityRemoved += OnEntityRemoved;
-            }
-            if ((_type & EcsReactSystemType.OnUpdate) != 0) {
-                _reactFilter.OnEntityUpdated += OnEntityAdded;
+            switch (_type) {
+                case EcsReactSystemType.OnAdd:
+                    _reactFilter.OnEntityAdded += OnEntityAdded;
+                    break;
+                case EcsReactSystemType.OnRemove:
+                    _reactFilter.OnEntityRemoved += OnEntityAdded;
+                    break;
+                case EcsReactSystemType.OnUpdate:
+                    _reactFilter.OnEntityUpdated += OnEntityAdded;
+                    break;
             }
         }
 
         void IEcsPreInitSystem.PreDestroy () {
-            if ((_type & EcsReactSystemType.OnAdd) != 0) {
-                _reactFilter.OnEntityAdded -= OnEntityAdded;
-                _reactFilter.OnEntityRemoved -= OnEntityRemoved;
-            }
-            if ((_type & EcsReactSystemType.OnUpdate) != 0) {
-                _reactFilter.OnEntityUpdated -= OnEntityAdded;
+            switch (_type) {
+                case EcsReactSystemType.OnAdd:
+                    _reactFilter.OnEntityAdded -= OnEntityAdded;
+                    break;
+                case EcsReactSystemType.OnRemove:
+                    _reactFilter.OnEntityRemoved -= OnEntityAdded;
+                    break;
+                case EcsReactSystemType.OnUpdate:
+                    _reactFilter.OnEntityUpdated -= OnEntityAdded;
+                    break;
             }
         }
     }
@@ -124,9 +128,9 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// When react system should be processed.
     /// </summary>
-    [Flags]
     public enum EcsReactSystemType {
-        OnUpdate = 1,
-        OnAdd = 2
+        OnAdd,
+        OnRemove,
+        OnUpdate
     }
 }
