@@ -87,13 +87,13 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
-        void OnEntityAdded (int entity) {
+        void OnEntityAdded (int entity, int componentId) {
             if (_entities.IndexOf (entity) == -1) {
                 _entities.Add (entity);
             }
         }
 
-        void OnEntityRemoved (int entity) {
+        void OnEntityRemoved (int entity, int componentId) {
             _entities.Remove (entity);
         }
 

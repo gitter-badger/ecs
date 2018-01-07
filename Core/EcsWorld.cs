@@ -438,15 +438,15 @@ namespace LeopotamGroup.Ecs {
                     case DelayedUpdate.Op.RemoveEntity:
                         if (!entityData.IsReserved) {
                             var componentId = 0;
-                            var empty = new EcsComponentMask ();
                             while (!entityData.Mask.IsEmpty ()) {
                                 if (entityData.Mask.GetBit (componentId)) {
+                                    oldMask = entityData.Mask;
                                     entityData.Mask.SetBit (componentId, false);
                                     DetachComponent (op.Entity, entityData, componentId);
+                                    UpdateFilters (op.Entity, componentId, oldMask, entityData.Mask);
                                 }
                                 componentId++;
                             }
-                            UpdateFilters (op.Entity, oldMask, empty);
                             entityData.IsReserved = true;
                             _reservedEntityIds.Add (op.Entity);
                         }
@@ -455,21 +455,21 @@ namespace LeopotamGroup.Ecs {
                         if (!entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, true);
                             OnEntityComponentAdded (op.Entity, op.Component);
-                            UpdateFilters (op.Entity, oldMask, entityData.Mask);
+                            UpdateFilters (op.Entity, op.Component, oldMask, entityData.Mask);
                         }
                         break;
                     case DelayedUpdate.Op.RemoveComponent:
                         if (entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, false);
                             DetachComponent (op.Entity, entityData, op.Component);
-                            UpdateFilters (op.Entity, oldMask, entityData.Mask);
+                            UpdateFilters (op.Entity, op.Component, oldMask, entityData.Mask);
                         }
                         break;
                     case DelayedUpdate.Op.UpdateComponent:
                         for (var filterId = 0; filterId < _filters.Count; filterId++) {
                             var filter = _filters[filterId];
                             if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
-                                filter.RaiseOnEntityUpdated (op.Entity);
+                                filter.RaiseOnEntityUpdated (op.Entity, op.Component);
                             }
                         }
                         break;
@@ -502,9 +502,10 @@ namespace LeopotamGroup.Ecs {
         /// Updates all filters for changed component mask.
         /// </summary>
         /// <param name="entity">Entity.</param>
+        /// <param name="component">Component.</param>
         /// <param name="oldMask">Old component state.</param>
         /// <param name="newMask">New component state.</param>
-        void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
+        void UpdateFilters (int entity, int component, EcsComponentMask oldMask, EcsComponentMask newMask) {
             for (var i = _filters.Count - 1; i >= 0; i--) {
                 var filter = _filters[i];
                 var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
@@ -517,12 +518,12 @@ namespace LeopotamGroup.Ecs {
                         }
 #endif
                         filter.Entities.Remove (entity);
-                        filter.RaiseOnEntityRemoved (entity);
+                        filter.RaiseOnEntityRemoved (entity, component);
                     }
                 } else {
                     if (isNewMaskCompatible) {
                         filter.Entities.Add (entity);
-                        filter.RaiseOnEntityAdded (entity);
+                        filter.RaiseOnEntityAdded (entity, component);
                     }
                 }
             }

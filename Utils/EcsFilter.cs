@@ -8,8 +8,6 @@ using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
     public sealed class EcsFilter {
-        public delegate void OnFilterEntitiesChangeHandler (int entity);
-
         /// <summary>
         /// Components mask for filtering entities with required components.
         /// Do not change it manually!
@@ -31,28 +29,28 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Raises on entity added to filter.
         /// </summary>
-        public event OnFilterEntitiesChangeHandler OnEntityAdded = delegate { };
+        public event EcsWorld.OnEntityComponentChangeHandler OnEntityAdded = delegate { };
 
         /// <summary>
         /// Raises on entity removed from filter.
         /// </summary>
-        public event OnFilterEntitiesChangeHandler OnEntityRemoved = delegate { };
+        public event EcsWorld.OnEntityComponentChangeHandler OnEntityRemoved = delegate { };
 
         /// <summary>
         /// Raises on entity changed inplace.
         /// </summary>
-        public event OnFilterEntitiesChangeHandler OnEntityUpdated = delegate { };
+        public event EcsWorld.OnEntityComponentChangeHandler OnEntityUpdated = delegate { };
 
-        internal void RaiseOnEntityAdded (int entity) {
-            OnEntityAdded (entity);
+        internal void RaiseOnEntityAdded (int entity, int componentId) {
+            OnEntityAdded (entity, componentId);
         }
 
-        internal void RaiseOnEntityRemoved (int entity) {
-            OnEntityRemoved (entity);
+        internal void RaiseOnEntityRemoved (int entity, int componentId) {
+            OnEntityRemoved (entity, componentId);
         }
 
-        internal void RaiseOnEntityUpdated (int entity) {
-            OnEntityUpdated (entity);
+        internal void RaiseOnEntityUpdated (int entity, int componentId) {
+            OnEntityUpdated (entity, componentId);
         }
 
         internal EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {
