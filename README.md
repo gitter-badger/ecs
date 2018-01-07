@@ -137,7 +137,7 @@ class Startup : MonoBehaviour {
 ```
 
 # Reaction on component / filter changes
-Events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world instance and **OnFilterEntityAdded** / **OnFilterEntityRemoved** / **OnFilterEntityUpdated** at ecs-filter instance allows to add reaction on component / filter changes to any ecs-system:
+Events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world instance and **OnEntityAdded** / **OnEntityRemoved** / **OnEntityUpdated** at ecs-filter instance allows to add reaction on component / filter changes to any ecs-system:
 ```
 public sealed class TestSystem1 : IEcsInitSystem {
     [EcsWorld]
@@ -159,17 +159,18 @@ public sealed class TestSystem1 : IEcsInitSystem {
     void IEcsInitSystem.Destroy () {
         _world.OnEntityComponentAdded -= OnEntityComponentAdded;
         _weaponFilter.OnEntityAdded -= OnFilterEntityAdded;
+        _weaponFilter.OnEntityUpdated -= OnFilterEntityUpdated;
     }
 
     void OnEntityComponentAdded(int entityId, int componentId) {
-        // Component "componentId" was added to entity "entityId".
+        // Component "componentId" was added to entity "entityId" - world event.
     }
 
-    void OnFilterEntityAdded(int entityId) {
-        // Entity "entityId" was added to _weaponFilter.
+    void OnFilterEntityAdded (int entity, int componentId) {
+        // Entity "entityId" was added to _weaponFilter due to component "componentId" was added.
     }
 
-    void OnEntityComponentUpdated(int entityId, int componentId) {
+    void OnFilterEntityUpdated(int entityId, int componentId) {
         // Component "componentId" was updated inplace on entity "entityId".
     }
 }
