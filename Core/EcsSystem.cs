@@ -4,7 +4,6 @@
 // Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
@@ -94,15 +93,17 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
+        void OnEntityRemoved (int entity) {
+            _entities.Remove (entity);
+        }
+
         void IEcsPreInitSystem.PreInitialize () {
             _reactFilter = GetReactFilter ();
             _type = GetReactSystemType ();
             switch (_type) {
                 case EcsReactSystemType.OnAdd:
                     _reactFilter.OnEntityAdded += OnEntityAdded;
-                    break;
-                case EcsReactSystemType.OnRemove:
-                    _reactFilter.OnEntityRemoved += OnEntityAdded;
+                    _reactFilter.OnEntityRemoved += OnEntityRemoved;
                     break;
                 case EcsReactSystemType.OnUpdate:
                     _reactFilter.OnEntityUpdated += OnEntityAdded;
@@ -114,9 +115,7 @@ namespace LeopotamGroup.Ecs {
             switch (_type) {
                 case EcsReactSystemType.OnAdd:
                     _reactFilter.OnEntityAdded -= OnEntityAdded;
-                    break;
-                case EcsReactSystemType.OnRemove:
-                    _reactFilter.OnEntityRemoved -= OnEntityAdded;
+                    _reactFilter.OnEntityRemoved -= OnEntityRemoved;
                     break;
                 case EcsReactSystemType.OnUpdate:
                     _reactFilter.OnEntityUpdated -= OnEntityAdded;
@@ -130,7 +129,6 @@ namespace LeopotamGroup.Ecs {
     /// </summary>
     public enum EcsReactSystemType {
         OnAdd,
-        OnRemove,
         OnUpdate
     }
 }
