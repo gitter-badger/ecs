@@ -433,6 +433,8 @@ namespace LeopotamGroup.Ecs {
             return stats;
         }
 
+        readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
+
         /// <summary>
         /// Manually processes delayed updates. Use carefully!
         /// </summary>
@@ -441,17 +443,17 @@ namespace LeopotamGroup.Ecs {
             for (var i = 0; i < iMax; i++) {
                 var op = _delayedUpdates[i];
                 var entityData = _entities[op.Entity];
-                var oldMask = entityData.Mask;
+                _delayedOpMask.CopyFrom (entityData.Mask);
                 switch (op.Type) {
                     case DelayedUpdate.Op.RemoveEntity:
                         if (!entityData.IsReserved) {
                             var componentId = 0;
                             while (!entityData.Mask.IsEmpty ()) {
                                 if (entityData.Mask.GetBit (componentId)) {
-                                    oldMask = entityData.Mask;
                                     entityData.Mask.SetBit (componentId, false);
                                     DetachComponent (op.Entity, entityData, componentId);
-                                    UpdateFilters (op.Entity, componentId, oldMask, entityData.Mask);
+                                    UpdateFilters (op.Entity, componentId, _delayedOpMask, entityData.Mask);
+                                    _delayedOpMask.SetBit (componentId, false);
                                 }
                                 componentId++;
                             }
@@ -463,20 +465,20 @@ namespace LeopotamGroup.Ecs {
                         if (!entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, true);
                             OnEntityComponentAdded (op.Entity, op.Component);
-                            UpdateFilters (op.Entity, op.Component, oldMask, entityData.Mask);
+                            UpdateFilters (op.Entity, op.Component, _delayedOpMask, entityData.Mask);
                         }
                         break;
                     case DelayedUpdate.Op.RemoveComponent:
                         if (entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, false);
                             DetachComponent (op.Entity, entityData, op.Component);
-                            UpdateFilters (op.Entity, op.Component, oldMask, entityData.Mask);
+                            UpdateFilters (op.Entity, op.Component, _delayedOpMask, entityData.Mask);
                         }
                         break;
                     case DelayedUpdate.Op.UpdateComponent:
                         for (var filterId = 0; filterId < _filters.Count; filterId++) {
                             var filter = _filters[filterId];
-                            if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
+                            if (_delayedOpMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                                 filter.RaiseOnEntityUpdated (op.Entity, op.Component);
                             }
                         }

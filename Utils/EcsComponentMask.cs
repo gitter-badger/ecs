@@ -52,6 +52,12 @@ namespace LeopotamGroup.Ecs {
             return (_raw[bitId / RawItemSize] & (1UL << (bitId % RawItemSize))) != 0;
         }
 
+        public void CopyFrom (EcsComponentMask mask) {
+            for (var i = 0; i < RawLength; i++) {
+                _raw[i] = mask._raw[i];
+            }
+        }
+
         public bool IsEquals (EcsComponentMask mask) {
             for (var i = 0; i < RawLength; i++) {
                 if (_raw[i] != mask._raw[i]) {
