@@ -8,73 +8,79 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Mask for components selection.
     /// </summary>
-    struct EcsComponentMask {
-        ulong _raw0;
+    public sealed class EcsComponentMask {
+        const int RawLength = 4;
 
-        ulong _raw1;
+        const int RawItemSize = sizeof (ulong) * 8;
 
-        public EcsComponentMask (int bitId) {
-#if DEBUG && !ECS_PERF_TEST
-            if (bitId < 0 || bitId >= 128) { throw new System.Exception ("Invalid bit"); }
-#endif
-            if (bitId >= 64) {
-                _raw0 = 0;
-                _raw1 = 1UL << (bitId - 64);
-            } else {
-                _raw0 = 1UL << bitId;
-                _raw1 = 0;
-            }
-        }
+        const int BitsCount = RawLength * RawItemSize;
+
+        readonly ulong[] _raw = new ulong[RawLength];
 
         public override string ToString () {
-            return string.Format ("{0:X16}{1:X16}", _raw1, _raw0);
+            var str = "";
+            for (int i = 0; i < RawLength; i++) {
+                str += _raw[i].ToString ("{X16}");
+            }
+            return str;
         }
 
         public void SetBit (int bitId, bool state) {
 #if DEBUG && !ECS_PERF_TEST
-            if (bitId < 0 || bitId >= 128) { throw new System.Exception ("Invalid bit"); }
+            if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
 #endif
             if (state) {
-                if (bitId >= 64) {
-                    _raw1 |= 1UL << (bitId - 64);
-                } else {
-                    _raw0 |= 1UL << bitId;
-                }
+                _raw[bitId / RawItemSize] |= 1UL << (bitId % RawItemSize);
             } else {
-                if (bitId >= 64) {
-                    _raw1 &= ~(1UL << (bitId - 64));
-                } else {
-                    _raw0 &= ~(1UL << bitId);
-                }
+                _raw[bitId / RawItemSize] &= ~(1UL << (bitId % RawItemSize));
             }
         }
 
         public bool IsEmpty () {
-            return _raw0 == 0 && _raw1 == 0;
+            for (var i = 0; i < RawLength; i++) {
+                if (_raw[i] != 0) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public bool GetBit (int bitId) {
 #if DEBUG && !ECS_PERF_TEST
-            if (bitId < 0 || bitId >= 128) { throw new System.Exception ("Invalid bit"); }
+            if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
 #endif
-            if (bitId >= 64) {
-                return (_raw1 & (1UL << (bitId - 64))) != 0;
-            } else {
-                return (_raw0 & (1UL << bitId)) != 0;
-            }
+            return (_raw[bitId / RawItemSize] & (1UL << (bitId % RawItemSize))) != 0;
         }
 
-        public bool IsEquals (EcsComponentMask a) {
-            return _raw0 == a._raw0 && _raw1 == a._raw1;
+        public bool IsEquals (EcsComponentMask mask) {
+            for (var i = 0; i < RawLength; i++) {
+                if (_raw[i] != mask._raw[i]) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public bool IsCompatible (EcsComponentMask include, EcsComponentMask exclude) {
-            return (_raw0 & include._raw0) == include._raw0 && (_raw1 & include._raw1) == include._raw1 &&
-                (_raw0 & exclude._raw0) == 0 && (_raw1 & exclude._raw1) == 0;
+            ulong a;
+            ulong b;
+            for (var i = 0; i < RawLength; i++) {
+                a = _raw[i];
+                b = include._raw[i];
+                if ((a & b) != b || (a & exclude._raw[i]) != 0) {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        public bool IsIntersects (EcsComponentMask excludeMask) {
-            return (_raw0 & excludeMask._raw0) != 0 || (_raw1 & excludeMask._raw1) != 0;
+        public bool IsIntersects (EcsComponentMask mask) {
+            for (var i = 0; i < RawLength; i++) {
+                if ((_raw[i] & mask._raw[i]) != 0) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

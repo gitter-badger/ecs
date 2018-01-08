@@ -32,17 +32,19 @@ namespace LeopotamGroup.Ecs.Internals {
 
                 // [EcsFilterInclude]
                 if (f.FieldType == ecsFilter && !f.IsStatic) {
-                    var includeMask = new EcsComponentMask ();
+                    EcsComponentMask includeMask = null;
                     var standardFilterIncDefined = Attribute.IsDefined (f, attrEcsFilterInclude);
                     if (standardFilterIncDefined) {
+                        includeMask = new EcsComponentMask ();
                         var components = ((EcsFilterIncludeAttribute) Attribute.GetCustomAttribute (f, attrEcsFilterInclude)).Components;
                         for (var i = 0; i < components.Length; i++) {
                             includeMask.SetBit (world.GetComponentIndex (components[i]), true);
                         }
                     }
-                    var excludeMask = new EcsComponentMask ();
+                    EcsComponentMask excludeMask = null;
                     var standardFilterExcDefined = Attribute.IsDefined (f, attrEcsFilterExclude);
                     if (standardFilterExcDefined) {
+                        excludeMask = new EcsComponentMask ();
                         var components = ((EcsFilterExcludeAttribute) Attribute.GetCustomAttribute (f, attrEcsFilterExclude)).Components;
                         for (var i = 0; i < components.Length; i++) {
                             excludeMask.SetBit (world.GetComponentIndex (components[i]), true);
@@ -58,11 +60,13 @@ namespace LeopotamGroup.Ecs.Internals {
                     if (!standardFilterIncDefined && standardFilterExcDefined) {
                         throw new Exception ("EcsFilterExclude can be applied only as pair to EcsFilterInclude at system: " + type.Name);
                     }
-                    if (includeMask.IsIntersects (excludeMask)) {
+                    if (includeMask != null && excludeMask != null && includeMask.IsIntersects (excludeMask)) {
                         throw new Exception ("Exclude and include filters are intersected at system: " + type.Name);
                     }
 #endif
-                    f.SetValue (system, world.GetFilter (includeMask, excludeMask));
+                    if (standardFilterIncDefined) {
+                        f.SetValue (system, world.GetFilter (includeMask, excludeMask ?? new EcsComponentMask ()));
+                    }
                 }
 
                 // [EcsIndex]

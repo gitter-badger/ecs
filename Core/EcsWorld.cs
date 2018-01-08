@@ -374,6 +374,14 @@ namespace LeopotamGroup.Ecs {
         /// <param name="include">Component mask for required components.</param>
         /// <param name="include">Component mask for denied components.</param>
         internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
+#if DEBUG && !ECS_PERF_TEST
+            if (include == null) {
+                throw new ArgumentNullException ("include");
+            }
+            if (exclude == null) {
+                throw new ArgumentNullException ("exclude");
+            }
+#endif
             var i = _filters.Count - 1;
             for (; i >= 0; i--) {
                 if (this._filters[i].IncludeMask.IsEquals (include) && _filters[i].ExcludeMask.IsEquals (exclude)) {
@@ -549,7 +557,7 @@ namespace LeopotamGroup.Ecs {
 
         sealed class EcsEntity {
             public bool IsReserved;
-            public EcsComponentMask Mask = new EcsComponentMask ();
+            public readonly EcsComponentMask Mask = new EcsComponentMask ();
             public int ComponentsCount;
             public readonly List<IEcsComponent> Components = new List<IEcsComponent> (8);
         }
