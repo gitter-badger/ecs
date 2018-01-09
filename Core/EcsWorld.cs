@@ -546,6 +546,7 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
+        [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 2)]
         struct ComponentLink {
             public short PoolId;
             public int ItemId;
