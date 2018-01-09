@@ -211,35 +211,6 @@ public sealed class TestReactSystem : EcsReactSystem {
 }
 ```
 
-# Instant events
-For instant events processing any ecs-system can subscribes callback to receive specified type of event data. Event data should be implemented as **struct**:
-```
-struct DamageReceived {
-    public int Amount;
-}
-
-class WeaponSystem : IEcsSystem, IEcsInitSystem {
-    [EcsWorld]
-    EcsWorld _world;
-
-    void IEcsSystem.Initialize () {
-        _world.AddEventAction<DamageReceived> (OnDamageReceived);
-        
-        var eventData = new DamageReceived ();
-        eventData.Amount = 10;
-        _world.SendEvent (eventData);
-    }
-
-    void IEcsSystem.Destroy () {
-        _world.RemoveEventAction<DamageReceived> (OnDamageReceived);
-    }
-    
-    void OnDamageReceived (DamageReceived eventData) {
-        Debug.Log("Damage " + e.Amount);
-    }
-}
-```
-
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)
 

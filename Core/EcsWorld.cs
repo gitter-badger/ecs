@@ -65,18 +65,12 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of add / remove operations for components on entities.
         /// </summary>
-        readonly List<DelayedUpdate> _delayedUpdates = new List<DelayedUpdate> (64);
+        readonly List<DelayedUpdate> _delayedUpdates = new List<DelayedUpdate> (128);
 
         /// <summary>
         /// List of requested filters.
         /// </summary>
         readonly List<EcsFilter> _filters = new List<EcsFilter> (64);
-
-        /// <summary>
-        /// Events processing.
-        /// </summary>
-        /// <returns></returns>
-        readonly EcsEvents _events = new EcsEvents ();
 
         /// <summary>
         /// Shared data, useful for ScriptableObjects / assets sharing.
@@ -188,7 +182,6 @@ namespace LeopotamGroup.Ecs {
                 _initSystems[i].Destroy ();
             }
 
-            _events.UnsubscribeAndClearAllEvents ();
             _initSystems.Clear ();
             _runUpdateSystems.Clear ();
             _runFixedUpdateSystems.Clear ();
@@ -312,30 +305,6 @@ namespace LeopotamGroup.Ecs {
                 componentId = GetComponentIndex<T> ();
             }
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, componentId));
-        }
-
-        /// <summary>
-        /// Subscribes to event.
-        /// </summary>
-        /// <param name="eventData">Event callback.</param>
-        public void AddEventAction<T> (Action<T> cb) where T : struct {
-            _events.Subscribe (cb);
-        }
-
-        /// <summary>
-        /// Unsubscribes from event.
-        /// </summary>
-        /// <param name="eventData">Event callback.</param>
-        public void RemoveEventAction<T> (Action<T> cb) where T : struct {
-            _events.Unsubscribe (cb);
-        }
-
-        /// <summary>
-        /// Publishes event with custom data.
-        /// </summary>
-        /// <param name="eventData">Event data.</param>
-        public void SendEvent<T> (T eventData) where T : struct {
-            _events.Publish (eventData);
         }
 
         /// <summary>
