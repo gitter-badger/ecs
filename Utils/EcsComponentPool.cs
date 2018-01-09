@@ -12,26 +12,40 @@ namespace LeopotamGroup.Ecs.Internals {
     /// Components pool container.
     /// </summary>
     sealed class EcsComponentPool {
-        readonly Stack<IEcsComponent> _pool = new Stack<IEcsComponent> (512);
+        public IEcsComponent[] Items = new IEcsComponent[512];
+
+        readonly List<int> _reservedItems = new List<int> (512);
 
         readonly Type _type;
+
+        int _itemsCount;
+
+        int _reservedItemsCount;
 
         public EcsComponentPool (Type type) {
             _type = type;
         }
 
-        public IEcsComponent Get () {
-            return _pool.Count > 0 ? _pool.Pop () : Activator.CreateInstance (_type) as IEcsComponent;
-        }
-
-        public void Recycle (IEcsComponent item) {
-            if (item != null) {
-                _pool.Push (item);
+        public int GetIndex () {
+            int id;
+            if (_reservedItemsCount > 0) {
+                _reservedItemsCount--;
+                id = _reservedItems[_reservedItemsCount];
+                _reservedItems.RemoveAt (_reservedItemsCount);
+            } else {
+                id = _itemsCount;
+                if (_itemsCount == Items.Length) {
+                    var newItems = new IEcsComponent[_itemsCount << 1];
+                    Array.Copy (Items, newItems, _itemsCount);
+                    Items = newItems;
+                }
+                Items[_itemsCount++] = Activator.CreateInstance (_type) as IEcsComponent;
             }
+            return id;
         }
 
-        public int GetCachedCount () {
-            return _pool.Count;
+        public void RecycleIndex (int id) {
+            _reservedItems.Add (id);
         }
     }
 }

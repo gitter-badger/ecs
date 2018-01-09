@@ -13,7 +13,7 @@ namespace LeopotamGroup.Ecs {
 
         const int RawItemSize = sizeof (ulong) * 8;
 
-        const int BitsCount = RawLength * RawItemSize;
+        public const int BitsCount = RawLength * RawItemSize;
 
         readonly ulong[] _raw = new ulong[RawLength];
 

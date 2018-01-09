@@ -30,27 +30,27 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Registered IEcsInitSystem systems.
         /// </summary>
-        readonly List<IEcsInitSystem> _initSystems = new List<IEcsInitSystem> (16);
+        readonly List<IEcsInitSystem> _initSystems = new List<IEcsInitSystem> (32);
 
         /// <summary>
-        /// Registered IEcsRunSystem systems with [EcsRunUpdate].
+        /// Registered IEcsRunSystem systems with EcsRunSystemType.Update.
         /// </summary>
-        readonly List<IEcsRunSystem> _runUpdateSystems = new List<IEcsRunSystem> (32);
+        readonly List<IEcsRunSystem> _runUpdateSystems = new List<IEcsRunSystem> (64);
 
         /// <summary>
-        /// Registered IEcsRunSystem systems with [EcsRunFixedUpdate].
+        /// Registered IEcsRunSystem systems with EcsRunSystemType.FixedUpdate.
         /// </summary>
-        readonly List<IEcsRunSystem> _runFixedUpdateSystems = new List<IEcsRunSystem> (16);
+        readonly List<IEcsRunSystem> _runFixedUpdateSystems = new List<IEcsRunSystem> (32);
 
         /// <summary>
         /// Dictionary for fast search component (type.hashcode) -> type id.
         /// </summary>
-        readonly Dictionary<int, int> _componentIds = new Dictionary<int, int> (64);
+        readonly Dictionary<int, int> _componentIds = new Dictionary<int, int> (EcsComponentMask.BitsCount);
 
         /// <summary>
         /// Pools list for recycled component instances.
         /// </summary>
-        readonly Dictionary<int, EcsComponentPool> _componentPools = new Dictionary<int, EcsComponentPool> (64);
+        readonly EcsComponentPool[] _componentPools = new EcsComponentPool[EcsComponentMask.BitsCount];
 
         /// <summary>
         /// List of all entities (their components).
@@ -186,11 +186,13 @@ namespace LeopotamGroup.Ecs {
             _runUpdateSystems.Clear ();
             _runFixedUpdateSystems.Clear ();
             _componentIds.Clear ();
-            _componentPools.Clear ();
             _entities.Clear ();
             _reservedEntityIds.Clear ();
             _filters.Clear ();
             _sharedData.Clear ();
+            for (var i = _componentPools.Length - 1; i >= 0; i--) {
+                _componentPools[i] = null;
+            }
         }
 
         /// <summary>
@@ -250,24 +252,34 @@ namespace LeopotamGroup.Ecs {
                 componentId = GetComponentIndex<T> ();
             }
             var entityData = _entities[entity];
-            if (componentId < entityData.ComponentsCount && entityData.Components[componentId] != null) {
-                return entityData.Components[componentId] as T;
+            var pool = _componentPools[componentId];
+            ComponentLink link;
+            // direct initialization - faster than constructor call.
+            link.ItemId = -1;
+            link.PoolId = -1;
+            var i = entityData.ComponentsCount - 1;
+            for (; i >= 0; i--) {
+                link = entityData.Components[i];
+                if (link.PoolId == componentId) {
+                    break;
+                }
             }
+            if (i != -1) {
+                // already exists.
+                return pool.Items[link.ItemId] as T;
+            }
+
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, componentId));
 
-            EcsComponentPool pool;
-            if (!_componentPools.TryGetValue (componentId, out pool)) {
-                pool = new EcsComponentPool (typeof (T));
-                _componentPools[componentId] = pool;
+            link.PoolId = componentId;
+            link.ItemId = pool.GetIndex ();
+            if (entityData.ComponentsCount == entityData.Components.Length) {
+                var newComponents = new ComponentLink[entityData.ComponentsCount << 1];
+                Array.Copy (entityData.Components, newComponents, entityData.ComponentsCount);
+                entityData.Components = newComponents;
             }
-            var component = pool.Get () as T;
-
-            while (entityData.ComponentsCount <= componentId) {
-                entityData.Components.Add (null);
-                entityData.ComponentsCount++;
-            }
-            entityData.Components[componentId] = component;
-            return component;
+            entityData.Components[entityData.ComponentsCount++] = link;
+            return pool.Items[link.ItemId] as T;
         }
 
         /// <summary>
@@ -292,7 +304,18 @@ namespace LeopotamGroup.Ecs {
                 componentId = GetComponentIndex<T> ();
             }
             var entityData = _entities[entity];
-            return componentId < entityData.ComponentsCount ? entityData.Components[componentId] as T : null;
+            ComponentLink link;
+            // direct initialization - faster than constructor call.
+            link.ItemId = -1;
+            link.PoolId = -1;
+            var i = entityData.ComponentsCount - 1;
+            for (; i >= 0; i--) {
+                link = entityData.Components[i];
+                if (link.PoolId == componentId) {
+                    break;
+                }
+            }
+            return i != -1 ? _componentPools[link.PoolId].Items[link.ItemId] as T : null;
         }
 
         /// <summary>
@@ -311,28 +334,25 @@ namespace LeopotamGroup.Ecs {
         /// Gets component index. Useful for GetComponent() requests as second parameter for performance reason.
         /// </summary>
         public int GetComponentIndex<T> () where T : class, IEcsComponent {
-            int retVal;
-            var type = typeof (T).GetHashCode ();
-            if (!_componentIds.TryGetValue (type, out retVal)) {
-                retVal = _componentIds.Count;
-                _componentIds[type] = retVal;
-            }
-            return retVal;
+            return GetComponentIndex (typeof (T));
         }
 
         /// <summary>
-        /// Gets component index. Slower than generic version, use carefully!
+        /// Gets component index. Useful for GetComponent() requests as second parameter for performance reason.
         /// </summary>
         /// <param name="componentType">Component type.</param>
         public int GetComponentIndex (Type componentType) {
+#if DEBUG && !ECS_PERF_TEST
             if (componentType == null || !typeof (IEcsComponent).IsAssignableFrom (componentType) || !componentType.IsClass) {
                 throw new Exception ("Invalid component type");
             }
+#endif
             int retVal;
             var type = componentType.GetHashCode ();
             if (!_componentIds.TryGetValue (type, out retVal)) {
                 retVal = _componentIds.Count;
                 _componentIds[type] = retVal;
+                _componentPools[retVal] = new EcsComponentPool (componentType);
             }
             return retVal;
         }
@@ -362,27 +382,6 @@ namespace LeopotamGroup.Ecs {
                 _filters.Add (new EcsFilter (include, exclude));
             }
             return _filters[i];
-        }
-
-        /// <summary>
-        /// Gets all components on entity.
-        /// </summary>
-        /// <param name="entity">Entity.</param>
-        /// <param name="list">List to put results in it.</param>
-        public void GetComponents (int entity, IList<IEcsComponent> list) {
-            if (list != null) {
-                list.Clear ();
-                var entityData = _entities[entity];
-                var componentId = 0;
-                var mask = entityData.Mask;
-                while (!mask.IsEmpty ()) {
-                    if (mask.GetBit (componentId)) {
-                        mask.SetBit (componentId, false);
-                        list.Add (entityData.Components[componentId]);
-                    }
-                    componentId++;
-                }
-            }
         }
 
         /// <summary>
@@ -471,10 +470,17 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Detaching component.</param>
         void DetachComponent (int entityId, EcsEntity entity, int componentId) {
-            var comp = entity.Components[componentId];
-            entity.Components[componentId] = null;
-            OnEntityComponentRemoved (entityId, componentId);
-            _componentPools[componentId].Recycle (comp);
+            ComponentLink link;
+            for (var i = entity.ComponentsCount - 1; i >= 0; i--) {
+                link = entity.Components[i];
+                if (link.PoolId == componentId) {
+                    entity.ComponentsCount--;
+                    Array.Copy (entity.Components, i + 1, entity.Components, i, entity.ComponentsCount - i);
+                    OnEntityComponentRemoved (entityId, componentId);
+                    _componentPools[link.PoolId].RecycleIndex (link.ItemId);
+                    return;
+                }
+            }
         }
 
         /// <summary>
@@ -526,11 +532,16 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
+        struct ComponentLink {
+            public int PoolId;
+            public int ItemId;
+        }
+
         sealed class EcsEntity {
             public bool IsReserved;
             public readonly EcsComponentMask Mask = new EcsComponentMask ();
             public int ComponentsCount;
-            public readonly List<IEcsComponent> Components = new List<IEcsComponent> (8);
+            public ComponentLink[] Components = new ComponentLink[8];
         }
     }
 }
