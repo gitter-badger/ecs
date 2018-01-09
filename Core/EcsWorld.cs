@@ -55,7 +55,12 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of all entities (their components).
         /// </summary>
-        readonly List<EcsEntity> _entities = new List<EcsEntity> (1024);
+        EcsEntity[] _entities = new EcsEntity[1024];
+
+        /// <summary>
+        /// Amount of created entities at _entities array.
+        /// </summary>
+        int _entitiesCount;
 
         /// <summary>
         /// List of removed entities - they can be reused later.
@@ -170,7 +175,7 @@ namespace LeopotamGroup.Ecs {
         /// Destroys all registered external data, full cleanup for internal data.
         /// </summary>
         public void Destroy () {
-            for (int i = 0, iMax = _entities.Count; i < iMax; i++) {
+            for (var i = 0; i < _entitiesCount; i++) {
                 RemoveEntity (i);
             }
             ProcessDelayedUpdates ();
@@ -186,12 +191,15 @@ namespace LeopotamGroup.Ecs {
             _runUpdateSystems.Clear ();
             _runFixedUpdateSystems.Clear ();
             _componentIds.Clear ();
-            _entities.Clear ();
             _reservedEntityIds.Clear ();
             _filters.Clear ();
             _sharedData.Clear ();
+            _entitiesCount = 0;
             for (var i = _componentPools.Length - 1; i >= 0; i--) {
                 _componentPools[i] = null;
+            }
+            for (var i = _entities.Length - 1; i >= 0; i--) {
+                _entities[i] = null;
             }
         }
 
@@ -226,8 +234,13 @@ namespace LeopotamGroup.Ecs {
                 _entities[entity].IsReserved = false;
                 _reservedEntityIds.RemoveAt (id);
             } else {
-                entity = _entities.Count;
-                _entities.Add (new EcsEntity ());
+                entity = _entitiesCount;
+                if (_entitiesCount == _entities.Length) {
+                    var newEntities = new EcsEntity[_entitiesCount << 1];
+                    Array.Copy (_entities, newEntities, _entitiesCount);
+                    _entities = newEntities;
+                }
+                _entities[_entitiesCount++] = new EcsEntity ();
             }
             return entity;
         }
@@ -271,7 +284,7 @@ namespace LeopotamGroup.Ecs {
 
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, componentId));
 
-            link.PoolId = componentId;
+            link.PoolId = (short) componentId;
             link.ItemId = pool.GetIndex ();
             if (entityData.ComponentsCount == entityData.Components.Length) {
                 var newComponents = new ComponentLink[entityData.ComponentsCount << 1];
@@ -308,6 +321,7 @@ namespace LeopotamGroup.Ecs {
             // direct initialization - faster than constructor call.
             link.ItemId = -1;
             link.PoolId = -1;
+
             var i = entityData.ComponentsCount - 1;
             for (; i >= 0; i--) {
                 link = entityData.Components[i];
@@ -392,7 +406,7 @@ namespace LeopotamGroup.Ecs {
                 InitSystems = _initSystems.Count,
                 RunUpdateSystems = _runUpdateSystems.Count,
                 RunFixedUpdateSystems = _runFixedUpdateSystems.Count,
-                AllEntities = _entities.Count,
+                AllEntities = _entitiesCount,
                 ReservedEntities = _reservedEntityIds.Count,
                 Filters = _filters.Count,
                 Components = _componentIds.Count,
@@ -533,13 +547,13 @@ namespace LeopotamGroup.Ecs {
         }
 
         struct ComponentLink {
-            public int PoolId;
+            public short PoolId;
             public int ItemId;
         }
 
         sealed class EcsEntity {
             public bool IsReserved;
-            public readonly EcsComponentMask Mask = new EcsComponentMask ();
+            public EcsComponentMask Mask = new EcsComponentMask ();
             public int ComponentsCount;
             public ComponentLink[] Components = new ComponentLink[8];
         }
