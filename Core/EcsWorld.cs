@@ -308,7 +308,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Removes component from entity.
+        /// Gets component on entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
@@ -369,6 +369,22 @@ namespace LeopotamGroup.Ecs {
                 _componentPools[retVal] = new EcsComponentPool (componentType);
             }
             return retVal;
+        }
+
+        /// <summary>
+        /// Gets all components on entity.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        /// <param name="list">List to put results in it.</param>
+        public void GetComponents (int entity, IList<IEcsComponent> list) {
+            if (list != null) {
+                list.Clear ();
+                var entityData = _entities[entity];
+                for (var i = 0; i < entityData.ComponentsCount; i++) {
+                    var link = entityData.Components[i];
+                    list.Add (_componentPools[link.PoolId].Items[link.ItemId]);
+                }
+            }
         }
 
         /// <summary>
