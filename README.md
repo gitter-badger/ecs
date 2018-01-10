@@ -1,11 +1,13 @@
+[![gitter](https://img.shields.io/gitter/room/leopotam/ecs.svg)](https://gitter.im/leopotam/ecs)
+[![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
 # Another one Entity Component System framework
-Performance and zero memory allocation / no gc work - main goals of this project.
+Performance and zero memory allocation / no gc work / small size - main goals of this project.
 
 > **Its early work-in-progress stage, not recommended to use in real projects, any api / behaviour can change later.**
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
-> Components limit - 256 different components at each world. Components limit on each entity: up to 256, but better to keep it less or equal 8 for performance reason.
+> Components limit - 256 **different** components at each world (256 C# classes). Components limit on each entity: up to 256, but better to keep it less or equal 8 for performance reason.
 
 # Main parts of ecs
 
