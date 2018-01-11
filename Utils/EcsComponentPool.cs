@@ -12,7 +12,7 @@ namespace LeopotamGroup.Ecs.Internals {
     /// Components pool container.
     /// </summary>
     sealed class EcsComponentPool {
-        public IEcsComponent[] Items = new IEcsComponent[512];
+        public object[] Items = new object[512];
 
         readonly List<int> _reservedItems = new List<int> (512);
 
@@ -35,11 +35,11 @@ namespace LeopotamGroup.Ecs.Internals {
             } else {
                 id = _itemsCount;
                 if (_itemsCount == Items.Length) {
-                    var newItems = new IEcsComponent[_itemsCount << 1];
+                    var newItems = new object[_itemsCount << 1];
                     Array.Copy (Items, newItems, _itemsCount);
                     Items = newItems;
                 }
-                Items[_itemsCount++] = Activator.CreateInstance (_type) as IEcsComponent;
+                Items[_itemsCount++] = Activator.CreateInstance (_type);
             }
             return id;
         }

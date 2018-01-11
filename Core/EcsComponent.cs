@@ -8,5 +8,6 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Base interface for all ecs components.
     /// </summary>
+    [System.Obsolete ("Will be removed - any class can be used as component without inheritance from IEcsComponent.")]
     public interface IEcsComponent { }
 }

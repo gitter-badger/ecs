@@ -12,9 +12,9 @@ Performance and zero memory allocation / no gc work / small size - main goals of
 # Main parts of ecs
 
 ## Component
-Container for user data without / with small logic inside. User class should implements **IEcsComponent** interface:
+Container for user data without / with small logic inside. Can be used any user class without any additional inheritance:
 ```
-class WeaponComponent: IEcsComponent {
+class WeaponComponent {
     public int Ammo;
     public string GunName;
 }

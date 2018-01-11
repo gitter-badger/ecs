@@ -92,11 +92,6 @@ namespace LeopotamGroup.Ecs {
         bool _inited;
 #endif
 
-        static EcsWorldBase () {
-            var so = System.Runtime.InteropServices.Marshal.SizeOf (typeof (DelayedUpdate));
-            UnityEngine.Debug.Log (so);
-        }
-
         /// <summary>
         /// Adds new system to processing.
         /// </summary>
@@ -239,8 +234,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public T AddComponent<T> (int entity, int componentId = -1) where T : class,
-        IEcsComponent {
+        public T AddComponent<T> (int entity, int componentId = -1) where T : class {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -280,8 +274,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public void RemoveComponent<T> (int entity, int componentId = -1) where T : class,
-        IEcsComponent {
+        public void RemoveComponent<T> (int entity, int componentId = -1) where T : class {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -293,8 +286,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public T GetComponent<T> (int entity, int componentId = -1) where T : class,
-        IEcsComponent {
+        public T GetComponent<T> (int entity, int componentId = -1) where T : class {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -319,8 +311,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public void UpdateComponent<T> (int entity, int componentId = -1) where T : class,
-        IEcsComponent {
+        public void UpdateComponent<T> (int entity, int componentId = -1) where T : class {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -330,8 +321,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Gets component index. Useful for GetComponent() requests as second parameter for performance reason.
         /// </summary>
-        public int GetComponentIndex<T> () where T : class,
-        IEcsComponent {
+        public int GetComponentIndex<T> () where T : class {
             return GetComponentIndex (typeof (T));
         }
 
@@ -341,7 +331,7 @@ namespace LeopotamGroup.Ecs {
         /// <param name="componentType">Component type.</param>
         public int GetComponentIndex (Type componentType) {
 #if DEBUG && !ECS_PERF_TEST
-            if (componentType == null || !typeof (IEcsComponent).IsAssignableFrom (componentType) || !componentType.IsClass) {
+            if (componentType == null || !componentType.IsClass) {
                 throw new Exception ("Invalid component type");
             }
 #endif
@@ -360,7 +350,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="list">List to put results in it.</param>
-        public void GetComponents (int entity, IList<IEcsComponent> list) {
+        public void GetComponents (int entity, IList<object> list) {
             if (list != null) {
                 list.Clear ();
                 var entityData = _entities[entity];
