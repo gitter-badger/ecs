@@ -218,6 +218,59 @@ public sealed class TestReactSystem : EcsReactSystem {
 }
 ```
 
+# Sharing data between systems
+If ecs-world class should contains some shared fields, it can be implemented in this way:
+```
+class MySharedData : ScriptableObject {
+    public string PlayerName = "Unknown";
+    public GameObject PlayerModel;
+}
+
+class MyWorld: EcsWorldBase<MyWorld> {
+    public readonly MySharedData Assets;
+
+    public MyWorld(MySharedData data) {
+        Assets = data;
+    }
+}
+
+class ChangePlayerName : IEcsInitSystem {
+    [EcsWorld]
+    MyWorld _world;
+
+    void IEcsInitSystem.Initialize () {
+        _world.Assets.PlayerName = "Jack";
+    }
+
+    void IEcsInitSystem.Destroy () { }
+}
+
+class SpawnPlayerModel : IEcsInitSystem {
+    [EcsWorld]
+    MyWorld _world;
+
+    void IEcsInitSystem.Initialize () {
+        GameObject.Instantiate(_world.Assets.PlayerModel);
+    }
+
+    void IEcsInitSystem.Destroy () { }
+}
+
+class Startup : Monobehaviour {
+    [SerializedField]
+    MySharedData _sharedData;
+
+    MyWorld _world;
+
+    void OnEnable() {
+        _world = new MyWorld(_sharedData)
+            .AddSystem(ChangePlayerName())
+            .AddSystem(SpawnPlayerModel());
+        _world.Initialize();
+    }
+}
+```
+
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)
 

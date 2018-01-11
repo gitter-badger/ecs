@@ -12,8 +12,10 @@ namespace LeopotamGroup.Ecs.Internals {
     /// Processes dependency injection to ecs systems. For internal use only.
     /// </summary>
     static class EcsInjections {
-        public static void Inject (EcsWorld world, IEcsSystem system) {
-            var type = system.GetType ();
+        public static void Inject<W> (EcsWorldBase<W> world, IEcsSystem system) where W : EcsWorldBase<W> {
+            var worldType = world.GetType ();
+
+            var systemType = system.GetType ();
 
             var ecsWorld = typeof (EcsWorld);
             var ecsFilter = typeof (EcsFilter);
@@ -24,9 +26,9 @@ namespace LeopotamGroup.Ecs.Internals {
             var attrEcsFilterExclude = typeof (EcsFilterExcludeAttribute);
             var attrEcsIndex = typeof (EcsIndexAttribute);
 
-            foreach (var f in type.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)) {
+            foreach (var f in systemType.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)) {
                 // [EcsWorld]
-                if (f.FieldType == ecsWorld && !f.IsStatic && Attribute.IsDefined (f, attrEcsWorld)) {
+                if (f.FieldType.IsAssignableFrom (worldType) && !f.IsStatic && Attribute.IsDefined (f, attrEcsWorld)) {
                     f.SetValue (system, world);
                 }
 

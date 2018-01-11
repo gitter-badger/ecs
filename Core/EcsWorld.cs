@@ -11,7 +11,15 @@ using LeopotamGroup.Ecs.Internals;
 namespace LeopotamGroup.Ecs {
     public delegate void OnEntityComponentChangeHandler (int entity, int componentId);
 
-    public sealed class EcsWorld {
+    /// <summary>
+    /// Basic ecs world implementation.
+    /// </summary>
+    public sealed class EcsWorld : EcsWorldBase<EcsWorld> { }
+
+    /// <summary>
+    /// Abstract ecs environment.
+    /// </summary>
+    public abstract class EcsWorldBase<W> where W : EcsWorldBase<W> {
         /// <summary>
         /// Raises on component attached to entity.
         /// </summary>
@@ -77,11 +85,6 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         readonly List<EcsFilter> _filters = new List<EcsFilter> (64);
 
-        /// <summary>
-        /// Shared data, useful for ScriptableObjects / assets sharing.
-        /// </summary>
-        readonly Dictionary<int, object> _sharedData = new Dictionary<int, object> (32);
-
 #if DEBUG && !ECS_PERF_TEST
         /// <summary>
         /// Is Initialize method was called?
@@ -89,11 +92,16 @@ namespace LeopotamGroup.Ecs {
         bool _inited;
 #endif
 
+        static EcsWorldBase () {
+            var so = System.Runtime.InteropServices.Marshal.SizeOf (typeof (DelayedUpdate));
+            UnityEngine.Debug.Log (so);
+        }
+
         /// <summary>
         /// Adds new system to processing.
         /// </summary>
         /// <param name="system">System instance.</param>
-        public EcsWorld AddSystem (IEcsSystem system) {
+        public W AddSystem (IEcsSystem system) {
 #if DEBUG && !ECS_PERF_TEST
             if (_inited) {
                 throw new Exception ("Already initialized, cant add new system.");
@@ -122,36 +130,7 @@ namespace LeopotamGroup.Ecs {
                         break;
                 }
             }
-            return this;
-        }
-
-        /// <summary>
-        /// Sets shared data by key. Exists data will be overwritten.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        public EcsWorld SetSharedData (string key, object data) {
-#if DEBUG && !ECS_PERF_TEST
-            if (key == null || data == null) {
-                throw new ArgumentNullException ("Invalid parameters");
-            }
-#endif
-            _sharedData[key.GetHashCode ()] = data;
-            return this;
-        }
-
-        /// <summary>
-        /// Get shared data by key.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        public object GetSharedData (string key) {
-#if DEBUG && !ECS_PERF_TEST
-            if (key == null) {
-                throw new ArgumentNullException ("Invalid parameter");
-            }
-#endif
-            object retVal;
-            _sharedData.TryGetValue (key.GetHashCode (), out retVal);
-            return retVal;
+            return this as W;
         }
 
         /// <summary>
@@ -193,7 +172,6 @@ namespace LeopotamGroup.Ecs {
             _componentIds.Clear ();
             _reservedEntityIds.Clear ();
             _filters.Clear ();
-            _sharedData.Clear ();
             _entitiesCount = 0;
             for (var i = _componentPools.Length - 1; i >= 0; i--) {
                 _componentPools[i] = null;
@@ -261,7 +239,8 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public T AddComponent<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+        public T AddComponent<T> (int entity, int componentId = -1) where T : class,
+        IEcsComponent {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -301,7 +280,8 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public void RemoveComponent<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+        public void RemoveComponent<T> (int entity, int componentId = -1) where T : class,
+        IEcsComponent {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -313,7 +293,8 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public T GetComponent<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+        public T GetComponent<T> (int entity, int componentId = -1) where T : class,
+        IEcsComponent {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -338,7 +319,8 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
-        public void UpdateComponent<T> (int entity, int componentId = -1) where T : class, IEcsComponent {
+        public void UpdateComponent<T> (int entity, int componentId = -1) where T : class,
+        IEcsComponent {
             if (componentId == -1) {
                 componentId = GetComponentIndex<T> ();
             }
@@ -348,7 +330,8 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Gets component index. Useful for GetComponent() requests as second parameter for performance reason.
         /// </summary>
-        public int GetComponentIndex<T> () where T : class, IEcsComponent {
+        public int GetComponentIndex<T> () where T : class,
+        IEcsComponent {
             return GetComponentIndex (typeof (T));
         }
 
@@ -584,7 +567,7 @@ namespace LeopotamGroup.Ecs {
             public bool IsReserved;
             public EcsComponentMask Mask = new EcsComponentMask ();
             public int ComponentsCount;
-            public ComponentLink[] Components = new ComponentLink[8];
+            public ComponentLink[] Components = new ComponentLink[6];
         }
     }
 }
