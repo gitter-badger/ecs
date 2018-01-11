@@ -29,17 +29,17 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Raises on entity added to filter.
         /// </summary>
-        public event EcsWorld.OnEntityComponentChangeHandler OnEntityAdded = delegate { };
+        public event OnEntityComponentChangeHandler OnEntityAdded = delegate { };
 
         /// <summary>
         /// Raises on entity removed from filter.
         /// </summary>
-        public event EcsWorld.OnEntityComponentChangeHandler OnEntityRemoved = delegate { };
+        public event OnEntityComponentChangeHandler OnEntityRemoved = delegate { };
 
         /// <summary>
         /// Raises on entity changed inplace.
         /// </summary>
-        public event EcsWorld.OnEntityComponentChangeHandler OnEntityUpdated = delegate { };
+        public event OnEntityComponentChangeHandler OnEntityUpdated = delegate { };
 
         internal void RaiseOnEntityAdded (int entity, int componentId) {
             OnEntityAdded (entity, componentId);

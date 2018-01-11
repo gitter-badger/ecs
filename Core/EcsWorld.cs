@@ -9,9 +9,9 @@ using System.Collections.Generic;
 using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
-    public sealed class EcsWorld {
-        public delegate void OnEntityComponentChangeHandler (int entity, int componentId);
+    public delegate void OnEntityComponentChangeHandler (int entity, int componentId);
 
+    public sealed class EcsWorld {
         /// <summary>
         /// Raises on component attached to entity.
         /// </summary>
@@ -70,7 +70,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of add / remove operations for components on entities.
         /// </summary>
-        readonly List<DelayedUpdate> _delayedUpdates = new List<DelayedUpdate> (128);
+        readonly List<DelayedUpdate> _delayedUpdates = new List<DelayedUpdate> (1024);
 
         /// <summary>
         /// List of requested filters.
@@ -242,6 +242,7 @@ namespace LeopotamGroup.Ecs {
                 }
                 _entities[_entitiesCount++] = new EcsEntity ();
             }
+            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, -1));
             return entity;
         }
 
@@ -459,6 +460,12 @@ namespace LeopotamGroup.Ecs {
                             _reservedEntityIds.Add (op.Entity);
                         }
                         break;
+                    case DelayedUpdate.Op.SafeRemoveEntity:
+                        if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
+                            entityData.IsReserved = true;
+                            _reservedEntityIds.Add (op.Entity);
+                        }
+                        break;
                     case DelayedUpdate.Op.AddComponent:
                         if (!entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, true);
@@ -471,6 +478,9 @@ namespace LeopotamGroup.Ecs {
                             entityData.Mask.SetBit (op.Component, false);
                             DetachComponent (op.Entity, entityData, op.Component);
                             UpdateFilters (op.Entity, op.Component, _delayedOpMask, entityData.Mask);
+                            if (entityData.ComponentsCount == 0) {
+                                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, -1));
+                            }
                         }
                         break;
                     case DelayedUpdate.Op.UpdateComponent:
@@ -544,21 +554,23 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
+        [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 2)]
         struct DelayedUpdate {
-            public enum Op {
+            public enum Op : short {
                 RemoveEntity,
+                SafeRemoveEntity,
                 AddComponent,
                 RemoveComponent,
                 UpdateComponent
             }
             public Op Type;
             public int Entity;
-            public int Component;
+            public short Component;
 
             public DelayedUpdate (Op type, int entity, int component) {
                 Type = type;
                 Entity = entity;
-                Component = component;
+                Component = (short) component;
             }
         }
 

@@ -9,6 +9,9 @@ namespace LeopotamGroup.Ecs {
     /// Mask for components selection.
     /// </summary>
     public sealed class EcsComponentMask {
+        // Can be changed if you need more than 256 components per world.
+        // Each number adds room for 64 components. If there are more than
+        // 32k components (WUT?!) - you should fix EcsWorld.DelayedUpdate.Component field type.
         const int RawLength = 4;
 
         const int RawItemSize = sizeof (ulong) * 8;
