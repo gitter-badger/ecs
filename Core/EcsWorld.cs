@@ -78,7 +78,12 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of removed entities - they can be reused later.
         /// </summary>
-        readonly List<int> _reservedEntityIds = new List<int> (256);
+        int[] _reservedEntities = new int[256];
+
+        /// <summary>
+        /// Amount of created entities at _entities array.
+        /// </summary>
+        int _reservedEntitiesCount;
 
         /// <summary>
         /// List of add / remove operations for components on entities.
@@ -172,9 +177,9 @@ namespace LeopotamGroup.Ecs {
             _runUpdateSystems.Clear ();
             _runFixedUpdateSystems.Clear ();
             _componentIds.Clear ();
-            _reservedEntityIds.Clear ();
             _filters.Clear ();
             _entitiesCount = 0;
+            _reservedEntitiesCount = 0;
             for (var i = _componentPools.Length - 1; i >= 0; i--) {
                 _componentPools[i] = null;
             }
@@ -208,11 +213,10 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public int CreateEntity () {
             int entity;
-            if (_reservedEntityIds.Count > 0) {
-                var id = _reservedEntityIds.Count - 1;
-                entity = _reservedEntityIds[id];
+            if (_reservedEntitiesCount > 0) {
+                _reservedEntitiesCount--;
+                entity = _reservedEntities[_reservedEntitiesCount];
                 _entities[entity].IsReserved = false;
-                _reservedEntityIds.RemoveAt (id);
             } else {
                 entity = _entitiesCount;
                 if (_entitiesCount == _entities.Length) {
@@ -403,8 +407,8 @@ namespace LeopotamGroup.Ecs {
                 InitSystems = _initSystems.Count,
                 RunUpdateSystems = _runUpdateSystems.Count,
                 RunFixedUpdateSystems = _runFixedUpdateSystems.Count,
-                ActiveEntities = _entitiesCount - _reservedEntityIds.Count,
-                ReservedEntities = _reservedEntityIds.Count,
+                ActiveEntities = _entitiesCount - _reservedEntitiesCount,
+                ReservedEntities = _reservedEntitiesCount,
                 Filters = _filters.Count,
                 Components = _componentIds.Count,
                 DelayedUpdates = _delayedUpdates.Count
@@ -437,13 +441,23 @@ namespace LeopotamGroup.Ecs {
                                 componentId++;
                             }
                             entityData.IsReserved = true;
-                            _reservedEntityIds.Add (op.Entity);
+                            if (_reservedEntitiesCount == _reservedEntities.Length) {
+                                var newEntities = new int[_reservedEntitiesCount << 1];
+                                Array.Copy (_reservedEntities, newEntities, _reservedEntitiesCount);
+                                _reservedEntities = newEntities;
+                            }
+                            _reservedEntities[_reservedEntitiesCount++] = op.Entity;
                         }
                         break;
                     case DelayedUpdate.Op.SafeRemoveEntity:
                         if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
                             entityData.IsReserved = true;
-                            _reservedEntityIds.Add (op.Entity);
+                            if (_reservedEntitiesCount == _reservedEntities.Length) {
+                                var newEntities = new int[_reservedEntitiesCount << 1];
+                                Array.Copy (_reservedEntities, newEntities, _reservedEntitiesCount);
+                                _reservedEntities = newEntities;
+                            }
+                            _reservedEntities[_reservedEntitiesCount++] = op.Entity;
                         }
                         break;
                     case DelayedUpdate.Op.AddComponent:
