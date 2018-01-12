@@ -15,11 +15,8 @@ namespace LeopotamGroup.Ecs.Internals {
         public static void Inject<W> (EcsWorldBase<W> world, IEcsSystem system) where W : EcsWorldBase<W> {
             var worldType = world.GetType ();
             var systemType = system.GetType ();
-
-            var ecsWorld = typeof (EcsWorld);
             var ecsFilter = typeof (EcsFilter);
             var ecsIndex = typeof (int);
-
             var attrEcsWorld = typeof (EcsWorldAttribute);
             var attrEcsFilterInclude = typeof (EcsFilterIncludeAttribute);
             var attrEcsFilterExclude = typeof (EcsFilterExcludeAttribute);
