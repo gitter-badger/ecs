@@ -22,9 +22,9 @@ namespace LeopotamGroup.Ecs {
         public int RunFixedUpdateSystems;
 
         /// <summary>
-        /// Amount of created entities.
+        /// Amount of active entities.
         /// </summary>
-        public int AllEntities;
+        public int ActiveEntities;
 
         /// <summary>
         /// Amount of cached (not in use) entities.

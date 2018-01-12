@@ -31,6 +31,11 @@ namespace LeopotamGroup.Ecs {
         public event OnEntityComponentChangeHandler OnEntityComponentRemoved = delegate { };
 
         /// <summary>
+        /// Should DI be used or skipped for manual initialization?
+        /// </summary>
+        protected bool UseDependencyInjection = true;
+
+        /// <summary>
         /// Registered IEcsPreInitSystem systems.
         /// </summary>
         readonly List<IEcsPreInitSystem> _preInitSystems = new List<IEcsPreInitSystem> (16);
@@ -102,7 +107,9 @@ namespace LeopotamGroup.Ecs {
                 throw new Exception ("Already initialized, cant add new system.");
             }
 #endif
-            EcsInjections.Inject (this, system);
+            if (UseDependencyInjection) {
+                EcsInjections.Inject (this, system);
+            }
 
             var preInitSystem = system as IEcsPreInitSystem;
             if (preInitSystem != null) {
@@ -396,7 +403,7 @@ namespace LeopotamGroup.Ecs {
                 InitSystems = _initSystems.Count,
                 RunUpdateSystems = _runUpdateSystems.Count,
                 RunFixedUpdateSystems = _runFixedUpdateSystems.Count,
-                AllEntities = _entitiesCount,
+                ActiveEntities = _entitiesCount - _reservedEntityIds.Count,
                 ReservedEntities = _reservedEntityIds.Count,
                 Filters = _filters.Count,
                 Components = _componentIds.Count,
