@@ -5,7 +5,6 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs.Internals {
     /// <summary>
@@ -14,9 +13,9 @@ namespace LeopotamGroup.Ecs.Internals {
     sealed class EcsComponentPool {
         public object[] Items = new object[512];
 
-        readonly List<int> _reservedItems = new List<int> (512);
+        int[] _reservedItems = new int[256];
 
-        readonly Type _type;
+        Type _type;
 
         int _itemsCount;
 
@@ -29,9 +28,7 @@ namespace LeopotamGroup.Ecs.Internals {
         public int GetIndex () {
             int id;
             if (_reservedItemsCount > 0) {
-                _reservedItemsCount--;
-                id = _reservedItems[_reservedItemsCount];
-                _reservedItems.RemoveAt (_reservedItemsCount);
+                id = _reservedItems[--_reservedItemsCount];
             } else {
                 id = _itemsCount;
                 if (_itemsCount == Items.Length) {
@@ -45,7 +42,12 @@ namespace LeopotamGroup.Ecs.Internals {
         }
 
         public void RecycleIndex (int id) {
-            _reservedItems.Add (id);
+            if (_reservedItemsCount == _reservedItems.Length) {
+                var newItems = new int[_reservedItemsCount << 1];
+                Array.Copy (_reservedItems, newItems, _reservedItemsCount);
+                _reservedItems = newItems;
+            }
+            _reservedItems[_reservedItemsCount++] = id;
         }
     }
 }
