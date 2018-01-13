@@ -7,7 +7,9 @@ Performance and zero memory allocation / no gc work / small size - main goals of
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
-> Components limit - 256 **different** components at each world (256 C# classes). Components limit on each entity: up to 256, but better to keep it less or equal 8 for performance reason.
+> Components limit - 256 **different** components at each world (256 C# classes), can be changed manually.
+
+> Components limit on each entity: up to component limit at ecs-world, but better to keep it less or equal 6 for performance reason.
 
 # Main parts of ecs
 
@@ -64,7 +66,7 @@ class HealthSystem : IEcsRunSystem {
 ```
 
 # Data injection
-With **[EcsWorld]**, **[EcsFilterInclude(typeof(X))]**, **[EcsFilterExclude(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom IEcsSystem-class can be auto initialized (auto injected):
+With **[EcsWorld]**, **[EcsFilterInclude(typeof(X))]**, **[EcsFilterExclude(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom `IEcsSystem` class can be auto initialized (auto injected):
 ```
 class HealthSystem : IEcsSystem {
     [EcsWorld]
@@ -144,7 +146,45 @@ class Startup : MonoBehaviour {
 ```
 
 # Reaction on component / filter changes
-Events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at ecs-world instance and **OnEntityAdded** / **OnEntityRemoved** / **OnEntityUpdated** at ecs-filter instance allows to add reaction on component / filter changes to any ecs-system:
+There is special predefined helper-class - `EcsReactSystem`:
+```
+public sealed class TestReactSystem : EcsReactSystem {
+    [EcsWorld]
+    EcsWorld _world;
+
+    [EcsFilterInclude (typeof (WeaponComponent))]
+    EcsFilter _weaponFilter;
+
+    // Should returns filter that react system will watch for.
+    public override EcsFilter GetReactFilter () {
+        return _weaponFilter;
+    }
+
+    // On which event at filter this react-system should be alerted -
+    // "new entity in filter" or "entity inplace update".
+    public override EcsReactSystemType GetReactSystemType () {
+        return EcsReactSystemType.OnUpdate;
+    }
+
+    // EcsReactSystem is IEcsRunSystem and should provides additional info.
+    public override EcsRunSystemType GetRunSystemType () {
+        return EcsRunSystemType.Update;
+    }
+
+    // Filtered entities processing, will be raised only if entities presents.
+    public override void RunReact (List<int> entities) {
+        foreach (var entity in entities) {
+            var weapon = _world.GetComponent<WeaponComponent> (entity);
+            Debug.LogFormat ("Weapon updated on {0}", entity);
+        }
+    }
+}
+```
+
+If custom reaction requires - events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at `EcsWorld` instance and **OnEntityAdded** / **OnEntityRemoved** / **OnEntityUpdated** at `EcsFilter` instance can be used to add reaction on component / filter changes to any ecs-system.
+
+> Not recommended if you dont understand how it works internally.
+
 ```
 public sealed class TestSystem1 : IEcsInitSystem {
     [EcsWorld]
@@ -183,43 +223,9 @@ public sealed class TestSystem1 : IEcsInitSystem {
 }
 ```
 
-There is special predefined helper-class - EcsReactSystem:
-```
-public sealed class TestReactSystem : EcsReactSystem {
-    [EcsWorld]
-    EcsWorld _world;
-
-    [EcsFilterInclude (typeof (WeaponComponent))]
-    EcsFilter _weaponFilter;
-
-    // Should returns filter that react system will watch for.
-    public override EcsFilter GetReactFilter () {
-        return _weaponFilter;
-    }
-
-    // On which event at filter this react-system should be alerted -
-    // "new entity in filter" or "entity inplace update".
-    public override EcsReactSystemType GetReactSystemType () {
-        return EcsReactSystemType.OnUpdate;
-    }
-
-    // EcsReactSystem is IEcsRunSystem and should provides additional info.
-    public override EcsRunSystemType GetRunSystemType () {
-        return EcsRunSystemType.Update;
-    }
-
-    // Filtered entities processing, will be raised only if entities presents.
-    public override void RunReact (List<int> entities) {
-        foreach (var entity in entities) {
-            var weapon = _world.GetComponent<WeaponComponent> (entity);
-            Debug.LogFormat ("Weapon updated on {0}", entity);
-        }
-    }
-}
-```
 
 # Sharing data between systems
-If ecs-world class should contains some shared fields, it can be implemented in this way:
+If `EcsWorld` class should contains some shared fields (useful for sharing assets / prefabs), it can be implemented in this way:
 ```
 class MySharedData : ScriptableObject {
     public string PlayerName = "Unknown";
