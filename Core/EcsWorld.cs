@@ -192,6 +192,11 @@ namespace LeopotamGroup.Ecs {
         /// Processes all IEcsRunSystem systems with [EcsRunUpdate] attribute.
         /// </summary>
         public void RunUpdate () {
+#if DEBUG && !ECS_PERF_TEST
+            if (!_inited) {
+                throw new Exception ("World not initialized.");
+            }
+#endif
             for (var i = 0; i < _runUpdateSystems.Count; i++) {
                 _runUpdateSystems[i].Run ();
                 ProcessDelayedUpdates ();
@@ -202,6 +207,11 @@ namespace LeopotamGroup.Ecs {
         /// Processes all IEcsRunSystem systems with [EcsRunFixedUpdate] attribute.
         /// </summary>
         public void RunFixedUpdate () {
+#if DEBUG && !ECS_PERF_TEST
+            if (!_inited) {
+                throw new Exception ("World not initialized.");
+            }
+#endif
             for (var i = 0; i < _runFixedUpdateSystems.Count; i++) {
                 _runFixedUpdateSystems[i].Run ();
                 ProcessDelayedUpdates ();
@@ -212,6 +222,11 @@ namespace LeopotamGroup.Ecs {
         /// Creates new entity.
         /// </summary>
         public int CreateEntity () {
+#if DEBUG && !ECS_PERF_TEST
+            if (!_inited) {
+                throw new Exception ("World not initialized.");
+            }
+#endif
             int entity;
             if (_reservedEntitiesCount > 0) {
                 _reservedEntitiesCount--;

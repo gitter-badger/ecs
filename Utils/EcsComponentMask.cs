@@ -25,7 +25,7 @@ namespace LeopotamGroup.Ecs {
         public override string ToString () {
             var str = "";
             for (int i = 0; i < RawLength; i++) {
-                str += _raw[i].ToString ("{X16}");
+                str += _raw[i].ToString ("X16");
             }
             return str;
         }
