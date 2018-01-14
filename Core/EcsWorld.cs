@@ -14,12 +14,7 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Basic ecs world implementation.
     /// </summary>
-    public sealed class EcsWorld : EcsWorldBase<EcsWorld> { }
-
-    /// <summary>
-    /// Abstract ecs environment.
-    /// </summary>
-    public abstract class EcsWorldBase<W> where W : EcsWorldBase<W> {
+    public class EcsWorld {
         /// <summary>
         /// Raises on component attached to entity.
         /// </summary>
@@ -106,7 +101,7 @@ namespace LeopotamGroup.Ecs {
         /// Adds new system to processing.
         /// </summary>
         /// <param name="system">System instance.</param>
-        public W AddSystem (IEcsSystem system) {
+        public EcsWorld AddSystem (IEcsSystem system) {
 #if DEBUG && !ECS_PERF_TEST
             if (_inited) {
                 throw new Exception ("Already initialized, cant add new system.");
@@ -137,7 +132,7 @@ namespace LeopotamGroup.Ecs {
                         break;
                 }
             }
-            return this as W;
+            return this;
         }
 
         /// <summary>

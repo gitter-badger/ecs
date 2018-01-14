@@ -12,7 +12,7 @@ namespace LeopotamGroup.Ecs.Internals {
     /// Processes dependency injection to ecs systems. For internal use only.
     /// </summary>
     static class EcsInjections {
-        public static void Inject<W> (EcsWorldBase<W> world, IEcsSystem system) where W : EcsWorldBase<W> {
+        public static void Inject (EcsWorld world, IEcsSystem system) {
             var worldType = world.GetType ();
             var systemType = system.GetType ();
             var ecsFilter = typeof (EcsFilter);

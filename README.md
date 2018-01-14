@@ -232,7 +232,7 @@ class MySharedData : ScriptableObject {
     public GameObject PlayerModel;
 }
 
-class MyWorld: EcsWorldBase<MyWorld> {
+class MyWorld: EcsWorld {
     public readonly MySharedData Assets;
 
     public MyWorld(MySharedData data) {
@@ -243,6 +243,10 @@ class MyWorld: EcsWorldBase<MyWorld> {
 class ChangePlayerName : IEcsInitSystem {
     [EcsWorld]
     MyWorld _world;
+
+    // This field will be initialized with same reference as _world field.
+    [EcsWorld]
+    EcsWorld _standardWorld;
 
     void IEcsInitSystem.Initialize () {
         _world.Assets.PlayerName = "Jack";
