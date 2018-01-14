@@ -284,5 +284,8 @@ class Startup : Monobehaviour {
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)
 
+# Extensions
+[uGui event bindings](https://github.com/Leopotam/ecs-ui)
+
 # License
 The software released under the terms of the MIT license. Enjoy.
