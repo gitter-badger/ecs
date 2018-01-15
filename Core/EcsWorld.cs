@@ -241,6 +241,34 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
+        /// Creates new entity and adds component to it.
+        /// Faster than CreateEntity() + AddComponent() sequence.
+        /// </summary>
+        /// <param name="componentId">Component index. If equals to "-1" - will try to find registered type.</param>
+        public T CreateEntityWith<T> (int componentId = -1) where T : class {
+#if DEBUG && !ECS_PERF_TEST
+            if (!_inited) {
+                throw new Exception ("World not initialized.");
+            }
+#endif
+            int entity;
+            if (_reservedEntitiesCount > 0) {
+                _reservedEntitiesCount--;
+                entity = _reservedEntities[_reservedEntitiesCount];
+                _entities[entity].IsReserved = false;
+            } else {
+                entity = _entitiesCount;
+                if (_entitiesCount == _entities.Length) {
+                    var newEntities = new EcsEntity[_entitiesCount << 1];
+                    Array.Copy (_entities, newEntities, _entitiesCount);
+                    _entities = newEntities;
+                }
+                _entities[_entitiesCount++] = new EcsEntity ();
+            }
+            return AddComponent<T> (entity, componentId);
+        }
+
+        /// <summary>
         /// Removes exists entity or throws exception on invalid one.
         /// </summary>
         /// <param name="entity">Entity.</param>
