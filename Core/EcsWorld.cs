@@ -508,8 +508,8 @@ namespace LeopotamGroup.Ecs {
                     case DelayedUpdate.Op.RemoveComponent:
                         if (entityData.Mask.GetBit (op.Component)) {
                             entityData.Mask.SetBit (op.Component, false);
-                            DetachComponent (op.Entity, entityData, op.Component);
                             UpdateFilters (op.Entity, op.Component, _delayedOpMask, entityData.Mask);
+                            DetachComponent (op.Entity, entityData, op.Component);
                             if (entityData.ComponentsCount == 0) {
                                 _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, -1));
                             }
