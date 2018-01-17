@@ -388,6 +388,11 @@ namespace LeopotamGroup.Ecs {
             var type = componentType.GetHashCode ();
             if (!_componentIds.TryGetValue (type, out retVal)) {
                 retVal = _componentIds.Count;
+#if DEBUG && !ECS_PERF_TEST
+                if (retVal >= EcsComponentMask.BitsCount) {
+                    throw new Exception ("No free room for new components - try to increase EcsComponentMask.RawLength.");
+                }
+#endif
                 _componentIds[type] = retVal;
                 _componentPools[retVal] = new EcsComponentPool (componentType);
             }

@@ -7,7 +7,7 @@ Performance and zero memory allocation / no gc work / small size - main goals of
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
-> Components limit - 256 **different** components at each world (256 C# classes), can be changed manually.
+> Components limit - 256 **different** components at each world (256 C# classes), can be changed with preprocessor defines: `ECS_COMPONENT_LIMIT_512`, `ECS_COMPONENT_LIMIT_1024` or `ECS_COMPONENT_LIMIT_2048`.
 
 > Components limit on each entity: up to component limit at ecs-world, but better to keep it less or equal 6 for performance reason.
 

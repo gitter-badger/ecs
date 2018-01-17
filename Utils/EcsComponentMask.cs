@@ -14,7 +14,15 @@ namespace LeopotamGroup.Ecs {
         // 32k components (WUT?!) - you should fix:
         // * EcsWorld.DelayedUpdate.Component field type.
         // * EcsWorld.ComponentLink.PoolId field type.
+#if ECS_COMPONENT_LIMIT_2048
+        const int RawLength = 32;
+#elif ECS_COMPONENT_LIMIT_1024
+        const int RawLength = 16;
+#elif ECS_COMPONENT_LIMIT_512
+        const int RawLength = 8;
+#else
         const int RawLength = 4;
+#endif
 
         const int RawItemSize = sizeof (ulong) * 8;
 
