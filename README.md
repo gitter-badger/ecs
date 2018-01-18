@@ -30,7 +30,7 @@ _world.RemoveEntity (entity);
 ```
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements **IEcsPreInitSystem**, **IEcsInitSystem** or **IEcsRunSystem** interfaces:
+Сontainer for logic for processing filtered entities. User class should implements `IEcsPreInitSystem`, `IEcsInitSystem` or `IEcsRunSystem` interfaces:
 ```
 class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem {
     void IEcsPreInitSystem.PreInitialize () {
@@ -66,7 +66,7 @@ class HealthSystem : IEcsRunSystem {
 ```
 
 # Data injection
-With **[EcsWorld]**, **[EcsFilterInclude(typeof(X))]**, **[EcsFilterExclude(typeof(X))]** and **[EcsIndex(typeof(X))]** attributes any compatible field of custom `IEcsSystem` class can be auto initialized (auto injected):
+With `[EcsWorld]`, `[EcsFilterInclude(typeof(X))]`, `[EcsFilterExclude(typeof(X))]` and `[EcsIndex(typeof(X))]` attributes any compatible field of custom `IEcsSystem` class can be auto initialized (auto injected):
 ```
 class HealthSystem : IEcsSystem {
     [EcsWorld]
@@ -146,7 +146,11 @@ class Startup : MonoBehaviour {
 ```
 
 # Reaction on component / filter changes
-There is special predefined helper-class - `EcsReactSystem`:
+## Process events from EcsFilter as stream
+`EcsReactSystem` class can be used for this case.
+
+> Important: this system not supported processing of `OnRemove` event.
+
 ```
 public sealed class TestReactSystem : EcsReactSystem {
     [EcsWorld]
@@ -181,7 +185,45 @@ public sealed class TestReactSystem : EcsReactSystem {
 }
 ```
 
-If custom reaction requires - events **OnEntityComponentAdded** / **OnEntityComponentRemoved** at `EcsWorld` instance and **OnEntityAdded** / **OnEntityRemoved** / **OnEntityUpdated** at `EcsFilter` instance can be used to add reaction on component / filter changes to any ecs-system.
+## Process events from EcsFilter immediately
+`EcsInstantReactSystem` class can be used for this case.
+
+Useful case for using this type of processing - reaction fro OnRemove event.
+
+```
+public sealed class TestReactInstantSystem : EcsReactInstantSystem {
+    [EcsWorld]
+    EcsWorld _world;
+
+    [EcsFilterInclude (typeof (WeaponComponent))]
+    EcsFilter _weaponFilter;
+
+    // Should returns filter that react system will watch for.
+    public override EcsFilter GetReactFilter () {
+        return _weaponFilter;
+    }
+
+    // On which event at filter this react-system should be alerted -
+    // "enity was removed from filter".
+    public override EcsReactSystemType GetReactSystemType () {
+        return EcsReactSystemType.OnRemove;
+    }
+
+    // EcsReactSystem is IEcsRunSystem and should provides additional info.
+    public override EcsRunSystemType GetRunSystemType () {
+        return EcsRunSystemType.Update;
+    }
+
+    // Entity processing, will be raised only when entity will be removed from filter.
+    public override void RunReact (int entity, int componentId) {
+        var weapon = _world.GetComponent<WeaponComponent> (entity, componentId);
+        Debug.LogFormat ("Weapon removed from {0}", entity);
+    }
+}
+```
+
+## Custom reaction
+Events `OnEntityComponentAdded` / `OnEntityComponentRemoved` at `EcsWorld` instance and `OnEntityAdded` / `OnEntityRemoved` / `OnEntityUpdated` at `EcsFilter` instance can be used to add reaction on component / filter changes to any ecs-system.
 
 > Not recommended if you dont understand how it works internally.
 
