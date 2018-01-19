@@ -302,7 +302,7 @@ namespace LeopotamGroup.Ecs {
             }
             if (i != -1) {
                 // already exists.
-                return pool.Items[link.ItemId] as T;
+                return (T) pool.Items[link.ItemId];
             }
 
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, componentId));
@@ -315,7 +315,7 @@ namespace LeopotamGroup.Ecs {
                 entityData.Components = newComponents;
             }
             entityData.Components[entityData.ComponentsCount++] = link;
-            return pool.Items[link.ItemId] as T;
+            return (T) pool.Items[link.ItemId];
         }
 
         /// <summary>
@@ -352,7 +352,7 @@ namespace LeopotamGroup.Ecs {
                     break;
                 }
             }
-            return i != -1 ? _componentPools[link.PoolId].Items[link.ItemId] as T : null;
+            return i != -1 ? (T) _componentPools[link.PoolId].Items[link.ItemId] : null;
         }
 
         /// <summary>
