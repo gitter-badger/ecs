@@ -16,7 +16,6 @@ namespace LeopotamGroup.Ecs.Internals {
             var worldType = world.GetType ();
             var systemType = system.GetType ();
             var ecsFilter = typeof (EcsFilter);
-            var ecsIndex = typeof (int);
             var attrEcsWorld = typeof (EcsWorldAttribute);
             var attrEcsFilterInclude = typeof (EcsFilterIncludeAttribute);
             var attrEcsFilterExclude = typeof (EcsFilterExcludeAttribute);
