@@ -32,13 +32,13 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
-        void OnEntityAdded (int entity, int componentId) {
+        void OnEntityAdded (int entity) {
             if (_entities.IndexOf (entity) == -1) {
                 _entities.Add (entity);
             }
         }
 
-        void OnEntityRemoved (int entity, int componentId) {
+        void OnEntityRemoved (int entity) {
             _entities.Remove (entity);
         }
 
@@ -82,7 +82,7 @@ namespace LeopotamGroup.Ecs {
 
         public abstract EcsReactSystemType GetReactSystemType ();
 
-        public abstract void RunReact (int entity, int componentId);
+        public abstract void RunReact (int entity);
 
         EcsFilter _reactFilter;
 

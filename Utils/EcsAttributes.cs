@@ -36,16 +36,4 @@ namespace LeopotamGroup.Ecs {
             Components = components;
         }
     }
-
-    /// <summary>
-    /// Processes injection to int field for component index of specified type.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Field)]
-    public sealed class EcsIndexAttribute : Attribute {
-        public readonly Type Component;
-
-        public EcsIndexAttribute (Type component) {
-            Component = component;
-        }
-    }
 }

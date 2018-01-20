@@ -66,7 +66,7 @@ class HealthSystem : IEcsRunSystem {
 ```
 
 # Data injection
-With `[EcsWorld]`, `[EcsFilterInclude(typeof(X))]`, `[EcsFilterExclude(typeof(X))]` and `[EcsIndex(typeof(X))]` attributes any compatible field of custom `IEcsSystem` class can be auto initialized (auto injected):
+With `[EcsWorld]`, `[EcsFilterInclude(typeof(X))]` and `[EcsFilterExclude(typeof(X))]` attributes any compatible field of custom `IEcsSystem` class can be auto initialized (auto injected):
 ```
 class HealthSystem : IEcsSystem {
     [EcsWorld]
@@ -74,9 +74,6 @@ class HealthSystem : IEcsSystem {
 
     [EcsFilterInclude(typeof(WeaponComponent))]
     EcsFilter _weaponFilter;
-
-    [EcsIndex(typeof(WeaponComponent))]
-    int _weaponId;
 }
 ```
 
@@ -215,8 +212,8 @@ public sealed class TestReactInstantSystem : EcsReactInstantSystem {
     }
 
     // Entity processing, will be raised only when entity will be removed from filter.
-    public override void RunReact (int entity, int componentId) {
-        var weapon = _world.GetComponent<WeaponComponent> (entity, componentId);
+    public override void RunReact (int entity) {
+        var weapon = _world.GetComponent<WeaponComponent> (entity);
         Debug.LogFormat ("Weapon removed from {0}", entity);
     }
 }
@@ -236,7 +233,6 @@ public sealed class TestSystem1 : IEcsInitSystem {
     EcsFilter _weaponFilter;
 
     void IEcsInitSystem.Initialize () {
-        _world.OnEntityComponentAdded += OnEntityComponentAdded;
         _weaponFilter.OnEntityAdded += OnFilterEntityAdded;
         _weaponFilter.OnEntityUpdated += OnFilterEntityUpdated;
 
@@ -251,16 +247,12 @@ public sealed class TestSystem1 : IEcsInitSystem {
         _weaponFilter.OnEntityUpdated -= OnFilterEntityUpdated;
     }
 
-    void OnEntityComponentAdded(int entityId, int componentId) {
-        // Component "componentId" was added to entity "entityId" - world event.
+    void OnFilterEntityAdded (int entity) {
+        // Entity "entityId" was added to _weaponFilter due to component "WeaponComponent" was added.
     }
 
-    void OnFilterEntityAdded (int entity, int componentId) {
-        // Entity "entityId" was added to _weaponFilter due to component "componentId" was added.
-    }
-
-    void OnFilterEntityUpdated(int entityId, int componentId) {
-        // Component "componentId" was updated inplace on entity "entityId".
+    void OnFilterEntityUpdated(int entityId) {
+        // Component "WeaponComponent" was updated inplace on entity "entityId".
     }
 }
 ```

@@ -20,7 +20,6 @@ namespace LeopotamGroup.Ecs.Internals {
             var attrEcsWorld = typeof (EcsWorldAttribute);
             var attrEcsFilterInclude = typeof (EcsFilterIncludeAttribute);
             var attrEcsFilterExclude = typeof (EcsFilterExcludeAttribute);
-            var attrEcsIndex = typeof (EcsIndexAttribute);
 
             foreach (var f in systemType.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)) {
                 // [EcsWorld]
@@ -36,7 +35,10 @@ namespace LeopotamGroup.Ecs.Internals {
                         includeMask = new EcsComponentMask ();
                         var components = ((EcsFilterIncludeAttribute) Attribute.GetCustomAttribute (f, attrEcsFilterInclude)).Components;
                         for (var i = 0; i < components.Length; i++) {
-                            includeMask.SetBit (world.GetComponentIndex (components[i]), true);
+                            var genType = typeof (EcsComponentPool<>).MakeGenericType (components[i]);
+                            var poolInstance = genType.GetField ("Instance").GetValue (null) as IEcsComponentPool;
+                            var bit = world.GetComponentPoolIndex (poolInstance);
+                            includeMask.SetBit (bit, true);
                         }
                     }
                     EcsComponentMask excludeMask = null;
@@ -45,7 +47,10 @@ namespace LeopotamGroup.Ecs.Internals {
                         excludeMask = new EcsComponentMask ();
                         var components = ((EcsFilterExcludeAttribute) Attribute.GetCustomAttribute (f, attrEcsFilterExclude)).Components;
                         for (var i = 0; i < components.Length; i++) {
-                            excludeMask.SetBit (world.GetComponentIndex (components[i]), true);
+                            var genType = typeof (EcsComponentPool<>).MakeGenericType (components[i]);
+                            var poolInstance = genType.GetField ("Instance").GetValue (null) as IEcsComponentPool;
+                            var bit = world.GetComponentPoolIndex (poolInstance);
+                            excludeMask.SetBit (bit, true);
                         }
                     }
 #if DEBUG && !ECS_PERF_TEST
@@ -65,12 +70,6 @@ namespace LeopotamGroup.Ecs.Internals {
                     if (standardFilterIncDefined) {
                         f.SetValue (system, world.GetFilter (includeMask, excludeMask ?? new EcsComponentMask ()));
                     }
-                }
-
-                // [EcsIndex]
-                if (f.FieldType == ecsIndex && !f.IsStatic && Attribute.IsDefined (f, attrEcsIndex)) {
-                    var component = ((EcsIndexAttribute) Attribute.GetCustomAttribute (f, attrEcsIndex)).Component;
-                    f.SetValue (system, world.GetComponentIndex (component));
                 }
             }
         }

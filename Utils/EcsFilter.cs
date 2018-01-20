@@ -29,28 +29,28 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Raises on entity added to filter.
         /// </summary>
-        public event OnEntityComponentChangeHandler OnEntityAdded = delegate { };
+        public event OnFilterChangeHandler OnEntityAdded = delegate { };
 
         /// <summary>
         /// Raises on entity removed from filter.
         /// </summary>
-        public event OnEntityComponentChangeHandler OnEntityRemoved = delegate { };
+        public event OnFilterChangeHandler OnEntityRemoved = delegate { };
 
         /// <summary>
         /// Raises on entity changed inplace.
         /// </summary>
-        public event OnEntityComponentChangeHandler OnEntityUpdated = delegate { };
+        public event OnFilterChangeHandler OnEntityUpdated = delegate { };
 
-        internal void RaiseOnEntityAdded (int entity, int componentId) {
-            OnEntityAdded (entity, componentId);
+        internal void RaiseOnEntityAdded (int entity) {
+            OnEntityAdded (entity);
         }
 
-        internal void RaiseOnEntityRemoved (int entity, int componentId) {
-            OnEntityRemoved (entity, componentId);
+        internal void RaiseOnEntityRemoved (int entity) {
+            OnEntityRemoved (entity);
         }
 
-        internal void RaiseOnEntityUpdated (int entity, int componentId) {
-            OnEntityUpdated (entity, componentId);
+        internal void RaiseOnEntityUpdated (int entity) {
+            OnEntityUpdated (entity);
         }
 
         internal EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {
