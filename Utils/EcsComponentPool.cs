@@ -7,13 +7,13 @@
 using System;
 
 namespace LeopotamGroup.Ecs.Internals {
-
     interface IEcsComponentPool {
         object GetItem (int idx);
         void RecycleIndex (int id);
         int GetComponentIndex ();
         void ConnectToWorld (EcsWorld world, int index);
     }
+
     /// <summary>
     /// Components pool container.
     /// </summary>
@@ -26,7 +26,7 @@ namespace LeopotamGroup.Ecs.Internals {
 
         public EcsWorld World;
 
-        static int[] _reservedItems = new int[8];
+        int[] _reservedItems = new int[8];
 
         int _itemsCount;
 
@@ -43,7 +43,7 @@ namespace LeopotamGroup.Ecs.Internals {
                     Array.Copy (Items, newItems, _itemsCount);
                     Items = newItems;
                 }
-                Items[_itemsCount++] = new T (); // Activator.CreateInstance (_type);
+                Items[_itemsCount++] = new T ();
             }
             return id;
         }
