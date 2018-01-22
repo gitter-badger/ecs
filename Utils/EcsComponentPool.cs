@@ -20,13 +20,13 @@ namespace LeopotamGroup.Ecs.Internals {
     sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
         public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
 
-        public T[] Items = new T[512];
+        public T[] Items = new T[8];
 
         public int TypeIndex = -1;
 
         public EcsWorld World;
 
-        static int[] _reservedItems = new int[256];
+        static int[] _reservedItems = new int[8];
 
         int _itemsCount;
 
@@ -72,8 +72,8 @@ namespace LeopotamGroup.Ecs.Internals {
             World = world;
             TypeIndex = index;
             if (World == null) {
-                Items = new T[512];
-                _reservedItems = new int[256];
+                Items = new T[8];
+                _reservedItems = new int[8];
                 _itemsCount = 0;
                 _reservedItemsCount = 0;
             }
