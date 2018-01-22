@@ -3,7 +3,7 @@
 # Another one Entity Component System framework
 Performance and zero memory allocation / no gc work / small size - main goals of this project.
 
-> **Its early work-in-progress stage, not recommended to use in real projects, any api / behaviour can change later.**
+> **This software in work-in-progress stage, api mostly stable.**
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
@@ -222,7 +222,7 @@ public sealed class TestReactInstantSystem : EcsReactInstantSystem {
 ## Custom reaction
 Events `OnEntityComponentAdded` / `OnEntityComponentRemoved` at `EcsWorld` instance and `OnEntityAdded` / `OnEntityRemoved` / `OnEntityUpdated` at `EcsFilter` instance can be used to add reaction on component / filter changes to any ecs-system.
 
-> Not recommended if you dont understand how it works internally.
+> **Not recommended if you dont understand how it works internally, this api / behaviour can be changed later.**
 
 ```
 public sealed class TestSystem1 : IEcsInitSystem {
