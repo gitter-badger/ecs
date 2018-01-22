@@ -57,9 +57,10 @@ namespace LeopotamGroup.Ecs {
             IncludeMask = include;
             ExcludeMask = exclude;
         }
-
+#if DEBUG && !ECS_PERF_TEST
         public override string ToString () {
             return string.Format ("Filter(+{0} -{1})", IncludeMask, ExcludeMask);
         }
+#endif
     }
 }

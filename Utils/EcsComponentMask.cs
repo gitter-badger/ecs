@@ -29,7 +29,7 @@ namespace LeopotamGroup.Ecs {
         public const int BitsCount = RawLength * RawItemSize;
 
         readonly ulong[] _raw = new ulong[RawLength];
-
+#if DEBUG && !ECS_PERF_TEST
         public override string ToString () {
             var str = "";
             for (int i = 0; i < RawLength; i++) {
@@ -37,6 +37,7 @@ namespace LeopotamGroup.Ecs {
             }
             return str;
         }
+#endif
 
         public void SetBit (int bitId, bool state) {
 #if DEBUG && !ECS_PERF_TEST

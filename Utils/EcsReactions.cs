@@ -53,9 +53,11 @@ namespace LeopotamGroup.Ecs {
                 case EcsReactSystemType.OnUpdate:
                     _reactFilter.OnEntityUpdated += OnEntityAdded;
                     break;
+#if DEBUG && !ECS_PERF_TEST
                 case EcsReactSystemType.OnRemove:
                     throw new System.NotSupportedException (
                         "OnRemove type not supported for delayed processing, use EcsReactInstantSystem instead.");
+#endif
             }
         }
 

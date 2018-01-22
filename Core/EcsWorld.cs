@@ -75,20 +75,23 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
 
+#if DEBUG && !ECS_PERF_TEST
         /// <summary>
         /// Is Initialize method was called?
         /// </summary>
         bool _inited;
+#endif
 
         /// <summary>
         /// Adds new system to processing.
         /// </summary>
         /// <param name="system">System instance.</param>
         public EcsWorld AddSystem (IEcsSystem system) {
+#if DEBUG && !ECS_PERF_TEST
             if (_inited) {
                 throw new Exception ("Already initialized, cant add new system.");
             }
-
+#endif
             EcsInjections.Inject (this, system);
 
             var preInitSystem = system as IEcsPreInitSystem;
@@ -119,11 +122,12 @@ namespace LeopotamGroup.Ecs {
         /// Closes registration for new external data, initialize all registered systems.
         /// </summary>
         public void Initialize () {
+#if DEBUG && !ECS_PERF_TEST
             if (_inited) {
                 throw new Exception ("Already initialized.");
             }
             _inited = true;
-
+#endif
             for (var i = 0; i < _preInitSystems.Count; i++) {
                 _preInitSystems[i].PreInitialize ();
                 ProcessDelayedUpdates ();
