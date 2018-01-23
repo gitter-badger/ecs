@@ -315,6 +315,26 @@ class Startup : Monobehaviour {
 }
 ```
 
+# Performance tips
+## Mass creation of new entities with new components (that still not created and pooled)
+In this case custom component creator can be used (for speed up 2x or more):
+
+```
+class MyComponent { }
+
+class Startup : Monobehaviour {
+    EcsWorld _world;
+
+    void OnEnable() {
+        _world = new MyWorld (_sharedData)
+            .RegisterComponentCreator<MyComponent> (() => new MyComponent());
+            .RegisterSystem (MySystem());
+        _world.Initialize();
+    }
+}
+```
+Reference to custom creator will be reset on `world.Destroy` call.
+
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)
 
