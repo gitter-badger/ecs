@@ -120,8 +120,8 @@ class Startup : MonoBehaviour {
     void OnEnable() {
         // create ecs environment.
         _world = new EcsWorld ()
-            .AddSystem(new WeaponSystem ());
-        _world.Initialize();
+            .RegisterSystem (new WeaponSystem ());
+        _world.Initialize ();
     }
     
     void Update() {
@@ -307,9 +307,9 @@ class Startup : Monobehaviour {
     MyWorld _world;
 
     void OnEnable() {
-        _world = new MyWorld(_sharedData)
-            .AddSystem(ChangePlayerName())
-            .AddSystem(SpawnPlayerModel());
+        _world = new MyWorld (_sharedData)
+            .RegisterSystem (ChangePlayerName())
+            .RegisterSystem (SpawnPlayerModel());
         _world.Initialize();
     }
 }

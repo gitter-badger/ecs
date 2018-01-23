@@ -86,10 +86,19 @@ namespace LeopotamGroup.Ecs {
         /// Adds new system to processing.
         /// </summary>
         /// <param name="system">System instance.</param>
+        [Obsolete ("Use RegisterSystem instead")]
         public EcsWorld AddSystem (IEcsSystem system) {
+            return RegisterSystem (system);
+        }
+
+        /// <summary>
+        /// Adds new system to processing.
+        /// </summary>
+        /// <param name="system">System instance.</param>
+        public EcsWorld RegisterSystem (IEcsSystem system) {
 #if DEBUG && !ECS_PERF_TEST
             if (_inited) {
-                throw new Exception ("Already initialized, cant add new system.");
+                throw new Exception ("Already initialized, cant register new system.");
             }
 #endif
             EcsInjections.Inject (this, system);
@@ -115,6 +124,25 @@ namespace LeopotamGroup.Ecs {
                         break;
                 }
             }
+            return this;
+        }
+
+        /// <summary>
+        /// Adds new system to processing.
+        /// </summary>
+        /// <param name="system">System instance.</param>
+        public EcsWorld RegisterComponentCreator<T> (Func<T> creator) where T : class, new () {
+#if DEBUG && !ECS_PERF_TEST
+            if (_inited) {
+                throw new Exception ("Already initialized, cant register new component creator.");
+            }
+#endif
+            var pool = EcsComponentPool<T>.Instance;
+            if (pool.World != this) {
+                pool.ConnectToWorld (this, _componentPools.Count);
+                _componentPools.Add (pool);
+            }
+            pool.SetCreator (creator);
             return this;
         }
 

@@ -32,6 +32,8 @@ namespace LeopotamGroup.Ecs.Internals {
 
         int _reservedItemsCount;
 
+        Func<T> _creator;
+
         public int GetIndex () {
             int id;
             if (_reservedItemsCount > 0) {
@@ -43,7 +45,7 @@ namespace LeopotamGroup.Ecs.Internals {
                     Array.Copy (Items, newItems, _itemsCount);
                     Items = newItems;
                 }
-                Items[_itemsCount++] = new T ();
+                Items[_itemsCount++] = _creator != null ? _creator () : (T) Activator.CreateInstance (typeof (T));
             }
             return id;
         }
@@ -78,7 +80,12 @@ namespace LeopotamGroup.Ecs.Internals {
                 _reservedItems = new int[8];
                 _itemsCount = 0;
                 _reservedItemsCount = 0;
+                _creator = null;
             }
+        }
+
+        public void SetCreator (Func<T> creator) {
+            _creator = creator;
         }
     }
 }
