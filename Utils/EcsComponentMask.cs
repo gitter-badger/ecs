@@ -29,7 +29,7 @@ namespace LeopotamGroup.Ecs {
         public const int BitsCount = RawLength * RawItemSize;
 
         readonly ulong[] _raw = new ulong[RawLength];
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
         public override string ToString () {
             var str = "";
             for (int i = 0; i < RawLength; i++) {
@@ -40,7 +40,7 @@ namespace LeopotamGroup.Ecs {
 #endif
 
         public void SetBit (int bitId, bool state) {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
 #endif
             if (state) {
@@ -60,7 +60,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         public bool GetBit (int bitId) {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
 #endif
             return (_raw[bitId / RawItemSize] & (1UL << (bitId % RawItemSize))) != 0;

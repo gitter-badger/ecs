@@ -75,7 +75,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
 
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
         /// <summary>
         /// Is Initialize method was called?
         /// </summary>
@@ -96,7 +96,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="system">System instance.</param>
         public EcsWorld RegisterSystem (IEcsSystem system) {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (_inited) {
                 throw new Exception ("Already initialized, cant register new system.");
             }
@@ -132,7 +132,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="system">System instance.</param>
         public EcsWorld RegisterComponentCreator<T> (Func<T> creator) where T : class, new () {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (_inited) {
                 throw new Exception ("Already initialized, cant register new component creator.");
             }
@@ -150,7 +150,7 @@ namespace LeopotamGroup.Ecs {
         /// Closes registration for new external data, initialize all registered systems.
         /// </summary>
         public void Initialize () {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (_inited) {
                 throw new Exception ("Already initialized.");
             }
@@ -202,7 +202,7 @@ namespace LeopotamGroup.Ecs {
         /// Processes all IEcsRunSystem systems with [EcsRunUpdate] attribute.
         /// </summary>
         public void RunUpdate () {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (!_inited) {
                 throw new Exception ("World not initialized.");
             }
@@ -217,7 +217,7 @@ namespace LeopotamGroup.Ecs {
         /// Processes all IEcsRunSystem systems with [EcsRunFixedUpdate] attribute.
         /// </summary>
         public void RunFixedUpdate () {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (!_inited) {
                 throw new Exception ("World not initialized.");
             }
@@ -232,7 +232,7 @@ namespace LeopotamGroup.Ecs {
         /// Creates new entity.
         /// </summary>
         public int CreateEntity () {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (!_inited) {
                 throw new Exception ("World not initialized.");
             }
@@ -260,7 +260,7 @@ namespace LeopotamGroup.Ecs {
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (!_inited) {
                 throw new Exception ("World not initialized.");
             }
@@ -485,7 +485,7 @@ namespace LeopotamGroup.Ecs {
         /// <param name="include">Component mask for required components.</param>
         /// <param name="include">Component mask for denied components.</param>
         internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (include == null) {
                 throw new ArgumentNullException ("include");
             }
@@ -550,7 +550,7 @@ namespace LeopotamGroup.Ecs {
                 var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
                 if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                     if (!isNewMaskCompatible) {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
                         if (filter.Entities.IndexOf (entity) == -1) {
                             throw new Exception (
                                 string.Format ("Something wrong - entity {0} should be in filter {1}, but not exits.", entity, filter));

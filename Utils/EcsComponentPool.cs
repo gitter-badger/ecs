@@ -68,7 +68,7 @@ namespace LeopotamGroup.Ecs.Internals {
         }
 
         public void ConnectToWorld (EcsWorld world, int index) {
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
             if (world != null && World != null) {
                 throw new Exception ("Already connected to another world.");
             }

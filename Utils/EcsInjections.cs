@@ -52,7 +52,7 @@ namespace LeopotamGroup.Ecs.Internals {
                             excludeMask.SetBit (bit, true);
                         }
                     }
-#if DEBUG && !ECS_PERF_TEST
+#if DEBUG
                     if (standardFilterIncDefined && includeMask.IsEmpty ()) {
                         throw new Exception ("Include filter cant be empty at system: " + systemType.Name);
                     }
