@@ -16,26 +16,6 @@ namespace LeopotamGroup.Ecs {
     /// </summary>
     public class EcsWorld {
         /// <summary>
-        /// Registered IEcsPreInitSystem systems.
-        /// </summary>
-        readonly List<IEcsPreInitSystem> _preInitSystems = new List<IEcsPreInitSystem> (16);
-
-        /// <summary>
-        /// Registered IEcsInitSystem systems.
-        /// </summary>
-        readonly List<IEcsInitSystem> _initSystems = new List<IEcsInitSystem> (32);
-
-        /// <summary>
-        /// Registered IEcsRunSystem systems with EcsRunSystemType.Update.
-        /// </summary>
-        readonly List<IEcsRunSystem> _runUpdateSystems = new List<IEcsRunSystem> (64);
-
-        /// <summary>
-        /// Registered IEcsRunSystem systems with EcsRunSystemType.FixedUpdate.
-        /// </summary>
-        readonly List<IEcsRunSystem> _runFixedUpdateSystems = new List<IEcsRunSystem> (32);
-
-        /// <summary>
         /// Component pools, just for correct cleanup behaviour on Destroy.
         /// </summary>
         readonly List<IEcsComponentPool> _componentPools = new List<IEcsComponentPool> (EcsComponentMask.BitsCount);
@@ -75,68 +55,11 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
 
-#if DEBUG
-        /// <summary>
-        /// Is Initialize method was called?
-        /// </summary>
-        bool _inited;
-#endif
-
-        /// <summary>
-        /// Adds new system to processing.
-        /// </summary>
-        /// <param name="system">System instance.</param>
-        [Obsolete ("Use RegisterSystem instead")]
-        public EcsWorld AddSystem (IEcsSystem system) {
-            return RegisterSystem (system);
-        }
-
-        /// <summary>
-        /// Adds new system to processing.
-        /// </summary>
-        /// <param name="system">System instance.</param>
-        public EcsWorld RegisterSystem (IEcsSystem system) {
-#if DEBUG
-            if (_inited) {
-                throw new Exception ("Already initialized, cant register new system.");
-            }
-#endif
-            EcsInjections.Inject (this, system);
-
-            var preInitSystem = system as IEcsPreInitSystem;
-            if (preInitSystem != null) {
-                _preInitSystems.Add (preInitSystem);
-            }
-
-            var initSystem = system as IEcsInitSystem;
-            if (initSystem != null) {
-                _initSystems.Add (initSystem);
-            }
-
-            var runSystem = system as IEcsRunSystem;
-            if (runSystem != null) {
-                switch (runSystem.GetRunSystemType ()) {
-                    case EcsRunSystemType.Update:
-                        _runUpdateSystems.Add (runSystem);
-                        break;
-                    case EcsRunSystemType.FixedUpdate:
-                        _runFixedUpdateSystems.Add (runSystem);
-                        break;
-                }
-            }
-            return this;
-        }
-
         /// <summary>
         /// Adds new system to processing.
         /// </summary>
         /// <param name="system">System instance.</param>
         public EcsWorld RegisterComponentCreator<T> (Func<T> creator) where T : class, new () {
-#if DEBUG
-            if (_inited) {
-                throw new Exception ("Already initialized, cant register new component creator.");
-            }
-#endif
             var pool = EcsComponentPool<T>.Instance;
             if (pool.World != this) {
                 pool.ConnectToWorld (this, _componentPools.Count);
@@ -147,96 +70,9 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Closes registration for new external data, initialize all registered systems.
-        /// </summary>
-        public void Initialize () {
-#if DEBUG
-            if (_inited) {
-                throw new Exception ("Already initialized.");
-            }
-            _inited = true;
-#endif
-            for (var i = 0; i < _preInitSystems.Count; i++) {
-                _preInitSystems[i].PreInitialize ();
-                ProcessDelayedUpdates ();
-            }
-            for (var i = 0; i < _initSystems.Count; i++) {
-                _initSystems[i].Initialize ();
-                ProcessDelayedUpdates ();
-            }
-        }
-
-        /// <summary>
-        /// Destroys all registered external data, full cleanup for internal data.
-        /// </summary>
-        public void Destroy () {
-            for (var i = 0; i < _entitiesCount; i++) {
-                RemoveEntity (i);
-            }
-            ProcessDelayedUpdates ();
-
-            for (var i = 0; i < _preInitSystems.Count; i++) {
-                _preInitSystems[i].PreDestroy ();
-            }
-            for (var i = 0; i < _initSystems.Count; i++) {
-                _initSystems[i].Destroy ();
-            }
-
-            _initSystems.Clear ();
-            _runUpdateSystems.Clear ();
-            _runFixedUpdateSystems.Clear ();
-            // _componentIds.Clear ();
-            _filters.Clear ();
-            _reservedEntitiesCount = 0;
-            for (var i = _componentPools.Count - 1; i >= 0; i--) {
-                _componentPools[i].ConnectToWorld (null, -1);
-            }
-            _componentPools.Clear ();
-            for (var i = _entitiesCount - 1; i >= 0; i--) {
-                _entities[i] = null;
-            }
-            _entitiesCount = 0;
-        }
-
-        /// <summary>
-        /// Processes all IEcsRunSystem systems with [EcsRunUpdate] attribute.
-        /// </summary>
-        public void RunUpdate () {
-#if DEBUG
-            if (!_inited) {
-                throw new Exception ("World not initialized.");
-            }
-#endif
-            for (var i = 0; i < _runUpdateSystems.Count; i++) {
-                _runUpdateSystems[i].Run ();
-                ProcessDelayedUpdates ();
-            }
-        }
-
-        /// <summary>
-        /// Processes all IEcsRunSystem systems with [EcsRunFixedUpdate] attribute.
-        /// </summary>
-        public void RunFixedUpdate () {
-#if DEBUG
-            if (!_inited) {
-                throw new Exception ("World not initialized.");
-            }
-#endif
-            for (var i = 0; i < _runFixedUpdateSystems.Count; i++) {
-                _runFixedUpdateSystems[i].Run ();
-                ProcessDelayedUpdates ();
-            }
-        }
-
-        /// <summary>
         /// Creates new entity.
         /// </summary>
         public int CreateEntity () {
-#if DEBUG
-            if (!_inited) {
-                throw new Exception ("World not initialized.");
-            }
-#endif
             int entity;
             if (_reservedEntitiesCount > 0) {
                 _reservedEntitiesCount--;
@@ -260,11 +96,6 @@ namespace LeopotamGroup.Ecs {
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
-#if DEBUG
-            if (!_inited) {
-                throw new Exception ("World not initialized.");
-            }
-#endif
             int entity;
             if (_reservedEntitiesCount > 0) {
                 _reservedEntitiesCount--;
@@ -389,9 +220,6 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public EcsWorldStats GetStats () {
             var stats = new EcsWorldStats () {
-                InitSystems = _initSystems.Count,
-                RunUpdateSystems = _runUpdateSystems.Count,
-                RunFixedUpdateSystems = _runFixedUpdateSystems.Count,
                 ActiveEntities = _entitiesCount - _reservedEntitiesCount,
                 ReservedEntities = _reservedEntitiesCount,
                 Filters = _filters.Count,
@@ -480,11 +308,30 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
+        /// Removes empty filters. Use carefully, all subscriptions must be removed before!
+        /// </summary>
+        public void RemoveEmptyFilters () {
+            for (var i = _filters.Count - 1; i >= 0; i--) {
+                if (_filters[i].Entities.Count == 0) {
+                    _filters.RemoveAt (i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes free space from cache, in-use items will be kept.
+        /// Useful for free memory when this component will not be used in quantity as before.
+        /// </summary>
+        public void ShrinkComponentPool<T> () where T : class, new () {
+            EcsComponentPool<T>.Instance.Shrink ();
+        }
+
+        /// <summary>
         /// Gets filter for specific components.
         /// </summary>
         /// <param name="include">Component mask for required components.</param>
         /// <param name="include">Component mask for denied components.</param>
-        internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
+        public EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
 #if DEBUG
             if (include == null) {
                 throw new ArgumentNullException ("include");
@@ -568,9 +415,9 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
-        [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 2)]
+        [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
         struct DelayedUpdate {
-            public enum Op : short {
+            public enum Op : byte {
                 RemoveEntity,
                 SafeRemoveEntity,
                 AddComponent,

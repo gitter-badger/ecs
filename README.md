@@ -112,32 +112,36 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 
 ## EcsWorld
-Root level container for all systems / entities / components, works like isolated environment:
+Root level container for all entities / components, works like isolated environment.
+
+## EcsSystems
+Group of systems to process `EcsWorld` instance:
 ```
 class Startup : MonoBehaviour {
-    EcsWorld _world;
+    EcsSystems _systems;
 
     void OnEnable() {
         // create ecs environment.
-        _world = new EcsWorld ()
-            .RegisterSystem (new WeaponSystem ());
-        _world.Initialize ();
+        var world = new EcsWorld ();
+        _systems = new EcsSystems(world)
+            .Add (new WeaponSystem ());
+        _systems.Initialize ();
     }
     
     void Update() {
         // process all dependent systems.
-        _world.RunUpdate ();
+        _systems.RunUpdate ();
     }
 
     void FixedUpdate() {
         // process all dependent systems.
-        _world.RunFixedUpdate ();
+        _systems.RunFixedUpdate ();
     }
 
     void OnDisable() {
         // destroy ecs environment.
-        _world.Destroy ();
-        _world = null;
+        _systems.Destroy ();
+        _systems = null;
     }
 }
 ```
@@ -304,13 +308,14 @@ class Startup : Monobehaviour {
     [SerializedField]
     MySharedData _sharedData;
 
-    MyWorld _world;
+    EcsSystems _systems;
 
     void OnEnable() {
-        _world = new MyWorld (_sharedData)
-            .RegisterSystem (ChangePlayerName())
-            .RegisterSystem (SpawnPlayerModel());
-        _world.Initialize();
+        var world = new MyWorld (_sharedData);
+        _systems = new EcsSystems(world)
+            .Add (ChangePlayerName())
+            .Add (SpawnPlayerModel());
+        _systems.Initialize();
     }
 }
 ```
@@ -323,13 +328,15 @@ In this case custom component creator can be used (for speed up 2x or more):
 class MyComponent { }
 
 class Startup : Monobehaviour {
-    EcsWorld _world;
+    EcsSystems _systems;
 
     void OnEnable() {
-        _world = new MyWorld (_sharedData)
-            .RegisterComponentCreator<MyComponent> (() => new MyComponent());
-            .RegisterSystem (MySystem());
-        _world.Initialize();
+        var world = new MyWorld (_sharedData);
+        world.RegisterComponentCreator<MyComponent> (() => new MyComponent());
+        
+        _systems = new EcsSystems(world)
+            .Add (MySystem());
+        _systems.Initialize();
     }
 }
 ```

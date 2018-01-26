@@ -20,13 +20,15 @@ namespace LeopotamGroup.Ecs.Internals {
     sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
         public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
 
-        public T[] Items = new T[8];
+        const int MinSize = 8;
+
+        public T[] Items = new T[MinSize];
 
         public int TypeIndex = -1;
 
         public EcsWorld World;
 
-        int[] _reservedItems = new int[8];
+        int[] _reservedItems = new int[MinSize];
 
         int _itemsCount;
 
@@ -76,8 +78,8 @@ namespace LeopotamGroup.Ecs.Internals {
             World = world;
             TypeIndex = index;
             if (World == null) {
-                Items = new T[8];
-                _reservedItems = new int[8];
+                Items = new T[MinSize];
+                _reservedItems = new int[MinSize];
                 _itemsCount = 0;
                 _reservedItemsCount = 0;
                 _creator = null;
@@ -86,6 +88,32 @@ namespace LeopotamGroup.Ecs.Internals {
 
         public void SetCreator (Func<T> creator) {
             _creator = creator;
+        }
+
+        public void Shrink () {
+            var newSize = GetPoolSize (_itemsCount);
+            if (newSize < Items.Length) {
+                var newItems = new T[newSize];
+                Array.Copy (Items, newItems, _itemsCount);
+                Items = newItems;
+            }
+            if (_reservedItems.Length > MinSize) {
+                _reservedItems = new int[MinSize];
+                _reservedItemsCount = 0;
+            }
+        }
+
+        int GetPoolSize (int n) {
+            if (n < MinSize) {
+                return MinSize;
+            }
+            n--;
+            n = n | (n >> 1);
+            n = n | (n >> 2);
+            n = n | (n >> 4);
+            n = n | (n >> 8);
+            n = n | (n >> 16);
+            return n + 1;
         }
     }
 }
