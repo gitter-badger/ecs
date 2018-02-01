@@ -35,6 +35,11 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         readonly List<IEcsRunSystem> _runFixedUpdateSystems = new List<IEcsRunSystem> (16);
 
+        /// <summary>
+        /// Registered IEcsRunSystem systems with EcsRunSystemType.LateUpdate.
+        /// </summary>
+        readonly List<IEcsRunSystem> _runLateUpdateSystems = new List<IEcsRunSystem> (16);
+
 #if DEBUG
         /// <summary>
         /// Is Initialize method was called?
@@ -82,6 +87,9 @@ namespace LeopotamGroup.Ecs {
                     case EcsRunSystemType.FixedUpdate:
                         _runFixedUpdateSystems.Add (runSystem);
                         break;
+                    case EcsRunSystemType.LateUpdate:
+                        _runLateUpdateSystems.Add (runSystem);
+                        break;
                 }
             }
             return this;
@@ -126,6 +134,7 @@ namespace LeopotamGroup.Ecs {
             _initSystems.Clear ();
             _runUpdateSystems.Clear ();
             _runFixedUpdateSystems.Clear ();
+            _runLateUpdateSystems.Clear ();
         }
 
         /// <summary>
@@ -154,6 +163,21 @@ namespace LeopotamGroup.Ecs {
 #endif
             for (var i = 0; i < _runFixedUpdateSystems.Count; i++) {
                 _runFixedUpdateSystems[i].Run ();
+                _world.ProcessDelayedUpdates ();
+            }
+        }
+
+        /// <summary>
+        /// Processes all IEcsRunSystem systems with EcsRunSystemType.LateUpdate type.
+        /// </summary>
+        public void RunLateUpdate () {
+#if DEBUG
+            if (!_inited) {
+                throw new Exception ("Group not initialized.");
+            }
+#endif
+            for (var i = 0; i < _runLateUpdateSystems.Count; i++) {
+                _runLateUpdateSystems[i].Run ();
                 _world.ProcessDelayedUpdates ();
             }
         }

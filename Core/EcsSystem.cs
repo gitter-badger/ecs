@@ -60,6 +60,7 @@ namespace LeopotamGroup.Ecs {
     /// </summary>
     public enum EcsRunSystemType {
         Update,
-        FixedUpdate
+        FixedUpdate,
+        LateUpdate
     }
 }
