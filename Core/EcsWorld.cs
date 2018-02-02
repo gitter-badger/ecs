@@ -124,7 +124,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Adds component to entity.
+        /// Adds component to entity. Will throw exception if component already exists.
         /// </summary>
         /// <param name="entity">Entity.</param>
         public T AddComponent<T> (int entity) where T : class, new () {
@@ -144,8 +144,7 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             if (itemId != -1) {
-                // already exists.
-                return pool.Items[itemId];
+                throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T).Name, entity));
             }
 
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool));
