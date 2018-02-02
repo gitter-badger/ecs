@@ -19,6 +19,7 @@ namespace LeopotamGroup.Ecs.Internals {
             var attrEcsWorld = typeof (EcsWorldAttribute);
             var attrEcsFilterInclude = typeof (EcsFilterIncludeAttribute);
             var attrEcsFilterExclude = typeof (EcsFilterExcludeAttribute);
+            var attrEcsFilterFill = typeof (EcsFilterFillAttribute);
 
             foreach (var f in systemType.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)) {
                 // [EcsWorld]
@@ -26,8 +27,8 @@ namespace LeopotamGroup.Ecs.Internals {
                     f.SetValue (system, world);
                 }
 
-                // [EcsFilterInclude]
                 if (f.FieldType == ecsFilter && !f.IsStatic) {
+                    // [EcsFilterInclude]
                     EcsComponentMask includeMask = null;
                     var standardFilterIncDefined = Attribute.IsDefined (f, attrEcsFilterInclude);
                     if (standardFilterIncDefined) {
@@ -40,6 +41,7 @@ namespace LeopotamGroup.Ecs.Internals {
                             includeMask.SetBit (bit, true);
                         }
                     }
+                    // [EcsFilterExclude]
                     EcsComponentMask excludeMask = null;
                     var standardFilterExcDefined = Attribute.IsDefined (f, attrEcsFilterExclude);
                     if (standardFilterExcDefined) {
@@ -67,7 +69,9 @@ namespace LeopotamGroup.Ecs.Internals {
                     }
 #endif
                     if (standardFilterIncDefined) {
-                        f.SetValue (system, world.GetFilter (includeMask, excludeMask ?? new EcsComponentMask ()));
+                        // [EcsFilterFill]
+                        var shouldBeFilled = Attribute.IsDefined (f, attrEcsFilterFill);
+                        f.SetValue (system, world.GetFilter (includeMask, excludeMask ?? new EcsComponentMask (), shouldBeFilled));
                     }
                 }
             }

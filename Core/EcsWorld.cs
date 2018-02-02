@@ -331,7 +331,8 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="include">Component mask for required components.</param>
         /// <param name="include">Component mask for denied components.</param>
-        public EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude) {
+        /// <param name="shouldBeFilled">New filter should be filled with compatible entities on creation.</param>
+        internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude, bool shouldBeFilled) {
 #if DEBUG
             if (include == null) {
                 throw new ArgumentNullException ("include");
@@ -348,11 +349,20 @@ namespace LeopotamGroup.Ecs {
             }
             if (i == -1) {
                 i = _filters.Count;
-                _filters.Add (new EcsFilter (include, exclude));
+                var filter = new EcsFilter (include, exclude);
+                if (shouldBeFilled) {
+                    FillFilter (filter);
+                }
+                _filters.Add (filter);
             }
             return _filters[i];
         }
 
+        /// <summary>
+        /// Returns component type index from connected pools list.
+        /// If instance not connected - process connection.
+        /// </summary>
+        /// <param name="poolInstance">Components pool.</param>
         internal int GetComponentPoolIndex (IEcsComponentPool poolInstance) {
             if (poolInstance == null) {
                 throw new ArgumentNullException ();
@@ -364,6 +374,19 @@ namespace LeopotamGroup.Ecs {
                 _componentPools.Add (poolInstance);
             }
             return idx;
+        }
+
+        /// <summary>
+        /// Fills filter with compatible entities.
+        /// </summary>
+        /// <param name="filter">Filter.</param>
+        void FillFilter (EcsFilter filter) {
+            for (var i = 0; i < _entitiesCount; i++) {
+                var entity = _entities[i];
+                if (!entity.IsReserved && entity.Mask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
+                    filter.Entities.Add (i);
+                }
+            }
         }
 
         /// <summary>
