@@ -191,7 +191,7 @@ public sealed class TestReactSystem : EcsReactSystem {
 ## Process events from EcsFilter immediately
 `EcsInstantReactSystem` class can be used for this case.
 
-Useful case for using this type of processing - reaction fro OnRemove event.
+Useful case for using this type of processing - reaction from OnRemove event.
 
 ```
 public sealed class TestReactInstantSystem : EcsReactInstantSystem {
@@ -226,12 +226,12 @@ public sealed class TestReactInstantSystem : EcsReactInstantSystem {
 ```
 
 ## Custom reaction
-Events `OnEntityComponentAdded` / `OnEntityComponentRemoved` at `EcsWorld` instance and `OnEntityAdded` / `OnEntityRemoved` / `OnEntityUpdated` at `EcsFilter` instance can be used to add reaction on component / filter changes to any ecs-system.
+For handling of filter events `custom class` should implements `IEcsFilterListener` interface with 3 methods: `OnFilterEntityAdded` / `OnFilterEntityRemoved` / `OnFilterEntityUpdated`. Then it can be added to any filter as compatible listener.
 
 > **Not recommended if you dont understand how it works internally, this api / behaviour can be changed later.**
 
 ```
-public sealed class TestSystem1 : IEcsInitSystem {
+public sealed class TestSystem1 : IEcsInitSystem, IEcsFilterListener {
     [EcsWorld]
     EcsWorld _world;
 
@@ -239,8 +239,7 @@ public sealed class TestSystem1 : IEcsInitSystem {
     EcsFilter _weaponFilter;
 
     void IEcsInitSystem.Initialize () {
-        _weaponFilter.OnEntityAdded += OnFilterEntityAdded;
-        _weaponFilter.OnEntityUpdated += OnFilterEntityUpdated;
+        _weaponFilter.AddListener(this);
 
         var entity = _world.CreateEntity ();
         _world.AddComponent<WeaponComponent> (entity);
@@ -248,21 +247,22 @@ public sealed class TestSystem1 : IEcsInitSystem {
     }
 
     void IEcsInitSystem.Destroy () {
-        _world.OnEntityComponentAdded -= OnEntityComponentAdded;
-        _weaponFilter.OnEntityAdded -= OnFilterEntityAdded;
-        _weaponFilter.OnEntityUpdated -= OnFilterEntityUpdated;
+        _weaponFilter.RemoveListener(this);
     }
 
-    void OnFilterEntityAdded (int entity) {
-        // Entity "entityId" was added to _weaponFilter due to component "WeaponComponent" was added.
+    void IEcsFilterListener.OnFilterEntityAdded (int entity) {
+        // Entity "entityId" was added to _weaponFilter due to component "WeaponComponent" was added to entity.
     }
 
-    void OnFilterEntityUpdated(int entityId) {
+    void IEcsFilterListener.OnFilterEntityUpdated(int entityId) {
         // Component "WeaponComponent" was updated inplace on entity "entityId".
+    }
+
+    void IEcsFilterListener.OnFilterEntityRemoved (int entity) {
+        // Entity "entityId" was removed from _weaponFilter due to component "WeaponComponent" was removed from entity.
     }
 }
 ```
-
 
 # Sharing data between systems
 If `EcsWorld` class should contains some shared fields (useful for sharing assets / prefabs), it can be implemented in this way:

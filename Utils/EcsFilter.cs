@@ -7,6 +7,18 @@
 using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
+    /// <summary>
+    /// Basic interface for filter events processing.
+    /// </summary>
+    public interface IEcsFilterListener {
+        void OnFilterEntityAdded (int entity);
+        void OnFilterEntityRemoved (int entity);
+        void OnFilterEntityUpdated (int entity);
+    }
+
+    /// <summary>
+    /// Container for filtered entities based on specified conditions.
+    /// </summary>
     public sealed class EcsFilter {
         /// <summary>
         /// Components mask for filtering entities with required components.
@@ -26,31 +38,53 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public readonly List<int> Entities = new List<int> (512);
 
-        /// <summary>
-        /// Raises on entity added to filter.
-        /// </summary>
-        public event OnFilterChangeHandler OnEntityAdded = delegate { };
+        readonly List<IEcsFilterListener> _listeners = new List<IEcsFilterListener> (4);
 
         /// <summary>
-        /// Raises on entity removed from filter.
+        /// Adds listener to events procesing.
         /// </summary>
-        public event OnFilterChangeHandler OnEntityRemoved = delegate { };
+        /// <param name="listener">External listener.</param>
+        public void AddListener (IEcsFilterListener listener) {
+#if DEBUG
+            if (listener == null) {
+                throw new System.ArgumentNullException ();
+            }
+            if (_listeners.Contains (listener)) {
+                throw new System.Exception ("Listener already added");
+            }
+#endif
+            _listeners.Add (listener);
+        }
 
         /// <summary>
-        /// Raises on entity changed inplace.
+        /// Removes listener from events procesing.
         /// </summary>
-        public event OnFilterChangeHandler OnEntityUpdated = delegate { };
+        /// <param name="listener">External listener.</param>
+        public void RemoveListener (IEcsFilterListener listener) {
+            if (listener != null) {
+                var idx = _listeners.IndexOf (listener);
+                if (idx != -1) {
+                    _listeners.RemoveAt (idx);
+                }
+            }
+        }
 
         internal void RaiseOnEntityAdded (int entity) {
-            OnEntityAdded (entity);
+            for (var i = 0; i < _listeners.Count; i++) {
+                _listeners[i].OnFilterEntityAdded (entity);
+            }
         }
 
         internal void RaiseOnEntityRemoved (int entity) {
-            OnEntityRemoved (entity);
+            for (var i = 0; i < _listeners.Count; i++) {
+                _listeners[i].OnFilterEntityRemoved (entity);
+            }
         }
 
         internal void RaiseOnEntityUpdated (int entity) {
-            OnEntityUpdated (entity);
+            for (var i = 0; i < _listeners.Count; i++) {
+                _listeners[i].OnFilterEntityUpdated (entity);
+            }
         }
 
         internal EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {
