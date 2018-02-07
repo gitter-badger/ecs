@@ -5,12 +5,10 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using LeopotamGroup.Ecs.Internals;
+using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
-    public delegate void OnFilterChangeHandler (int entity);
-
     /// <summary>
     /// Basic ecs world implementation.
     /// </summary>
@@ -173,6 +171,9 @@ namespace LeopotamGroup.Ecs {
         /// Gets component on entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public T GetComponent<T> (int entity) where T : class, new () {
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
@@ -194,6 +195,9 @@ namespace LeopotamGroup.Ecs {
         /// Updates component on entity - OnUpdated event will be raised on compatible filters.
         /// </summary>
         /// <param name="entity">Entity.</param>
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public void UpdateComponent<T> (int entity) where T : class, new () {
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, EcsComponentPool<T>.Instance));
         }
@@ -394,6 +398,9 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entityId">Entity Id.</param>
         /// <param name="entity">Entity.</param>
         /// <param name="componentId">Detaching component.</param>
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         void DetachComponent (int entityId, EcsEntity entity, IEcsComponentPool componentId) {
             ComponentLink link;
             for (var i = entity.ComponentsCount - 1; i >= 0; i--) {
@@ -413,6 +420,9 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entity">Entity.</param>
         /// <param name="oldMask">Old component state.</param>
         /// <param name="newMask">New component state.</param>
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
             for (var i = _filters.Count - 1; i >= 0; i--) {
                 var filter = _filters[i];

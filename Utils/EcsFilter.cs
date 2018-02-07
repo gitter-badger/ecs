@@ -69,18 +69,27 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         internal void RaiseOnEntityAdded (int entity) {
             for (var i = 0; i < _listeners.Count; i++) {
                 _listeners[i].OnFilterEntityAdded (entity);
             }
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         internal void RaiseOnEntityRemoved (int entity) {
             for (var i = 0; i < _listeners.Count; i++) {
                 _listeners[i].OnFilterEntityRemoved (entity);
             }
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         internal void RaiseOnEntityUpdated (int entity) {
             for (var i = 0; i < _listeners.Count; i++) {
                 _listeners[i].OnFilterEntityUpdated (entity);
