@@ -348,6 +348,8 @@ Reference to custom creator will be reset on `world.Destroy` call.
 [Snake game](https://github.com/Leopotam/ecs-snake)
 
 # Extensions
+[UnityEditor integration](https://github.com/Leopotam/ecs-unityintegration)
+
 [uGui event bindings](https://github.com/Leopotam/ecs-ui)
 
 # License
