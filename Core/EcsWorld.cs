@@ -24,8 +24,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of all event listeners.
         /// </summary>
-        /// <returns></returns>
-        readonly List<IEcsWorldListener> _listeners = new List<IEcsWorldListener> (16);
+        readonly List<IEcsWorldListener> _listeners = new List<IEcsWorldListener> (4);
 
         /// <summary>
         /// Amount of event listeners.
