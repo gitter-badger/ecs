@@ -25,10 +25,5 @@ namespace LeopotamGroup.Ecs {
         /// Amount of registered component types.
         /// </summary>
         public int Components;
-
-        /// <summary>
-        /// Current amount of delayed updates.
-        /// </summary>
-        public int DelayedUpdates;
     }
 }
