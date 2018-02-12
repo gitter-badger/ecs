@@ -9,28 +9,22 @@ using LeopotamGroup.Ecs.Internals;
 using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
+#if DEBUG
     /// <summary>
-    /// Basic interface for world events processing.
+    /// Debug interface for world events processing.
     /// </summary>
-    public interface IEcsWorldListener {
+    public interface IEcsWorldDebugListener {
         void OnEntityCreated (int entity);
         void OnEntityRemoved (int entity);
+        void OnComponentAdded (int entity, object component);
+        void OnComponentRemoved (int entity, object component);
     }
+#endif
 
     /// <summary>
     /// Basic ecs world implementation.
     /// </summary>
     public class EcsWorld {
-        /// <summary>
-        /// List of all event listeners.
-        /// </summary>
-        readonly List<IEcsWorldListener> _listeners = new List<IEcsWorldListener> (4);
-
-        /// <summary>
-        /// Amount of event listeners.
-        /// </summary>
-        int _listenersCount;
-
         /// <summary>
         /// Component pools, just for correct cleanup behaviour on Destroy.
         /// </summary>
@@ -71,28 +65,31 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
 
+#if DEBUG
+        /// <summary>
+        /// List of all debug listeners.
+        /// </summary>
+        readonly List<IEcsWorldDebugListener> _debugListeners = new List<IEcsWorldDebugListener> (4);
+
         /// <summary>
         /// Adds external event listener.
         /// </summary>
         /// <param name="observer">Event listener.</param>
-        public void AddEventListener (IEcsWorldListener observer) {
-#if DEBUG
-            if (_listeners.Contains (observer)) {
+        public void AddDebugListener (IEcsWorldDebugListener observer) {
+            if (_debugListeners.Contains (observer)) {
                 throw new Exception ("Listener already exists");
             }
-#endif
-            _listeners.Add (observer);
-            _listenersCount = _listeners.Count;
+            _debugListeners.Add (observer);
         }
 
         /// <summary>
         /// Removes external event listener.
         /// </summary>
         /// <param name="observer">Event listener.</param>
-        public void RemoveEventListener (IEcsWorldListener observer) {
-            _listeners.Remove (observer);
-            _listenersCount = _listeners.Count;
+        public void RemoveDebugListener (IEcsWorldDebugListener observer) {
+            _debugListeners.Remove (observer);
         }
+#endif
 
         /// <summary>
         /// Adds new system to processing.
@@ -127,11 +124,11 @@ namespace LeopotamGroup.Ecs {
                 _entities[_entitiesCount++] = new EcsEntity ();
             }
             _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null));
-
-            for (var ii = 0; ii < _listenersCount; ii++) {
-                _listeners[ii].OnEntityCreated (entity);
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnEntityCreated (entity);
             }
-
+#endif
             return entity;
         }
 
@@ -188,6 +185,12 @@ namespace LeopotamGroup.Ecs {
                 entityData.Components = newComponents;
             }
             entityData.Components[entityData.ComponentsCount++] = link;
+#if DEBUG
+            var component = pool.Items[link.ItemId];
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, component);
+            }
+#endif
             return pool.Items[link.ItemId];
         }
 
@@ -294,10 +297,11 @@ namespace LeopotamGroup.Ecs {
                             _reservedEntities = newEntities;
                         }
                         _reservedEntities[_reservedEntitiesCount++] = op.Entity;
-
-                        for (var ii = 0; ii < _listenersCount; ii++) {
-                            _listeners[ii].OnEntityRemoved (op.Entity);
+#if DEBUG
+                        for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                            _debugListeners[ii].OnEntityRemoved (op.Entity);
                         }
+#endif
                         break;
                     case DelayedUpdate.Op.SafeRemoveEntity:
                         if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
@@ -308,10 +312,11 @@ namespace LeopotamGroup.Ecs {
                                 _reservedEntities = newEntities;
                             }
                             _reservedEntities[_reservedEntitiesCount++] = op.Entity;
-
-                            for (var ii = 0; ii < _listenersCount; ii++) {
-                                _listeners[ii].OnEntityRemoved (op.Entity);
+#if DEBUG
+                            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                                _debugListeners[ii].OnEntityRemoved (op.Entity);
                             }
+#endif
                         }
                         break;
                     case DelayedUpdate.Op.AddComponent:
@@ -453,6 +458,12 @@ namespace LeopotamGroup.Ecs {
                 if (link.Pool == componentId) {
                     entity.ComponentsCount--;
                     Array.Copy (entity.Components, i + 1, entity.Components, i, entity.ComponentsCount - i);
+#if DEBUG
+                    var component = componentId.GetItem (link.ItemId);
+                    for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                        _debugListeners[ii].OnComponentRemoved (entityId, component);
+                    }
+#endif
                     componentId.RecycleIndex (link.ItemId);
                     return;
                 }

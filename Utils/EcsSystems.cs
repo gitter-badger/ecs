@@ -9,31 +9,35 @@ using LeopotamGroup.Ecs.Internals;
 using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
+#if DEBUG
     /// <summary>
-    /// Basic interface for systems events processing.
+    /// Debug interface for systems events processing.
     /// </summary>
-    public interface IEcsSystemsListener {
+    public interface IEcsSystemsDebugListener {
         void OnSystemsDestroyed ();
     }
+#endif
 
     /// <summary>
     /// Logical group of systems.
     /// </summary>
     public sealed class EcsSystems {
+#if DEBUG
         /// <summary>
-        /// Should RunUpdate / RunFixedUpdate / RunLateUpdate calls be processed or not.
+        /// Temporary disable RunUpdate / RunFixedUpdate / RunLateUpdate calls for debug reason.
         /// </summary>
-        public bool IsActive = true;
+        public bool IsRunActive = true;
+
+        /// <summary>
+        /// List of all debug listeners.
+        /// </summary>
+        readonly List<IEcsSystemsDebugListener> _debugListeners = new List<IEcsSystemsDebugListener> (4);
+#endif
 
         /// <summary>
         /// Ecs world instance.
         /// </summary>
         readonly EcsWorld _world;
-
-        /// <summary>
-        /// List of all event listeners.
-        /// </summary>
-        readonly List<IEcsSystemsListener> _listeners = new List<IEcsSystemsListener> (4);
 
         /// <summary>
         /// Registered IEcsPreInitSystem systems.
@@ -76,26 +80,26 @@ namespace LeopotamGroup.Ecs {
             _world = world;
         }
 
+#if DEBUG
         /// <summary>
         /// Adds external event listener.
         /// </summary>
         /// <param name="observer">Event listener.</param>
-        public void AddEventListener (IEcsSystemsListener observer) {
-#if DEBUG
-            if (_listeners.Contains (observer)) {
+        public void AddDebugListener (IEcsSystemsDebugListener observer) {
+            if (_debugListeners.Contains (observer)) {
                 throw new Exception ("Listener already exists");
             }
-#endif
-            _listeners.Add (observer);
+            _debugListeners.Add (observer);
         }
 
         /// <summary>
         /// Removes external event listener.
         /// </summary>
         /// <param name="observer">Event listener.</param>
-        public void RemoveEventListener (IEcsSystemsListener observer) {
-            _listeners.Remove (observer);
+        public void RemoveDebugListener (IEcsSystemsDebugListener observer) {
+            _debugListeners.Remove (observer);
         }
+#endif
 
         /// <summary>
         /// Gets all pre-init systems.
@@ -208,11 +212,11 @@ namespace LeopotamGroup.Ecs {
             if (!_inited) {
                 throw new Exception ("Group not initialized.");
             }
-#endif
-
-            for (var i = _listeners.Count - 1; i >= 0; i--) {
-                _listeners[i].OnSystemsDestroyed ();
+            for (var i = _debugListeners.Count - 1; i >= 0; i--) {
+                _debugListeners[i].OnSystemsDestroyed ();
             }
+            _debugListeners.Clear ();
+#endif
 
             for (var i = 0; i < _initSystems.Count; i++) {
                 _initSystems[i].Destroy ();
@@ -221,7 +225,6 @@ namespace LeopotamGroup.Ecs {
                 _preInitSystems[i].PreDestroy ();
             }
 
-            _listeners.Clear ();
             _initSystems.Clear ();
             _runUpdateSystems.Clear ();
             _runFixedUpdateSystems.Clear ();
@@ -236,12 +239,11 @@ namespace LeopotamGroup.Ecs {
             if (!_inited) {
                 throw new Exception ("Group not initialized.");
             }
+            if (!IsRunActive) { return; }
 #endif
-            if (IsActive) {
-                for (var i = 0; i < _runUpdateSystems.Count; i++) {
-                    _runUpdateSystems[i].Run ();
-                    _world.ProcessDelayedUpdates ();
-                }
+            for (var i = 0; i < _runUpdateSystems.Count; i++) {
+                _runUpdateSystems[i].Run ();
+                _world.ProcessDelayedUpdates ();
             }
         }
 
@@ -253,12 +255,11 @@ namespace LeopotamGroup.Ecs {
             if (!_inited) {
                 throw new Exception ("Group not initialized.");
             }
+            if (!IsRunActive) { return; }
 #endif
-            if (IsActive) {
-                for (var i = 0; i < _runFixedUpdateSystems.Count; i++) {
-                    _runFixedUpdateSystems[i].Run ();
-                    _world.ProcessDelayedUpdates ();
-                }
+            for (var i = 0; i < _runFixedUpdateSystems.Count; i++) {
+                _runFixedUpdateSystems[i].Run ();
+                _world.ProcessDelayedUpdates ();
             }
         }
 
@@ -270,12 +271,11 @@ namespace LeopotamGroup.Ecs {
             if (!_inited) {
                 throw new Exception ("Group not initialized.");
             }
+            if (!IsRunActive) { return; }
 #endif
-            if (IsActive) {
-                for (var i = 0; i < _runLateUpdateSystems.Count; i++) {
-                    _runLateUpdateSystems[i].Run ();
-                    _world.ProcessDelayedUpdates ();
-                }
+            for (var i = 0; i < _runLateUpdateSystems.Count; i++) {
+                _runLateUpdateSystems[i].Run ();
+                _world.ProcessDelayedUpdates ();
             }
         }
     }
