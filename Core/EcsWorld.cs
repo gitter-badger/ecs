@@ -109,27 +109,7 @@ namespace LeopotamGroup.Ecs {
         /// Creates new entity.
         /// </summary>
         public int CreateEntity () {
-            int entity;
-            if (_reservedEntitiesCount > 0) {
-                _reservedEntitiesCount--;
-                entity = _reservedEntities[_reservedEntitiesCount];
-                _entities[entity].IsReserved = false;
-            } else {
-                entity = _entitiesCount;
-                if (_entitiesCount == _entities.Length) {
-                    var newEntities = new EcsEntity[_entitiesCount << 1];
-                    Array.Copy (_entities, newEntities, _entitiesCount);
-                    _entities = newEntities;
-                }
-                _entities[_entitiesCount++] = new EcsEntity ();
-            }
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null));
-#if DEBUG
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                _debugListeners[ii].OnEntityCreated (entity);
-            }
-#endif
-            return entity;
+            return CreateEntityInternal (true);
         }
 
         /// <summary>
@@ -137,7 +117,7 @@ namespace LeopotamGroup.Ecs {
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
-            return AddComponent<T> (CreateEntity ());
+            return AddComponent<T> (CreateEntityInternal (false));
         }
 
         /// <summary>
@@ -146,7 +126,7 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entity">Entity.</param>
         public void RemoveEntity (int entity) {
             if (!_entities[entity].IsReserved) {
-                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveEntity, entity, null));
+                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveEntity, entity, null, -1));
             }
         }
 
@@ -161,30 +141,26 @@ namespace LeopotamGroup.Ecs {
                 pool.ConnectToWorld (this, _componentPools.Count);
                 _componentPools.Add (pool);
             }
-
-            var itemId = -1;
+#if DEBUG
             var i = entityData.ComponentsCount - 1;
             for (; i >= 0; i--) {
                 if (entityData.Components[i].Pool == pool) {
-                    itemId = entityData.Components[i].ItemId;
                     break;
                 }
             }
-            if (itemId != -1) {
+            if (i != -1) {
                 throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T).Name, entity));
             }
-
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool));
-
-            ComponentLink link;
-            link.Pool = pool;
-            link.ItemId = pool.GetIndex ();
+#endif
+            var link = new ComponentLink (pool, pool.GetIndex ());
             if (entityData.ComponentsCount == entityData.Components.Length) {
                 var newComponents = new ComponentLink[entityData.ComponentsCount << 1];
                 Array.Copy (entityData.Components, newComponents, entityData.ComponentsCount);
                 entityData.Components = newComponents;
             }
             entityData.Components[entityData.ComponentsCount++] = link;
+
+            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId));
 #if DEBUG
             var component = pool.Items[link.ItemId];
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
@@ -199,7 +175,30 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         public void RemoveComponent<T> (int entity) where T : class, new () {
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, EcsComponentPool<T>.Instance));
+            var entityData = _entities[entity];
+            var pool = EcsComponentPool<T>.Instance;
+#if DEBUG
+            if (pool.World != this) {
+                throw new Exception (string.Format ("Component pool of {0} type not connected to world", typeof (T).Name));
+            }
+#endif
+            ComponentLink link;
+            link.ItemId = -1;
+            var i = entityData.ComponentsCount - 1;
+            for (; i >= 0; i--) {
+                link = entityData.Components[i];
+                if (link.Pool == pool) {
+                    break;
+                }
+            }
+#if DEBUG
+            if (i == -1) {
+                throw new Exception (string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
+            }
+#endif
+            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, pool, link.ItemId));
+            entityData.ComponentsCount--;
+            Array.Copy (entityData.Components, i + 1, entityData.Components, i, entityData.ComponentsCount - i);
         }
 
         /// <summary>
@@ -213,9 +212,7 @@ namespace LeopotamGroup.Ecs {
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
             ComponentLink link;
-            // direct initialization - faster than constructor call.
             link.ItemId = -1;
-
             var i = entityData.ComponentsCount - 1;
             for (; i >= 0; i--) {
                 link = entityData.Components[i];
@@ -234,7 +231,23 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void UpdateComponent<T> (int entity) where T : class, new () {
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, EcsComponentPool<T>.Instance));
+#if DEBUG
+            var entityData = _entities[entity];
+            var pool = EcsComponentPool<T>.Instance;
+            ComponentLink link;
+            link.ItemId = -1;
+            var i = entityData.ComponentsCount - 1;
+            for (; i >= 0; i--) {
+                link = entityData.Components[i];
+                if (link.Pool == pool) {
+                    break;
+                }
+            }
+            if (i == -1) {
+                throw new Exception (string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
+            }
+#endif
+            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, null, -1));
         }
 
         /// <summary>
@@ -286,41 +299,26 @@ namespace LeopotamGroup.Ecs {
                             var link = entityData.Components[entityData.ComponentsCount - 1];
                             var componentId = link.Pool.GetComponentIndex ();
                             entityData.Mask.SetBit (componentId, false);
-                            DetachComponent (op.Entity, entityData, link.Pool);
+#if DEBUG
+                            var componentToRemove = link.Pool.GetItem (link.ItemId);
+                            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                                _debugListeners[ii].OnComponentRemoved (op.Entity, componentToRemove);
+                            }
+#endif
+                            link.Pool.RecycleIndex (link.ItemId);
                             UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
                             _delayedOpMask.SetBit (componentId, false);
+                            entityData.ComponentsCount--;
                         }
-                        entityData.IsReserved = true;
-                        if (_reservedEntitiesCount == _reservedEntities.Length) {
-                            var newEntities = new int[_reservedEntitiesCount << 1];
-                            Array.Copy (_reservedEntities, newEntities, _reservedEntitiesCount);
-                            _reservedEntities = newEntities;
-                        }
-                        _reservedEntities[_reservedEntitiesCount++] = op.Entity;
-#if DEBUG
-                        for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                            _debugListeners[ii].OnEntityRemoved (op.Entity);
-                        }
-#endif
+                        ReserveEntity (op.Entity, entityData);
                         break;
                     case DelayedUpdate.Op.SafeRemoveEntity:
                         if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
-                            entityData.IsReserved = true;
-                            if (_reservedEntitiesCount == _reservedEntities.Length) {
-                                var newEntities = new int[_reservedEntitiesCount << 1];
-                                Array.Copy (_reservedEntities, newEntities, _reservedEntitiesCount);
-                                _reservedEntities = newEntities;
-                            }
-                            _reservedEntities[_reservedEntitiesCount++] = op.Entity;
-#if DEBUG
-                            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                                _debugListeners[ii].OnEntityRemoved (op.Entity);
-                            }
-#endif
+                            ReserveEntity (op.Entity, entityData);
                         }
                         break;
                     case DelayedUpdate.Op.AddComponent:
-                        var bit = op.Component.GetComponentIndex ();
+                        var bit = op.Pool.GetComponentIndex ();
 #if DEBUG
                         if (entityData.Mask.GetBit (bit)) {
                             throw new Exception (string.Format ("Cant add component on entity {0}, already marked as added in mask", op.Entity));
@@ -330,14 +328,21 @@ namespace LeopotamGroup.Ecs {
                         UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
                         break;
                     case DelayedUpdate.Op.RemoveComponent:
-                        var bitRemove = op.Component.GetComponentIndex ();
-                        if (entityData.Mask.GetBit (bitRemove)) {
-                            entityData.Mask.SetBit (bitRemove, false);
-                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
-                            DetachComponent (op.Entity, entityData, op.Component);
-                            if (entityData.ComponentsCount == 0) {
-                                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null));
-                            }
+                        var bitRemove = op.Pool.GetComponentIndex ();
+#if DEBUG
+                        if (!entityData.Mask.GetBit (bitRemove)) {
+                            throw new Exception (string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity));
+                        }
+                        var componentInstance = op.Pool.GetItem (op.ComponentId);
+                        for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                            _debugListeners[ii].OnComponentRemoved (op.Entity, componentInstance);
+                        }
+#endif
+                        entityData.Mask.SetBit (bitRemove, false);
+                        UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                        op.Pool.RecycleIndex (op.ComponentId);
+                        if (entityData.ComponentsCount == 0) {
+                            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1));
                         }
                         break;
                     case DelayedUpdate.Op.UpdateComponent:
@@ -430,6 +435,56 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
+        /// Create entity with support of re-using reserved instances.
+        /// </summary>
+        /// <param name="addSafeRemove">Add delayed command for proper removing entities without components.</param>
+        int CreateEntityInternal (bool addSafeRemove) {
+            int entity;
+            if (_reservedEntitiesCount > 0) {
+                _reservedEntitiesCount--;
+                entity = _reservedEntities[_reservedEntitiesCount];
+                _entities[entity].IsReserved = false;
+            } else {
+                entity = _entitiesCount;
+                if (_entitiesCount == _entities.Length) {
+                    var newEntities = new EcsEntity[_entitiesCount << 1];
+                    Array.Copy (_entities, newEntities, _entitiesCount);
+                    _entities = newEntities;
+                }
+                _entities[_entitiesCount++] = new EcsEntity ();
+            }
+            if (addSafeRemove) {
+                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null, -1));
+            }
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnEntityCreated (entity);
+            }
+#endif
+            return entity;
+        }
+
+        /// <summary>
+        /// Puts entity to pool (reserved list) to reuse later.
+        /// </summary>
+        /// <param name="entity">Entity Id.</param>
+        /// <param name="entityData">EcsEntity instance.</param>
+        void ReserveEntity (int entity, EcsEntity entityData) {
+            entityData.IsReserved = true;
+            if (_reservedEntitiesCount == _reservedEntities.Length) {
+                var newEntities = new int[_reservedEntitiesCount << 1];
+                Array.Copy (_reservedEntities, newEntities, _reservedEntitiesCount);
+                _reservedEntities = newEntities;
+            }
+            _reservedEntities[_reservedEntitiesCount++] = entity;
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnEntityRemoved (entity);
+            }
+#endif
+        }
+
+        /// <summary>
         /// Fills filter with compatible entities.
         /// </summary>
         /// <param name="filter">Filter.</param>
@@ -438,34 +493,6 @@ namespace LeopotamGroup.Ecs {
                 var entity = _entities[i];
                 if (!entity.IsReserved && entity.Mask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                     filter.Entities.Add (i);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Detaches component from entity and raise OnComponentDetach event.
-        /// </summary>
-        /// <param name="entityId">Entity Id.</param>
-        /// <param name="entity">Entity.</param>
-        /// <param name="componentId">Detaching component.</param>
-#if NET_4_6
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        void DetachComponent (int entityId, EcsEntity entity, IEcsComponentPool componentId) {
-            ComponentLink link;
-            for (var i = entity.ComponentsCount - 1; i >= 0; i--) {
-                link = entity.Components[i];
-                if (link.Pool == componentId) {
-                    entity.ComponentsCount--;
-                    Array.Copy (entity.Components, i + 1, entity.Components, i, entity.ComponentsCount - i);
-#if DEBUG
-                    var component = componentId.GetItem (link.ItemId);
-                    for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                        _debugListeners[ii].OnComponentRemoved (entityId, component);
-                    }
-#endif
-                    componentId.RecycleIndex (link.ItemId);
-                    return;
                 }
             }
         }
@@ -514,18 +541,25 @@ namespace LeopotamGroup.Ecs {
             }
             public Op Type;
             public int Entity;
-            public IEcsComponentPool Component;
+            public IEcsComponentPool Pool;
+            public int ComponentId;
 
-            public DelayedUpdate (Op type, int entity, IEcsComponentPool component) {
+            public DelayedUpdate (Op type, int entity, IEcsComponentPool component, int componentId) {
                 Type = type;
                 Entity = entity;
-                Component = component;
+                Pool = component;
+                ComponentId = componentId;
             }
         }
 
         struct ComponentLink {
             public IEcsComponentPool Pool;
             public int ItemId;
+
+            public ComponentLink (IEcsComponentPool pool, int itemId) {
+                Pool = pool;
+                ItemId = itemId;
+            }
         }
 
         sealed class EcsEntity {
