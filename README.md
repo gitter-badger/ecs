@@ -53,14 +53,8 @@ class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem {
 
 ```
 class HealthSystem : IEcsRunSystem {
-    EcsRunSystemType IEcsRunSystem.GetRunSystemType () {
-        // Should returns type of run system,
-        // when Run method will be called - Update() or FixedUpdate.
-        return EcsRunSystemType.Update;
-    }
-
     void IEcsRunSystem.Run () {
-        // Will be called each FixedUpdate().
+        // Will be called on each EcsSystems.Run() call.
     }
 }
 ```
@@ -100,10 +94,6 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 
     void IEcsInitSystem.Destroy () { }
 
-    EcsRunSystemType IEcsRunSystem.GetRunSystemType () {
-        return EcsRunSystemType.Update;
-    }
-
     void IEcsRunSystem.Run () {
         foreach (var entity in _filter.Entities) {
             var weapon = _world.GetComponent<WeaponComponent> (entity);
@@ -132,18 +122,12 @@ class Startup : MonoBehaviour {
     
     void Update() {
         // process all dependent systems.
-        _systems.RunUpdate ();
-    }
-
-    void FixedUpdate() {
-        // process all dependent systems.
-        _systems.RunFixedUpdate ();
+        _systems.Run ();
     }
 
     void OnDisable() {
-        // destroy ecs environment.
+        // destroy systems logical group.
         _systems.Destroy ();
-        _systems = null;
     }
 }
 ```
@@ -171,11 +155,6 @@ public sealed class TestReactSystem : EcsReactSystem {
     // "new entity in filter" or "entity inplace update".
     public override EcsReactSystemType GetReactSystemType () {
         return EcsReactSystemType.OnUpdate;
-    }
-
-    // EcsReactSystem is IEcsRunSystem and should provides additional info.
-    public override EcsRunSystemType GetRunSystemType () {
-        return EcsRunSystemType.Update;
     }
 
     // Filtered entities processing, will be raised only if entities presents.
@@ -210,11 +189,6 @@ public sealed class TestReactInstantSystem : EcsReactInstantSystem {
     // "enity was removed from filter".
     public override EcsReactSystemType GetReactSystemType () {
         return EcsReactSystemType.OnRemove;
-    }
-
-    // EcsReactSystem is IEcsRunSystem and should provides additional info.
-    public override EcsRunSystemType GetRunSystemType () {
-        return EcsRunSystemType.Update;
     }
 
     // Entity processing, will be raised only when entity will be removed from filter.
@@ -322,8 +296,9 @@ class Startup : Monobehaviour {
 }
 ```
 
-# Performance tips
-## Mass creation of new entities with new components (that still not created and pooled)
+# Limitations
+## I want to create alot of new entities with new components on start, how to speed up this process?
+
 In this case custom component creator can be used (for speed up 2x or more):
 
 ```
@@ -343,6 +318,28 @@ class Startup : Monobehaviour {
 }
 ```
 Reference to custom creator will be reset on `world.Destroy` call.
+
+## I want to process one system at `MonoBehaviour.Update` and another - at `MonoBehaviour.FixedUpdate`. How I can do it?
+
+For splitting systems by `MonoBehaviour`-method multiple `EcsSystems` logical groups should be used:
+```
+EcsSystems _update;
+EcsSystems _fixedUpdate;
+
+void OnEnable() {
+    var world = new EcsWorld();
+    _update = new EcsSystems(world).Add(new UpdateSystem());
+    _fixedUpdate = new EcsSystems(world).Add(new FixedUpdateSystem());
+}
+
+void Update() {
+    _update.Run();
+}
+
+void FixedUpdate() {
+    _fixedUpdate.Run();
+}
+```
 
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)

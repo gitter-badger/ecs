@@ -45,22 +45,8 @@ namespace LeopotamGroup.Ecs {
     /// </summary>
     public interface IEcsRunSystem : IEcsSystem {
         /// <summary>
-        /// Returns update type (Update(), FixedUpdate(), etc).
-        /// </summary>
-        EcsRunSystemType GetRunSystemType ();
-
-        /// <summary>
         /// Custom logic.
         /// </summary>
         void Run ();
-    }
-
-    /// <summary>
-    /// When IEcsRunSystem should be processed.
-    /// </summary>
-    public enum EcsRunSystemType {
-        Update,
-        FixedUpdate,
-        LateUpdate
     }
 }

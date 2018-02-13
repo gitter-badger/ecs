@@ -13,8 +13,6 @@ namespace LeopotamGroup.Ecs {
     public abstract class EcsReactSystem : IEcsPreInitSystem, IEcsRunSystem, IEcsFilterListener {
         public abstract EcsFilter GetReactFilter ();
 
-        public abstract EcsRunSystemType GetRunSystemType ();
-
         public abstract EcsReactSystemType GetReactSystemType ();
 
         public abstract void RunReact (List<int> entities);
@@ -73,8 +71,6 @@ namespace LeopotamGroup.Ecs {
     /// </summary>
     public abstract class EcsReactInstantSystem : IEcsPreInitSystem, IEcsFilterListener {
         public abstract EcsFilter GetReactFilter ();
-
-        public abstract EcsRunSystemType GetRunSystemType ();
 
         public abstract EcsReactSystemType GetReactSystemType ();
 
