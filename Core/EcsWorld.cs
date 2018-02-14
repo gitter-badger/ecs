@@ -5,8 +5,8 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using LeopotamGroup.Ecs.Internals;
 using System.Collections.Generic;
+using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
 #if DEBUG
@@ -53,12 +53,16 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of add / remove operations for components on entities.
         /// </summary>
-        readonly List<DelayedUpdate> _delayedUpdates = new List<DelayedUpdate> (1024);
+        DelayedUpdate[] _delayedUpdates = new DelayedUpdate[1024];
+
+        int _delayedUpdatesCount;
 
         /// <summary>
         /// List of requested filters.
         /// </summary>
-        readonly List<EcsFilter> _filters = new List<EcsFilter> (64);
+        EcsFilter[] _filters = new EcsFilter[64];
+
+        int _filtersCount;
 
         /// <summary>
         /// Temporary buffer for filter updates.
@@ -126,7 +130,7 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entity">Entity.</param>
         public void RemoveEntity (int entity) {
             if (!_entities[entity].IsReserved) {
-                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveEntity, entity, null, -1));
+                AddDelayedUpdate (DelayedUpdate.Op.RemoveEntity, entity, null, -1);
             }
         }
 
@@ -160,7 +164,7 @@ namespace LeopotamGroup.Ecs {
             }
             entityData.Components[entityData.ComponentsCount++] = link;
 
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId));
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
 #if DEBUG
             var component = pool.Items[link.ItemId];
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
@@ -196,7 +200,7 @@ namespace LeopotamGroup.Ecs {
                 throw new Exception (string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
             }
 #endif
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, pool, link.ItemId));
+            AddDelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, pool, link.ItemId);
             entityData.ComponentsCount--;
             Array.Copy (entityData.Components, i + 1, entityData.Components, i, entityData.ComponentsCount - i);
         }
@@ -247,7 +251,7 @@ namespace LeopotamGroup.Ecs {
                 throw new Exception (string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
             }
 #endif
-            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, null, -1));
+            AddDelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, null, -1);
         }
 
         /// <summary>
@@ -273,7 +277,7 @@ namespace LeopotamGroup.Ecs {
             var stats = new EcsWorldStats () {
                 ActiveEntities = _entitiesCount - _reservedEntitiesCount,
                 ReservedEntities = _reservedEntitiesCount,
-                Filters = _filters.Count,
+                Filters = _filtersCount,
                 Components = _componentPools.Count
             };
             return stats;
@@ -283,7 +287,7 @@ namespace LeopotamGroup.Ecs {
         /// Manually processes delayed updates. Use carefully!
         /// </summary>
         public void ProcessDelayedUpdates () {
-            var iMax = _delayedUpdates.Count;
+            var iMax = _delayedUpdatesCount;
             for (var i = 0; i < iMax; i++) {
                 var op = _delayedUpdates[i];
                 var entityData = _entities[op.Entity];
@@ -342,11 +346,11 @@ namespace LeopotamGroup.Ecs {
                         UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
                         op.Pool.RecycleIndex (op.ComponentId);
                         if (entityData.ComponentsCount == 0) {
-                            _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1));
+                            AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1);
                         }
                         break;
                     case DelayedUpdate.Op.UpdateComponent:
-                        for (var filterId = 0; filterId < _filters.Count; filterId++) {
+                        for (var filterId = 0; filterId < _filtersCount; filterId++) {
                             var filter = _filters[filterId];
                             if (_delayedOpMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
                                 filter.RaiseOnEntityUpdated (op.Entity);
@@ -356,10 +360,10 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             if (iMax > 0) {
-                if (_delayedUpdates.Count == iMax) {
-                    _delayedUpdates.Clear ();
+                if (_delayedUpdatesCount == iMax) {
+                    _delayedUpdatesCount = 0;
                 } else {
-                    _delayedUpdates.RemoveRange (0, iMax);
+                    Array.Copy (_delayedUpdates, iMax, _delayedUpdates, 0, _delayedUpdatesCount - iMax);
                     ProcessDelayedUpdates ();
                 }
             }
@@ -369,9 +373,10 @@ namespace LeopotamGroup.Ecs {
         /// Removes empty filters. Use carefully, all subscriptions must be removed before!
         /// </summary>
         public void RemoveEmptyFilters () {
-            for (var i = _filters.Count - 1; i >= 0; i--) {
+            for (var i = _filtersCount - 1; i >= 0; i--) {
                 if (_filters[i].Entities.Count == 0) {
-                    _filters.RemoveAt (i);
+                    _filtersCount--;
+                    Array.Copy (_filters, i + 1, _filters, i, _filtersCount - i);
                 }
             }
         }
@@ -399,19 +404,24 @@ namespace LeopotamGroup.Ecs {
                 throw new ArgumentNullException ("exclude");
             }
 #endif
-            var i = _filters.Count - 1;
+            var i = _filtersCount - 1;
             for (; i >= 0; i--) {
                 if (this._filters[i].IncludeMask.IsEquals (include) && _filters[i].ExcludeMask.IsEquals (exclude)) {
                     break;
                 }
             }
             if (i == -1) {
-                i = _filters.Count;
+                i = _filtersCount;
+                if (_filtersCount == _filters.Length) {
+                    var newFilters = new EcsFilter[_filtersCount << 1];
+                    Array.Copy (_filters, newFilters, _filtersCount);
+                    _filters = newFilters;
+                }
                 var filter = new EcsFilter (include, exclude);
                 if (shouldBeFilled) {
                     FillFilter (filter);
                 }
-                _filters.Add (filter);
+                _filters[_filtersCount++] = filter;
             }
             return _filters[i];
         }
@@ -454,7 +464,7 @@ namespace LeopotamGroup.Ecs {
                 _entities[_entitiesCount++] = new EcsEntity ();
             }
             if (addSafeRemove) {
-                _delayedUpdates.Add (new DelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null, -1));
+                AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null, -1);
             }
 #if DEBUG
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
@@ -462,6 +472,18 @@ namespace LeopotamGroup.Ecs {
             }
 #endif
             return entity;
+        }
+
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        void AddDelayedUpdate (DelayedUpdate.Op type, int entity, IEcsComponentPool component, int componentId) {
+            if (_delayedUpdatesCount == _delayedUpdates.Length) {
+                var newDelayedUpdates = new DelayedUpdate[_delayedUpdatesCount << 1];
+                Array.Copy (_delayedUpdates, newDelayedUpdates, _delayedUpdatesCount);
+                _delayedUpdates = newDelayedUpdates;
+            }
+            _delayedUpdates[_delayedUpdatesCount++] = new DelayedUpdate (type, entity, component, componentId);
         }
 
         /// <summary>
@@ -507,7 +529,7 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
-            for (var i = _filters.Count - 1; i >= 0; i--) {
+            for (var i = _filtersCount - 1; i >= 0; i--) {
                 var filter = _filters[i];
                 var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
                 if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {

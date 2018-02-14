@@ -10,10 +10,7 @@ namespace LeopotamGroup.Ecs {
     /// </summary>
     public sealed class EcsComponentMask {
         // Can be changed if you need more than 256 components per world.
-        // Each number adds room for 64 components. If there are more than
-        // 32k components (WUT?!) - you should fix:
-        // * EcsWorld.DelayedUpdate.Component field type.
-        // * EcsWorld.ComponentLink.PoolId field type.
+        // Each number adds room for 64 components.
 #if ECS_COMPONENT_LIMIT_2048
         const int RawLength = 32;
 #elif ECS_COMPONENT_LIMIT_1024
@@ -32,13 +29,16 @@ namespace LeopotamGroup.Ecs {
 #if DEBUG
         public override string ToString () {
             var str = "";
-            for (int i = 0; i < RawLength; i++) {
+            for (int i = 0; i < _raw.Length; i++) {
                 str += _raw[i].ToString ("X16");
             }
             return str;
         }
 #endif
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public void SetBit (int bitId, bool state) {
 #if DEBUG
             if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
@@ -51,7 +51,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         public bool IsEmpty () {
-            for (var i = 0; i < RawLength; i++) {
+            for (var i = 0; i < _raw.Length; i++) {
                 if (_raw[i] != 0) {
                     return false;
                 }
@@ -59,6 +59,9 @@ namespace LeopotamGroup.Ecs {
             return true;
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public bool GetBit (int bitId) {
 #if DEBUG
             if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
@@ -66,14 +69,17 @@ namespace LeopotamGroup.Ecs {
             return (_raw[bitId / RawItemSize] & (1UL << (bitId % RawItemSize))) != 0;
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public void CopyFrom (EcsComponentMask mask) {
-            for (var i = 0; i < RawLength; i++) {
+            for (var i = 0; i < _raw.Length; i++) {
                 _raw[i] = mask._raw[i];
             }
         }
 
         public bool IsEquals (EcsComponentMask mask) {
-            for (var i = 0; i < RawLength; i++) {
+            for (var i = 0; i < _raw.Length; i++) {
                 if (_raw[i] != mask._raw[i]) {
                     return false;
                 }
@@ -81,13 +87,12 @@ namespace LeopotamGroup.Ecs {
             return true;
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public bool IsCompatible (EcsComponentMask include, EcsComponentMask exclude) {
-            ulong a;
-            ulong b;
-            for (var i = 0; i < RawLength; i++) {
-                a = _raw[i];
-                b = include._raw[i];
-                if ((a & b) != b || (a & exclude._raw[i]) != 0) {
+            for (var i = 0; i < _raw.Length; i++) {
+                if ((_raw[i] & include._raw[i]) != include._raw[i] || (_raw[i] & exclude._raw[i]) != 0) {
                     return false;
                 }
             }
@@ -95,7 +100,7 @@ namespace LeopotamGroup.Ecs {
         }
 
         public bool IsIntersects (EcsComponentMask mask) {
-            for (var i = 0; i < RawLength; i++) {
+            for (var i = 0; i < _raw.Length; i++) {
                 if ((_raw[i] & mask._raw[i]) != 0) {
                     return true;
                 }

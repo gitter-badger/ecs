@@ -4,6 +4,7 @@
 // Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
@@ -38,7 +39,9 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public readonly List<int> Entities = new List<int> (512);
 
-        readonly List<IEcsFilterListener> _listeners = new List<IEcsFilterListener> (4);
+        IEcsFilterListener[] _listeners = new IEcsFilterListener[4];
+
+        int _listenersCount;
 
         /// <summary>
         /// Adds listener to events procesing.
@@ -49,11 +52,19 @@ namespace LeopotamGroup.Ecs {
             if (listener == null) {
                 throw new System.ArgumentNullException ();
             }
-            if (_listeners.Contains (listener)) {
-                throw new System.Exception ("Listener already added");
+
+            for (var i = 0; i < _listenersCount; i++) {
+                if (_listeners[i] == listener) {
+                    throw new System.Exception ("Listener already added");
+                }
             }
 #endif
-            _listeners.Add (listener);
+            if (_listenersCount == _listeners.Length) {
+                var newListeners = new IEcsFilterListener[_listenersCount << 1];
+                Array.Copy (_listeners, newListeners, _listenersCount);
+                _listeners = newListeners;
+            }
+            _listeners[_listenersCount++] = listener;
         }
 
         /// <summary>
@@ -62,9 +73,12 @@ namespace LeopotamGroup.Ecs {
         /// <param name="listener">External listener.</param>
         public void RemoveListener (IEcsFilterListener listener) {
             if (listener != null) {
-                var idx = _listeners.IndexOf (listener);
-                if (idx != -1) {
-                    _listeners.RemoveAt (idx);
+                for (var i = _listenersCount - 1; i >= 0; i--) {
+                    if (_listeners[i] == listener) {
+                        _listenersCount--;
+                        Array.Copy (_listeners, i + 1, _listeners, i, _listenersCount - i);
+                        break;
+                    }
                 }
             }
         }
@@ -73,7 +87,7 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         internal void RaiseOnEntityAdded (int entity) {
-            for (var i = 0; i < _listeners.Count; i++) {
+            for (var i = 0; i < _listenersCount; i++) {
                 _listeners[i].OnFilterEntityAdded (entity);
             }
         }
@@ -82,7 +96,7 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         internal void RaiseOnEntityRemoved (int entity) {
-            for (var i = 0; i < _listeners.Count; i++) {
+            for (var i = 0; i < _listenersCount; i++) {
                 _listeners[i].OnFilterEntityRemoved (entity);
             }
         }
@@ -91,7 +105,7 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         internal void RaiseOnEntityUpdated (int entity) {
-            for (var i = 0; i < _listeners.Count; i++) {
+            for (var i = 0; i < _listenersCount; i++) {
                 _listeners[i].OnFilterEntityUpdated (entity);
             }
         }

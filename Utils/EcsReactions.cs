@@ -23,10 +23,13 @@ namespace LeopotamGroup.Ecs {
 
         readonly List<int> _entities = new List<int> (512);
 
+        int _entitiesCount;
+
         public void Run () {
-            if (_entities.Count > 0) {
+            if (_entitiesCount > 0) {
                 RunReact (_entities);
                 _entities.Clear ();
+                _entitiesCount = 0;
             }
         }
 
@@ -37,16 +40,20 @@ namespace LeopotamGroup.Ecs {
             }
 #endif
             _entities.Add (entity);
+            _entitiesCount++;
         }
 
         void IEcsFilterListener.OnFilterEntityUpdated (int entity) {
             if (_entities.IndexOf (entity) == -1) {
                 _entities.Add (entity);
+                _entitiesCount++;
             }
         }
 
         void IEcsFilterListener.OnFilterEntityRemoved (int entity) {
-            _entities.Remove (entity);
+            if (_entities.Remove (entity)) {
+                _entitiesCount--;
+            }
         }
 
         void IEcsPreInitSystem.PreInitialize () {
