@@ -40,12 +40,9 @@ namespace LeopotamGroup.Ecs {
         }
 
         void IEcsFilterListener.OnFilterEntityUpdated (int entity) {
-#if DEBUG
-            if (_entities.IndexOf (entity) != -1) {
-                throw new System.Exception ("Entity already in processing list.");
+            if (_entities.IndexOf (entity) == -1) {
+                _entities.Add (entity);
             }
-#endif
-            _entities.Add (entity);
         }
 
         void IEcsFilterListener.OnFilterEntityRemoved (int entity) {
