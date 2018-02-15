@@ -37,7 +37,7 @@ namespace LeopotamGroup.Ecs {
         /// List of filtered entities.
         /// Do not change it manually!
         /// </summary>
-        public readonly List<int> Entities = new List<int> (512);
+        public readonly List<int> Entities = new List<int> (64);
 
         IEcsFilterListener[] _listeners = new IEcsFilterListener[4];
 

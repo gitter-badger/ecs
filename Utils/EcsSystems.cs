@@ -5,8 +5,8 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using LeopotamGroup.Ecs.Internals;
 using System.Collections.Generic;
+using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
 #if DEBUG
@@ -52,7 +52,12 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Registered IEcsRunSystem systems.
         /// </summary>
-        readonly List<IEcsRunSystem> _runSystems = new List<IEcsRunSystem> (16);
+        IEcsRunSystem[] _runSystems = new IEcsRunSystem[16];
+
+        /// <summary>
+        /// Count of registered IEcsRunSystem systems.
+        /// </summary>
+        int _runSystemsCount;
 
 #if DEBUG
         /// <summary>
@@ -120,7 +125,9 @@ namespace LeopotamGroup.Ecs {
         public void GetRunSystems (List<IEcsRunSystem> list) {
             if (list != null) {
                 list.Clear ();
-                list.AddRange (_runSystems);
+                for (var i = 0; i < _runSystemsCount; i++) {
+                    list.Add (_runSystems[i]);
+                }
             }
         }
 
@@ -148,7 +155,12 @@ namespace LeopotamGroup.Ecs {
 
             var runSystem = system as IEcsRunSystem;
             if (runSystem != null) {
-                _runSystems.Add (runSystem);
+                if (_runSystemsCount == _runSystems.Length) {
+                    var newRunSystems = new IEcsRunSystem[_runSystemsCount << 1];
+                    Array.Copy (_runSystems, newRunSystems, _runSystemsCount);
+                    _runSystems = newRunSystems;
+                }
+                _runSystems[_runSystemsCount++] = runSystem;
             }
             return this;
         }
@@ -195,7 +207,10 @@ namespace LeopotamGroup.Ecs {
             }
 
             _initSystems.Clear ();
-            _runSystems.Clear ();
+            for (var i = _runSystemsCount - 1; i >= 0; i--) {
+                _runSystems[i] = null;
+            }
+            _runSystemsCount = 0;
         }
 
         /// <summary>
@@ -208,7 +223,7 @@ namespace LeopotamGroup.Ecs {
             }
             if (!IsRunActive) { return; }
 #endif
-            for (var i = 0; i < _runSystems.Count; i++) {
+            for (var i = 0; i < _runSystemsCount; i++) {
                 _runSystems[i].Run ();
                 _world.ProcessDelayedUpdates ();
             }

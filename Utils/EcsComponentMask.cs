@@ -40,72 +40,86 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void SetBit (int bitId, bool state) {
+            unchecked {
 #if DEBUG
-            if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
+                if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
 #endif
-            if (state) {
-                _raw[bitId / RawItemSize] |= 1UL << (bitId % RawItemSize);
-            } else {
-                _raw[bitId / RawItemSize] &= ~(1UL << (bitId % RawItemSize));
+                if (state) {
+                    _raw[bitId / RawItemSize] |= 1UL << (bitId % RawItemSize);
+                } else {
+                    _raw[bitId / RawItemSize] &= ~(1UL << (bitId % RawItemSize));
+                }
             }
         }
 
         public bool IsEmpty () {
-            for (var i = 0; i < _raw.Length; i++) {
-                if (_raw[i] != 0) {
-                    return false;
+            unchecked {
+                for (var i = 0; i < _raw.Length; i++) {
+                    if (_raw[i] != 0) {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
         }
 
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public bool GetBit (int bitId) {
+            unchecked {
 #if DEBUG
-            if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
+                if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
 #endif
-            return (_raw[bitId / RawItemSize] & (1UL << (bitId % RawItemSize))) != 0;
+                return (_raw[bitId / RawItemSize] & (1UL << (bitId % RawItemSize))) != 0;
+            }
         }
 
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void CopyFrom (EcsComponentMask mask) {
-            for (var i = 0; i < _raw.Length; i++) {
-                _raw[i] = mask._raw[i];
+            unchecked {
+                for (var i = 0; i < _raw.Length; i++) {
+                    _raw[i] = mask._raw[i];
+                }
             }
         }
 
         public bool IsEquals (EcsComponentMask mask) {
-            for (var i = 0; i < _raw.Length; i++) {
-                if (_raw[i] != mask._raw[i]) {
-                    return false;
+            unchecked {
+                for (var i = 0; i < _raw.Length; i++) {
+                    if (_raw[i] != mask._raw[i]) {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
         }
 
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        public bool IsCompatible (EcsComponentMask include, EcsComponentMask exclude) {
-            for (var i = 0; i < _raw.Length; i++) {
-                if ((_raw[i] & include._raw[i]) != include._raw[i] || (_raw[i] & exclude._raw[i]) != 0) {
-                    return false;
+        public bool IsCompatible (EcsFilter filter) {
+            unchecked {
+                for (var i = 0; i < _raw.Length; i++) {
+                    if ((_raw[i] & filter.IncludeMask._raw[i]) != filter.IncludeMask._raw[i] || (_raw[i] & filter.ExcludeMask._raw[i]) != 0) {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
         }
 
         public bool IsIntersects (EcsComponentMask mask) {
-            for (var i = 0; i < _raw.Length; i++) {
-                if ((_raw[i] & mask._raw[i]) != 0) {
-                    return true;
+            unchecked {
+                for (var i = 0; i < _raw.Length; i++) {
+                    if ((_raw[i] & mask._raw[i]) != 0) {
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
         }
     }
 }

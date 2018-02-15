@@ -21,7 +21,7 @@ namespace LeopotamGroup.Ecs {
 
         EcsReactSystemType _type;
 
-        readonly List<int> _entities = new List<int> (512);
+        readonly List<int> _entities = new List<int> (64);
 
         int _entitiesCount;
 

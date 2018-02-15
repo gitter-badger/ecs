@@ -352,7 +352,7 @@ namespace LeopotamGroup.Ecs {
                     case DelayedUpdate.Op.UpdateComponent:
                         for (var filterId = 0; filterId < _filtersCount; filterId++) {
                             var filter = _filters[filterId];
-                            if (_delayedOpMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
+                            if (_delayedOpMask.IsCompatible (filter)) {
                                 filter.RaiseOnEntityUpdated (op.Entity);
                             }
                         }
@@ -513,7 +513,7 @@ namespace LeopotamGroup.Ecs {
         void FillFilter (EcsFilter filter) {
             for (var i = 0; i < _entitiesCount; i++) {
                 var entity = _entities[i];
-                if (!entity.IsReserved && entity.Mask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
+                if (!entity.IsReserved && entity.Mask.IsCompatible (filter)) {
                     filter.Entities.Add (i);
                 }
             }
@@ -531,8 +531,8 @@ namespace LeopotamGroup.Ecs {
         void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
             for (var i = _filtersCount - 1; i >= 0; i--) {
                 var filter = _filters[i];
-                var isNewMaskCompatible = newMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask);
-                if (oldMask.IsCompatible (filter.IncludeMask, filter.ExcludeMask)) {
+                var isNewMaskCompatible = newMask.IsCompatible (filter);
+                if (oldMask.IsCompatible (filter)) {
                     if (!isNewMaskCompatible) {
 #if DEBUG
                         if (filter.Entities.IndexOf (entity) == -1) {
