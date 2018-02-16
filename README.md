@@ -7,8 +7,6 @@ Performance and zero memory allocation / no gc work / small size - main goals of
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
-> Components limit - 256 **different** components at each world (256 C# classes), can be changed with preprocessor defines: `ECS_COMPONENT_LIMIT_512`, `ECS_COMPONENT_LIMIT_1024` or `ECS_COMPONENT_LIMIT_2048`.
-
 > Components limit on each entity: up to component limit at ecs-world, but better to keep it less or equal 6 for performance reason.
 
 # Main parts of ecs
@@ -296,7 +294,15 @@ class Startup : Monobehaviour {
 }
 ```
 
-# Limitations
+# FAQ
+
+## My project complex enough, I need more than 256 components. How I can do it?
+
+Default limit - 256 **different** components (256 C# classes), can be changed with one of preprocessor defines:
+* `LEOECS_COMPONENT_LIMIT_512`
+* `LEOECS_COMPONENT_LIMIT_1024`
+* `LEOECS_COMPONENT_LIMIT_2048`
+
 ## I want to create alot of new entities with new components on start, how to speed up this process?
 
 In this case custom component creator can be used (for speed up 2x or more):
@@ -317,7 +323,10 @@ class Startup : Monobehaviour {
     }
 }
 ```
-Reference to custom creator will be reset on `world.Destroy` call.
+
+## I dont care about uniqueness of entites in react-system with `OnUpdate` behaviour, I need more performance. How I can do it?
+
+For this case `LEOECS_DISABLE_REACT_UNIQUE_CHECKS` preprocessor define can be used - it will get up to 30% performance boost.
 
 ## I want to process one system at `MonoBehaviour.Update` and another - at `MonoBehaviour.FixedUpdate`. How I can do it?
 

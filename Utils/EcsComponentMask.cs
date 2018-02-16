@@ -11,11 +11,11 @@ namespace LeopotamGroup.Ecs {
     public sealed class EcsComponentMask {
         // Can be changed if you need more than 256 components per world.
         // Each number adds room for 64 components.
-#if ECS_COMPONENT_LIMIT_2048
+#if LEOECS_COMPONENT_LIMIT_2048
         const int RawLength = 32;
-#elif ECS_COMPONENT_LIMIT_1024
+#elif LEOECS_COMPONENT_LIMIT_1024
         const int RawLength = 16;
-#elif ECS_COMPONENT_LIMIT_512
+#elif LEOECS_COMPONENT_LIMIT_512
         const int RawLength = 8;
 #else
         const int RawLength = 4;
@@ -53,14 +53,12 @@ namespace LeopotamGroup.Ecs {
         }
 
         public bool IsEmpty () {
-            unchecked {
-                for (var i = 0; i < _raw.Length; i++) {
-                    if (_raw[i] != 0) {
-                        return false;
-                    }
+            for (var i = 0; i < _raw.Length; i++) {
+                if (_raw[i] != 0) {
+                    return false;
                 }
-                return true;
             }
+            return true;
         }
 
 #if NET_4_6
@@ -79,10 +77,8 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void CopyFrom (EcsComponentMask mask) {
-            unchecked {
-                for (var i = 0; i < _raw.Length; i++) {
-                    _raw[i] = mask._raw[i];
-                }
+            for (var i = 0; i < _raw.Length; i++) {
+                _raw[i] = mask._raw[i];
             }
         }
 
@@ -111,6 +107,9 @@ namespace LeopotamGroup.Ecs {
             }
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public bool IsIntersects (EcsComponentMask mask) {
             unchecked {
                 for (var i = 0; i < _raw.Length; i++) {

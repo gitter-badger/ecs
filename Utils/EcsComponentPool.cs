@@ -8,9 +8,10 @@ using System;
 
 namespace LeopotamGroup.Ecs.Internals {
     interface IEcsComponentPool {
-        object GetItem (int idx);
-        void RecycleIndex (int id);
-        int GetComponentIndex ();
+        object Get (int idx);
+        void Recycle (int id);
+        int GetComponentTypeIndex ();
+        EcsWorld GetWorld ();
         void ConnectToWorld (EcsWorld world, int index);
     }
 
@@ -52,7 +53,7 @@ namespace LeopotamGroup.Ecs.Internals {
             return id;
         }
 
-        public void RecycleIndex (int id) {
+        public void Recycle (int id) {
             if (_reservedItemsCount == _reservedItems.Length) {
                 var newItems = new int[_reservedItemsCount << 1];
                 Array.Copy (_reservedItems, newItems, _reservedItemsCount);
@@ -61,12 +62,16 @@ namespace LeopotamGroup.Ecs.Internals {
             _reservedItems[_reservedItemsCount++] = id;
         }
 
-        object IEcsComponentPool.GetItem (int idx) {
+        object IEcsComponentPool.Get (int idx) {
             return Items[idx];
         }
 
-        int IEcsComponentPool.GetComponentIndex () {
+        int IEcsComponentPool.GetComponentTypeIndex () {
             return TypeIndex;
+        }
+
+        EcsWorld IEcsComponentPool.GetWorld () {
+            return World;
         }
 
         public void ConnectToWorld (EcsWorld world, int index) {
