@@ -321,7 +321,8 @@ class Startup : Monobehaviour {
 
     void OnEnable() {
         var world = new MyWorld (_sharedData);
-        world.RegisterComponentCreator<MyComponent> (() => new MyComponent());
+        
+        EcsWorld.RegisterComponentCreator<MyComponent> (() => new MyComponent());
         
         _systems = new EcsSystems(world)
             .Add (MySystem());
