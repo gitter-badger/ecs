@@ -11,8 +11,6 @@ namespace LeopotamGroup.Ecs.Internals {
         object Get (int idx);
         void Recycle (int id);
         int GetComponentTypeIndex ();
-        EcsWorld GetWorld ();
-        void ConnectToWorld (EcsWorld world, int index);
     }
 
     /// <summary>
@@ -21,13 +19,11 @@ namespace LeopotamGroup.Ecs.Internals {
     sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
         public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
 
-        const int MinSize = 8;
-
         public T[] Items = new T[MinSize];
 
-        public int TypeIndex = -1;
+        const int MinSize = 8;
 
-        public EcsWorld World;
+        int _typeIndex;
 
         int[] _reservedItems = new int[MinSize];
 
@@ -36,6 +32,10 @@ namespace LeopotamGroup.Ecs.Internals {
         int _reservedItemsCount;
 
         Func<T> _creator;
+
+        EcsComponentPool () {
+            _typeIndex = EcsHelpers.ComponentsCount++;
+        }
 
         public int GetIndex () {
             int id;
@@ -66,29 +66,8 @@ namespace LeopotamGroup.Ecs.Internals {
             return Items[idx];
         }
 
-        int IEcsComponentPool.GetComponentTypeIndex () {
-            return TypeIndex;
-        }
-
-        EcsWorld IEcsComponentPool.GetWorld () {
-            return World;
-        }
-
-        public void ConnectToWorld (EcsWorld world, int index) {
-#if DEBUG
-            if (world != null && World != null) {
-                throw new Exception ("Already connected to another world.");
-            }
-#endif
-            World = world;
-            TypeIndex = index;
-            if (World == null) {
-                Items = new T[MinSize];
-                _reservedItems = new int[MinSize];
-                _itemsCount = 0;
-                _reservedItemsCount = 0;
-                _creator = null;
-            }
+        public int GetComponentTypeIndex () {
+            return _typeIndex;
         }
 
         public void SetCreator (Func<T> creator) {
@@ -96,7 +75,7 @@ namespace LeopotamGroup.Ecs.Internals {
         }
 
         public void Shrink () {
-            var newSize = GetPoolSize (_itemsCount);
+            var newSize = EcsHelpers.GetPowerOfTwoSize (_itemsCount < MinSize ? MinSize : _itemsCount);
             if (newSize < Items.Length) {
                 var newItems = new T[newSize];
                 Array.Copy (Items, newItems, _itemsCount);
@@ -106,19 +85,6 @@ namespace LeopotamGroup.Ecs.Internals {
                 _reservedItems = new int[MinSize];
                 _reservedItemsCount = 0;
             }
-        }
-
-        int GetPoolSize (int n) {
-            if (n < MinSize) {
-                return MinSize;
-            }
-            n--;
-            n = n | (n >> 1);
-            n = n | (n >> 2);
-            n = n | (n >> 4);
-            n = n | (n >> 8);
-            n = n | (n >> 16);
-            return n + 1;
         }
     }
 }

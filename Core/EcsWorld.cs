@@ -28,9 +28,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Filter lists sorted by components for fast UpdateComponent processing.
         /// </summary>
-        readonly EcsFilterList[] _componentPoolFilters = new EcsFilterList[EcsComponentMask.BitsCount];
-
-        int _componentPoolFiltersCount;
+        EcsFilterList[] _componentPoolFilters = new EcsFilterList[512];
 
         /// <summary>
         /// List of all entities (their components).
@@ -92,17 +90,11 @@ namespace LeopotamGroup.Ecs {
 #endif
 
         /// <summary>
-        /// Adds new system to processing.
+        /// Registers custom activator for creating instances of specified type.
         /// </summary>
-        /// <param name="system">System instance.</param>
-        public EcsWorld RegisterComponentCreator<T> (Func<T> creator) where T : class, new () {
-            var pool = EcsComponentPool<T>.Instance;
-            if (pool.World != this) {
-                pool.ConnectToWorld (this, _componentPoolFiltersCount);
-                _componentPoolFilters[_componentPoolFiltersCount++] = new EcsFilterList ();
-            }
-            pool.SetCreator (creator);
-            return this;
+        /// <param name="creator">Custom callback for instance creation.</param>
+        public static void RegisterComponentCreator<T> (Func<T> creator) where T : class, new () {
+            EcsComponentPool<T>.Instance.SetCreator (creator);
         }
 
         /// <summary>
@@ -137,10 +129,6 @@ namespace LeopotamGroup.Ecs {
         public T AddComponent<T> (int entity) where T : class, new () {
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
-            if (pool.World != this) {
-                pool.ConnectToWorld (this, _componentPoolFiltersCount);
-                _componentPoolFilters[_componentPoolFiltersCount++] = new EcsFilterList ();
-            }
 #if DEBUG
             var i = entityData.ComponentsCount - 1;
             for (; i >= 0; i--) {
@@ -177,11 +165,6 @@ namespace LeopotamGroup.Ecs {
         public void RemoveComponent<T> (int entity) where T : class, new () {
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
-#if DEBUG
-            if (pool.World != this) {
-                throw new Exception (string.Format ("Component pool of {0} type not connected to world", typeof (T).Name));
-            }
-#endif
             ComponentLink link;
             link.ItemId = -1;
             var i = entityData.ComponentsCount - 1;
@@ -247,7 +230,10 @@ namespace LeopotamGroup.Ecs {
                 throw new Exception (string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
             }
 #endif
-            AddDelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, null, EcsComponentPool<T>.Instance.TypeIndex);
+            var typeId = EcsComponentPool<T>.Instance.GetComponentTypeIndex ();
+            if (typeId < _componentPoolFilters.Length && _componentPoolFilters[typeId] != null) {
+                AddDelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, null, typeId);
+            }
         }
 
         /// <summary>
@@ -274,7 +260,7 @@ namespace LeopotamGroup.Ecs {
                 ActiveEntities = _entitiesCount - _reservedEntitiesCount,
                 ReservedEntities = _reservedEntitiesCount,
                 Filters = _filtersCount,
-                Components = _componentPoolFiltersCount
+                Components = EcsHelpers.ComponentsCount
             };
             return stats;
         }
@@ -306,8 +292,8 @@ namespace LeopotamGroup.Ecs {
                                 _debugListeners[ii].OnComponentRemoved (op.Entity, componentToRemove);
                             }
 #endif
-                            link.Pool.Recycle (link.ItemId);
                             UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                            link.Pool.Recycle (link.ItemId);
                             _delayedOpMask.SetBit (componentId, false);
                             entityData.ComponentsCount--;
                         }
@@ -377,7 +363,7 @@ namespace LeopotamGroup.Ecs {
         /// Removes free space from cache, in-use items will be kept.
         /// Useful for free memory when this component will not be used in quantity as before.
         /// </summary>
-        public void ShrinkComponentPool<T> () where T : class, new () {
+        public static void ShrinkComponentPool<T> () where T : class, new () {
             EcsComponentPool<T>.Instance.Shrink ();
         }
 
@@ -417,47 +403,27 @@ namespace LeopotamGroup.Ecs {
                 }
                 _filters[_filtersCount++] = filter;
 
-                _delayedOpMask.CopyFrom (include);
-                var bit = 0;
-                while (!_delayedOpMask.IsEmpty ()) {
-                    if (_delayedOpMask.GetBit (bit)) {
-                        var filterList = _componentPoolFilters[bit];
-                        if (filterList.Count == filterList.Filters.Length) {
-                            var newFilters = new EcsFilter[filterList.Count << 1];
-                            Array.Copy (filterList.Filters, newFilters, filterList.Count);
-                            filterList.Filters = newFilters;
-                        }
-                        filterList.Filters[filterList.Count++] = filter;
-                        _delayedOpMask.SetBit (bit, false);
+                for (var bit = 0; bit < include.BitsCount; bit++) {
+                    var typeId = include.Bits[bit];
+                    if (typeId >= _componentPoolFilters.Length) {
+                        var newComponentPoolFilters = new EcsFilterList[EcsHelpers.GetPowerOfTwoSize (typeId)];
+                        Array.Copy (_componentPoolFilters, newComponentPoolFilters, _componentPoolFilters.Length);
+                        _componentPoolFilters = newComponentPoolFilters;
                     }
-                    bit++;
+                    var filterList = _componentPoolFilters[typeId];
+                    if (filterList == null) {
+                        filterList = new EcsFilterList ();
+                        _componentPoolFilters[typeId] = filterList;
+                    }
+                    if (filterList.Count == filterList.Filters.Length) {
+                        var newFilters = new EcsFilter[filterList.Count << 1];
+                        Array.Copy (filterList.Filters, newFilters, filterList.Count);
+                        filterList.Filters = newFilters;
+                    }
+                    filterList.Filters[filterList.Count++] = filter;
                 }
             }
             return _filters[i];
-        }
-
-        /// <summary>
-        /// Returns component type index from connected pools list.
-        /// If instance not connected - process connection.
-        /// </summary>
-        /// <param name="poolInstance">Components pool.</param>
-        internal int GetComponentPoolIndex (IEcsComponentPool poolInstance) {
-#if DEBUG
-            if (poolInstance == null) {
-                throw new ArgumentNullException ();
-            }
-            var world = poolInstance.GetWorld ();
-            if (world != null && world != this) {
-                throw new Exception ("Pool already connected to another world");
-            }
-#endif
-            var idx = poolInstance.GetComponentTypeIndex ();
-            if (idx == -1) {
-                idx = _componentPoolFiltersCount;
-                poolInstance.ConnectToWorld (this, idx);
-                _componentPoolFilters[_componentPoolFiltersCount++] = new EcsFilterList ();
-            }
-            return idx;
         }
 
         /// <summary>
@@ -507,6 +473,9 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity Id.</param>
         /// <param name="entityData">EcsEntity instance.</param>
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         void ReserveEntity (int entity, EcsEntity entityData) {
             entityData.IsReserved = true;
             if (_reservedEntitiesCount == _reservedEntities.Length) {

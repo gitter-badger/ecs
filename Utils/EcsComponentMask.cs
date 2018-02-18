@@ -4,35 +4,23 @@
 // Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
-namespace LeopotamGroup.Ecs {
+using System;
+
+namespace LeopotamGroup.Ecs.Internals {
     /// <summary>
     /// Mask for components selection.
     /// </summary>
-    public sealed class EcsComponentMask {
-        // Can be changed if you need more than 256 components per world.
-        // Each number adds room for 64 components.
-#if LEOECS_COMPONENT_LIMIT_2048
-        const int RawLength = 32;
-#elif LEOECS_COMPONENT_LIMIT_1024
-        const int RawLength = 16;
-#elif LEOECS_COMPONENT_LIMIT_512
-        const int RawLength = 8;
-#else
-        const int RawLength = 4;
-#endif
+    sealed class EcsComponentMask {
+        public int[] Bits = new int[4];
 
-        const int RawItemSize = sizeof (ulong) * 8;
-
-        public const int BitsCount = RawLength * RawItemSize;
-
-        readonly ulong[] _raw = new ulong[RawLength];
+        public int BitsCount;
 #if DEBUG
         public override string ToString () {
-            var str = "";
-            for (int i = 0; i < _raw.Length; i++) {
-                str += _raw[i].ToString ("X16");
+            var str = "[";
+            for (var i = 0; i < BitsCount; i++) {
+                str = string.Format ("{0}{1}{2}", str, i > 0 ? "," : "", Bits[i]);
             }
-            return str;
+            return str + "]";
         }
 #endif
 
@@ -40,21 +28,73 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void SetBit (int bitId, bool state) {
-            unchecked {
-#if DEBUG
-                if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
-#endif
-                if (state) {
-                    _raw[bitId / RawItemSize] |= 1UL << (bitId % RawItemSize);
-                } else {
-                    _raw[bitId / RawItemSize] &= ~(1UL << (bitId % RawItemSize));
+            var i = BitsCount - 1;
+            for (; i >= 0; i--) {
+                if (Bits[i] == bitId) {
+                    break;
+                }
+            }
+            if (state) {
+                if (i == -1) {
+                    if (BitsCount == Bits.Length) {
+                        var newBits = new int[BitsCount << 1];
+                        Array.Copy (Bits, newBits, BitsCount);
+                        Bits = newBits;
+                    }
+                    Bits[BitsCount++] = bitId;
+                }
+            } else {
+                if (i != -1) {
+                    BitsCount--;
+                    Array.Copy (Bits, i + 1, Bits, i, BitsCount - i);
                 }
             }
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public bool IsEmpty () {
-            for (var i = 0; i < _raw.Length; i++) {
-                if (_raw[i] != 0) {
+            return BitsCount == 0;
+        }
+
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public bool GetBit (int bitId) {
+            var i = BitsCount - 1;
+            for (; i >= 0; i--) {
+                if (Bits[i] == bitId) {
+                    break;
+                }
+            }
+            return i != -1;
+        }
+
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public void CopyFrom (EcsComponentMask mask) {
+            BitsCount = mask.BitsCount;
+            if (Bits.Length < BitsCount) {
+                Bits = new int[mask.Bits.Length];
+            }
+            Array.Copy (mask.Bits, Bits, BitsCount);
+        }
+
+        public bool IsEquals (EcsComponentMask mask) {
+            if (BitsCount != mask.BitsCount) {
+                return false;
+            }
+            for (var i = 0; i < BitsCount; i++) {
+                var j = mask.BitsCount - 1;
+                var bit = Bits[i];
+                for (; j >= 0; j--) {
+                    if (mask.Bits[j] == bit) {
+                        break;
+                    }
+                }
+                if (j == -1) {
                     return false;
                 }
             }
@@ -64,61 +104,44 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        public bool GetBit (int bitId) {
-            unchecked {
-#if DEBUG
-                if (bitId < 0 || bitId >= BitsCount) { throw new System.Exception ("Invalid bit"); }
-#endif
-                return (_raw[bitId / RawItemSize] & (1UL << (bitId % RawItemSize))) != 0;
-            }
-        }
-
-#if NET_4_6
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public void CopyFrom (EcsComponentMask mask) {
-            for (var i = 0; i < _raw.Length; i++) {
-                _raw[i] = mask._raw[i];
-            }
-        }
-
-        public bool IsEquals (EcsComponentMask mask) {
-            unchecked {
-                for (var i = 0; i < _raw.Length; i++) {
-                    if (_raw[i] != mask._raw[i]) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
-
-#if NET_4_6
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
         public bool IsCompatible (EcsFilter filter) {
-            unchecked {
-                for (var i = 0; i < _raw.Length; i++) {
-                    if ((_raw[i] & filter.IncludeMask._raw[i]) != filter.IncludeMask._raw[i] || (_raw[i] & filter.ExcludeMask._raw[i]) != 0) {
-                        return false;
+            if (BitsCount > 0 && filter.IncludeMask.BitsCount <= BitsCount) {
+                int i = filter.IncludeMask.BitsCount - 1;
+                var maxJ = BitsCount - 1;
+                for (; i >= 0; i--) {
+                    var j = maxJ;
+                    var bit = filter.IncludeMask.Bits[i];
+                    for (; j >= 0; j--) {
+                        if (Bits[j] == bit) {
+                            break;
+                        }
+                    }
+                    if (j == -1) {
+                        break;
                     }
                 }
-                return true;
+                if (i == -1) {
+                    return !IsIntersects (filter.ExcludeMask);
+                }
             }
+            return false;
         }
 
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public bool IsIntersects (EcsComponentMask mask) {
-            unchecked {
-                for (var i = 0; i < _raw.Length; i++) {
-                    if ((_raw[i] & mask._raw[i]) != 0) {
-                        return true;
+            if (BitsCount > 0 && mask.BitsCount > 0) {
+                for (var i = 0; i < BitsCount; i++) {
+                    var bit = Bits[i];
+                    for (var j = 0; j < mask.BitsCount; j++) {
+                        if (mask.Bits[j] == bit) {
+                            return true;
+                        }
                     }
                 }
-                return false;
             }
+            return false;
         }
     }
 }

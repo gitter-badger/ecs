@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
     /// <summary>

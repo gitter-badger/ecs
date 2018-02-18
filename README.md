@@ -307,12 +307,7 @@ The software released under the terms of the MIT license. Enjoy.
 
 ### My project complex enough, I need more than 256 components. How I can do it?
 
-Default limit - 256 **different** components (256 C# classes), can be changed with one of preprocessor defines:
-* `LEOECS_COMPONENT_LIMIT_512`
-* `LEOECS_COMPONENT_LIMIT_1024`
-* `LEOECS_COMPONENT_LIMIT_2048`
-
-For performance / memory usage reason better to keep amount of components on each entity less or equals 6.
+There are no components limit, but for performance / memory usage reason better to keep amount of components on each entity less or equals 6.
 
 ### I want to create alot of new entities with new components on start, how to speed up this process?
 
@@ -360,3 +355,7 @@ void FixedUpdate() {
     _fixedUpdate.Run();
 }
 ```
+
+### How it fast relative to Entitas?
+
+Some test can be found at [this repo](https://github.com/echeg/unityecs_speedtest). Tests can be obsoleted, better to grab last versions of frameworks and check locally.

@@ -37,8 +37,7 @@ namespace LeopotamGroup.Ecs.Internals {
                         for (var i = 0; i < components.Length; i++) {
                             var genType = typeof (EcsComponentPool<>).MakeGenericType (components[i]);
                             var poolInstance = genType.GetField ("Instance").GetValue (null) as IEcsComponentPool;
-                            var bit = world.GetComponentPoolIndex (poolInstance);
-                            includeMask.SetBit (bit, true);
+                            includeMask.SetBit (poolInstance.GetComponentTypeIndex (), true);
                         }
                     }
                     // [EcsFilterExclude]
@@ -50,8 +49,7 @@ namespace LeopotamGroup.Ecs.Internals {
                         for (var i = 0; i < components.Length; i++) {
                             var genType = typeof (EcsComponentPool<>).MakeGenericType (components[i]);
                             var poolInstance = genType.GetField ("Instance").GetValue (null) as IEcsComponentPool;
-                            var bit = world.GetComponentPoolIndex (poolInstance);
-                            excludeMask.SetBit (bit, true);
+                            excludeMask.SetBit (poolInstance.GetComponentTypeIndex (), true);
                         }
                     }
 #if DEBUG
