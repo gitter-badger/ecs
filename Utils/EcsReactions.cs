@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
     /// <summary>
@@ -25,71 +26,44 @@ namespace LeopotamGroup.Ecs {
 
         int _entitiesCount;
 
-#if !LEOECS_DISABLE_REACT_UNIQUE_CHECKS
-        readonly Dictionary<int, bool> _entityHashes = new Dictionary<int, bool> (new EntityEqualityComparer ());
-
-        sealed class EntityEqualityComparer : IEqualityComparer<int> {
-            public bool Equals (int x, int y) {
-                return x == y;
-            }
-            public int GetHashCode (int obj) {
-                return obj;
-            }
-        }
-#endif
+        readonly EcsEntityHashSet _entityHashes = new EcsEntityHashSet ();
 
         public void Run () {
             if (_entitiesCount > 0) {
                 RunReact (_entities);
                 _entities.Clear ();
-#if !LEOECS_DISABLE_REACT_UNIQUE_CHECKS
                 _entityHashes.Clear ();
-#endif
                 _entitiesCount = 0;
             }
         }
 
         void IEcsFilterListener.OnFilterEntityAdded (int entity) {
 #if DEBUG
-            if (_entities.IndexOf (entity) != -1) {
+            if (_entityHashes.Contains (entity)) {
                 throw new System.Exception ("Entity already in processing list.");
             }
 #endif
             if (_type == EcsReactSystemType.OnAdd) {
                 _entities.Add (entity);
-#if !LEOECS_DISABLE_REACT_UNIQUE_CHECKS
-                _entityHashes[entity] = true;
-#endif
+                _entityHashes.Add (entity);
                 _entitiesCount++;
             }
         }
 
         void IEcsFilterListener.OnFilterEntityUpdated (int entity) {
             if (_type == EcsReactSystemType.OnUpdate) {
-#if !LEOECS_DISABLE_REACT_UNIQUE_CHECKS
-                if (!_entityHashes.ContainsKey (entity)) {
+                if (_entityHashes.Add (entity)) {
                     _entities.Add (entity);
-                    _entityHashes[entity] = true;
                     _entitiesCount++;
                 }
-#else
-                _entities.Add (entity);
-                _entitiesCount++;
-#endif
             }
         }
 
         void IEcsFilterListener.OnFilterEntityRemoved (int entity) {
-#if !LEOECS_DISABLE_REACT_UNIQUE_CHECKS
             if (_entityHashes.Remove (entity)) {
                 _entities.Remove (entity);
                 _entitiesCount--;
             }
-#else
-            if (_entities.Remove (entity)) {
-                _entitiesCount--;
-            }
-#endif
         }
 
         void IEcsPreInitSystem.PreInitialize () {

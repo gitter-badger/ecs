@@ -143,7 +143,7 @@ namespace LeopotamGroup.Ecs {
             var link = new ComponentLink (pool, pool.GetIndex ());
             if (entityData.ComponentsCount == entityData.Components.Length) {
                 var newComponents = new ComponentLink[entityData.ComponentsCount << 1];
-                Array.Copy (entityData.Components, newComponents, entityData.ComponentsCount);
+                Array.Copy (entityData.Components, 0, newComponents, 0, entityData.ComponentsCount);
                 entityData.Components = newComponents;
             }
             entityData.Components[entityData.ComponentsCount++] = link;
@@ -336,7 +336,7 @@ namespace LeopotamGroup.Ecs {
                         var filterList = _componentPoolFilters[op.ComponentId];
                         for (var filterId = 0; filterId < filterList.Count; filterId++) {
                             var filter = filterList.Filters[filterId];
-                            if (!_delayedOpMask.IsIntersects (filter.ExcludeMask)) {
+                            if (filter.ExcludeMask.BitsCount == 0 || !_delayedOpMask.IsIntersects (filter.ExcludeMask)) {
                                 filter.RaiseOnEntityUpdated (op.Entity);
                             }
                         }
@@ -398,7 +398,7 @@ namespace LeopotamGroup.Ecs {
 
                 if (_filtersCount == _filters.Length) {
                     var newFilters = new EcsFilter[_filtersCount << 1];
-                    Array.Copy (_filters, newFilters, _filtersCount);
+                    Array.Copy (_filters, 0, newFilters, 0, _filtersCount);
                     _filters = newFilters;
                 }
                 _filters[_filtersCount++] = filter;
@@ -407,7 +407,7 @@ namespace LeopotamGroup.Ecs {
                     var typeId = include.Bits[bit];
                     if (typeId >= _componentPoolFilters.Length) {
                         var newComponentPoolFilters = new EcsFilterList[EcsHelpers.GetPowerOfTwoSize (typeId)];
-                        Array.Copy (_componentPoolFilters, newComponentPoolFilters, _componentPoolFilters.Length);
+                        Array.Copy (_componentPoolFilters, 0, newComponentPoolFilters, 0, _componentPoolFilters.Length);
                         _componentPoolFilters = newComponentPoolFilters;
                     }
                     var filterList = _componentPoolFilters[typeId];
@@ -417,7 +417,7 @@ namespace LeopotamGroup.Ecs {
                     }
                     if (filterList.Count == filterList.Filters.Length) {
                         var newFilters = new EcsFilter[filterList.Count << 1];
-                        Array.Copy (filterList.Filters, newFilters, filterList.Count);
+                        Array.Copy (filterList.Filters, 0, newFilters, 0, filterList.Count);
                         filterList.Filters = newFilters;
                     }
                     filterList.Filters[filterList.Count++] = filter;
@@ -440,7 +440,7 @@ namespace LeopotamGroup.Ecs {
                 entity = _entitiesCount;
                 if (_entitiesCount == _entities.Length) {
                     var newEntities = new EcsEntity[_entitiesCount << 1];
-                    Array.Copy (_entities, newEntities, _entitiesCount);
+                    Array.Copy (_entities, 0, newEntities, 0, _entitiesCount);
                     _entities = newEntities;
                 }
                 _entities[_entitiesCount++] = new EcsEntity ();
@@ -462,7 +462,7 @@ namespace LeopotamGroup.Ecs {
         void AddDelayedUpdate (DelayedUpdate.Op type, int entity, IEcsComponentPool component, int componentId) {
             if (_delayedUpdatesCount == _delayedUpdates.Length) {
                 var newDelayedUpdates = new DelayedUpdate[_delayedUpdatesCount << 1];
-                Array.Copy (_delayedUpdates, newDelayedUpdates, _delayedUpdatesCount);
+                Array.Copy (_delayedUpdates, 0, newDelayedUpdates, 0, _delayedUpdatesCount);
                 _delayedUpdates = newDelayedUpdates;
             }
             _delayedUpdates[_delayedUpdatesCount++] = new DelayedUpdate (type, entity, component, componentId);
@@ -480,7 +480,7 @@ namespace LeopotamGroup.Ecs {
             entityData.IsReserved = true;
             if (_reservedEntitiesCount == _reservedEntities.Length) {
                 var newEntities = new int[_reservedEntitiesCount << 1];
-                Array.Copy (_reservedEntities, newEntities, _reservedEntitiesCount);
+                Array.Copy (_reservedEntities, 0, newEntities, 0, _reservedEntitiesCount);
                 _reservedEntities = newEntities;
             }
             _reservedEntities[_reservedEntitiesCount++] = entity;

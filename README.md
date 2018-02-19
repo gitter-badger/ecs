@@ -331,10 +331,6 @@ class Startup : Monobehaviour {
 }
 ```
 
-### I dont care about uniqueness of entites in react-system with `OnUpdate` behaviour, I need more performance. How I can do it?
-
-For this case `LEOECS_DISABLE_REACT_UNIQUE_CHECKS` preprocessor define can be used - it will get up to 30% performance boost.
-
 ### I want to process one system at `MonoBehaviour.Update` and another - at `MonoBehaviour.FixedUpdate`. How I can do it?
 
 For splitting systems by `MonoBehaviour`-method multiple `EcsSystems` logical groups should be used:

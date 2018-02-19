@@ -62,7 +62,7 @@ namespace LeopotamGroup.Ecs {
 #endif
             if (_listenersCount == _listeners.Length) {
                 var newListeners = new IEcsFilterListener[_listenersCount << 1];
-                Array.Copy (_listeners, newListeners, _listenersCount);
+                Array.Copy (_listeners, 0, newListeners, 0, _listenersCount);
                 _listeners = newListeners;
             }
             _listeners[_listenersCount++] = listener;

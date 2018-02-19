@@ -38,7 +38,7 @@ namespace LeopotamGroup.Ecs.Internals {
                 if (i == -1) {
                     if (BitsCount == Bits.Length) {
                         var newBits = new int[BitsCount << 1];
-                        Array.Copy (Bits, newBits, BitsCount);
+                        Array.Copy (Bits, 0, newBits, 0, BitsCount);
                         Bits = newBits;
                     }
                     Bits[BitsCount++] = bitId;
@@ -79,7 +79,7 @@ namespace LeopotamGroup.Ecs.Internals {
             if (Bits.Length < BitsCount) {
                 Bits = new int[mask.Bits.Length];
             }
-            Array.Copy (mask.Bits, Bits, BitsCount);
+            Array.Copy (mask.Bits, 0, Bits, 0, BitsCount);
         }
 
         public bool IsEquals (EcsComponentMask mask) {
