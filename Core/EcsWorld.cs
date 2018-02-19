@@ -578,7 +578,7 @@ namespace LeopotamGroup.Ecs {
             public bool IsReserved;
             public EcsComponentMask Mask = new EcsComponentMask ();
             public int ComponentsCount;
-            public ComponentLink[] Components = new ComponentLink[6];
+            public ComponentLink[] Components = new ComponentLink[8];
         }
     }
 }

@@ -307,7 +307,7 @@ The software released under the terms of the MIT license. Enjoy.
 
 ### My project complex enough, I need more than 256 components. How I can do it?
 
-There are no components limit, but for performance / memory usage reason better to keep amount of components on each entity less or equals 6.
+There are no components limit, but for performance / memory usage reason better to keep amount of components on each entity less or equals 8.
 
 ### I want to create alot of new entities with new components on start, how to speed up this process?
 
