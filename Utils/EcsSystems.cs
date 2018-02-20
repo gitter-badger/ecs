@@ -156,9 +156,7 @@ namespace LeopotamGroup.Ecs {
             var runSystem = system as IEcsRunSystem;
             if (runSystem != null) {
                 if (_runSystemsCount == _runSystems.Length) {
-                    var newRunSystems = new IEcsRunSystem[_runSystemsCount << 1];
-                    Array.Copy (_runSystems, 0, newRunSystems, 0, _runSystemsCount);
-                    _runSystems = newRunSystems;
+                    Array.Resize (ref _runSystems, _runSystemsCount << 1);
                 }
                 _runSystems[_runSystemsCount++] = runSystem;
             }

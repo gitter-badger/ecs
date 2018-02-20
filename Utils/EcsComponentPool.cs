@@ -44,9 +44,7 @@ namespace LeopotamGroup.Ecs.Internals {
             } else {
                 id = _itemsCount;
                 if (_itemsCount == Items.Length) {
-                    var newItems = new T[_itemsCount << 1];
-                    Array.Copy (Items, 0, newItems, 0, _itemsCount);
-                    Items = newItems;
+                    Array.Resize (ref Items, _itemsCount << 1);
                 }
                 Items[_itemsCount++] = _creator != null ? _creator () : (T) Activator.CreateInstance (typeof (T));
             }
@@ -55,9 +53,7 @@ namespace LeopotamGroup.Ecs.Internals {
 
         public void RecycleById (int id) {
             if (_reservedItemsCount == _reservedItems.Length) {
-                var newItems = new int[_reservedItemsCount << 1];
-                Array.Copy (_reservedItems, 0, newItems, 0, _reservedItemsCount);
-                _reservedItems = newItems;
+                Array.Resize (ref _reservedItems, _reservedItemsCount << 1);
             }
             _reservedItems[_reservedItemsCount++] = id;
         }
@@ -77,9 +73,7 @@ namespace LeopotamGroup.Ecs.Internals {
         public void Shrink () {
             var newSize = EcsHelpers.GetPowerOfTwoSize (_itemsCount < MinSize ? MinSize : _itemsCount);
             if (newSize < Items.Length) {
-                var newItems = new T[newSize];
-                Array.Copy (Items, 0, newItems, 0, _itemsCount);
-                Items = newItems;
+                Array.Resize (ref Items, newSize);
             }
             if (_reservedItems.Length > MinSize) {
                 _reservedItems = new int[MinSize];

@@ -142,9 +142,7 @@ namespace LeopotamGroup.Ecs {
 #endif
             var link = new ComponentLink (pool, pool.RequestNewId ());
             if (entityData.ComponentsCount == entityData.Components.Length) {
-                var newComponents = new ComponentLink[entityData.ComponentsCount << 1];
-                Array.Copy (entityData.Components, 0, newComponents, 0, entityData.ComponentsCount);
-                entityData.Components = newComponents;
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
             }
             entityData.Components[entityData.ComponentsCount++] = link;
 
@@ -399,18 +397,14 @@ namespace LeopotamGroup.Ecs {
                 }
 
                 if (_filtersCount == _filters.Length) {
-                    var newFilters = new EcsFilter[_filtersCount << 1];
-                    Array.Copy (_filters, 0, newFilters, 0, _filtersCount);
-                    _filters = newFilters;
+                    Array.Resize (ref _filters, _filtersCount << 1);
                 }
                 _filters[_filtersCount++] = filter;
 
                 for (var bit = 0; bit < include.BitsCount; bit++) {
                     var typeId = include.Bits[bit];
                     if (typeId >= _componentPoolFilters.Length) {
-                        var newComponentPoolFilters = new EcsFilterList[EcsHelpers.GetPowerOfTwoSize (typeId)];
-                        Array.Copy (_componentPoolFilters, 0, newComponentPoolFilters, 0, _componentPoolFilters.Length);
-                        _componentPoolFilters = newComponentPoolFilters;
+                        Array.Resize (ref _componentPoolFilters, EcsHelpers.GetPowerOfTwoSize (typeId + 1));
                     }
                     var filterList = _componentPoolFilters[typeId];
                     if (filterList == null) {
@@ -418,9 +412,7 @@ namespace LeopotamGroup.Ecs {
                         _componentPoolFilters[typeId] = filterList;
                     }
                     if (filterList.Count == filterList.Filters.Length) {
-                        var newFilters = new EcsFilter[filterList.Count << 1];
-                        Array.Copy (filterList.Filters, 0, newFilters, 0, filterList.Count);
-                        filterList.Filters = newFilters;
+                        Array.Resize (ref filterList.Filters, filterList.Count << 1);
                     }
                     filterList.Filters[filterList.Count++] = filter;
                 }
@@ -441,9 +433,7 @@ namespace LeopotamGroup.Ecs {
             } else {
                 entity = _entitiesCount;
                 if (_entitiesCount == _entities.Length) {
-                    var newEntities = new EcsEntity[_entitiesCount << 1];
-                    Array.Copy (_entities, 0, newEntities, 0, _entitiesCount);
-                    _entities = newEntities;
+                    Array.Resize (ref _entities, _entitiesCount << 1);
                 }
                 _entities[_entitiesCount++] = new EcsEntity ();
             }
@@ -463,9 +453,7 @@ namespace LeopotamGroup.Ecs {
 #endif
         void AddDelayedUpdate (DelayedUpdate.Op type, int entity, IEcsComponentPool component, int componentId) {
             if (_delayedUpdatesCount == _delayedUpdates.Length) {
-                var newDelayedUpdates = new DelayedUpdate[_delayedUpdatesCount << 1];
-                Array.Copy (_delayedUpdates, 0, newDelayedUpdates, 0, _delayedUpdatesCount);
-                _delayedUpdates = newDelayedUpdates;
+                Array.Resize (ref _delayedUpdates, _delayedUpdatesCount << 1);
             }
             _delayedUpdates[_delayedUpdatesCount++] = new DelayedUpdate (type, entity, component, componentId);
         }
@@ -481,9 +469,7 @@ namespace LeopotamGroup.Ecs {
         void ReserveEntity (int entity, EcsEntity entityData) {
             entityData.IsReserved = true;
             if (_reservedEntitiesCount == _reservedEntities.Length) {
-                var newEntities = new int[_reservedEntitiesCount << 1];
-                Array.Copy (_reservedEntities, 0, newEntities, 0, _reservedEntitiesCount);
-                _reservedEntities = newEntities;
+                Array.Resize (ref _reservedEntities, _reservedEntitiesCount << 1);
             }
             _reservedEntities[_reservedEntitiesCount++] = entity;
 #if DEBUG

@@ -37,9 +37,7 @@ namespace LeopotamGroup.Ecs.Internals {
             if (state) {
                 if (i == -1) {
                     if (BitsCount == Bits.Length) {
-                        var newBits = new int[BitsCount << 1];
-                        Array.Copy (Bits, 0, newBits, 0, BitsCount);
-                        Bits = newBits;
+                        Array.Resize (ref Bits, BitsCount << 1);
                     }
                     Bits[BitsCount++] = bitId;
                 }
