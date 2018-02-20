@@ -8,8 +8,8 @@ using System;
 
 namespace LeopotamGroup.Ecs.Internals {
     interface IEcsComponentPool {
-        object Get (int idx);
-        void Recycle (int id);
+        object GetExistItemById (int idx);
+        void RecycleById (int id);
         int GetComponentTypeIndex ();
     }
 
@@ -37,7 +37,7 @@ namespace LeopotamGroup.Ecs.Internals {
             _typeIndex = EcsHelpers.ComponentsCount++;
         }
 
-        public int GetIndex () {
+        public int RequestNewId () {
             int id;
             if (_reservedItemsCount > 0) {
                 id = _reservedItems[--_reservedItemsCount];
@@ -53,7 +53,7 @@ namespace LeopotamGroup.Ecs.Internals {
             return id;
         }
 
-        public void Recycle (int id) {
+        public void RecycleById (int id) {
             if (_reservedItemsCount == _reservedItems.Length) {
                 var newItems = new int[_reservedItemsCount << 1];
                 Array.Copy (_reservedItems, 0, newItems, 0, _reservedItemsCount);
@@ -62,7 +62,7 @@ namespace LeopotamGroup.Ecs.Internals {
             _reservedItems[_reservedItemsCount++] = id;
         }
 
-        object IEcsComponentPool.Get (int idx) {
+        object IEcsComponentPool.GetExistItemById (int idx) {
             return Items[idx];
         }
 

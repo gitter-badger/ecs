@@ -13,9 +13,9 @@ namespace LeopotamGroup.Ecs {
     /// Basic interface for filter events processing.
     /// </summary>
     public interface IEcsFilterListener {
-        void OnFilterEntityAdded (int entity);
-        void OnFilterEntityRemoved (int entity);
-        void OnFilterEntityUpdated (int entity);
+        void OnFilterEntityAdded (int entity, object reason);
+        void OnFilterEntityRemoved (int entity, object reason);
+        void OnFilterEntityUpdated (int entity, object reason);
     }
 
     /// <summary>
@@ -87,27 +87,29 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal void RaiseOnEntityAdded (int entity) {
+        internal void RaiseOnAddEvent (int entity, object reason) {
+            Entities.Add (entity);
             for (var i = 0; i < _listenersCount; i++) {
-                _listeners[i].OnFilterEntityAdded (entity);
+                _listeners[i].OnFilterEntityAdded (entity, reason);
             }
         }
 
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal void RaiseOnEntityRemoved (int entity) {
+        internal void RaiseOnRemoveEvent (int entity, object reason) {
+            Entities.Remove (entity);
             for (var i = 0; i < _listenersCount; i++) {
-                _listeners[i].OnFilterEntityRemoved (entity);
+                _listeners[i].OnFilterEntityRemoved (entity, reason);
             }
         }
 
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal void RaiseOnEntityUpdated (int entity) {
+        internal void RaiseOnUpdateEvent (int entity, object reason) {
             for (var i = 0; i < _listenersCount; i++) {
-                _listeners[i].OnFilterEntityUpdated (entity);
+                _listeners[i].OnFilterEntityUpdated (entity, reason);
             }
         }
 

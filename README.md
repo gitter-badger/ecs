@@ -188,9 +188,12 @@ public sealed class TestReactInstantSystem : EcsReactInstantSystem {
     }
 
     // Entity processing, will be raised only when entity will be removed from filter.
-    public override void RunReact (int entity) {
+    public override void RunReact (int entity, object reason) {
+        // not works - component already detached at this moment.
         var weapon = _world.GetComponent<WeaponComponent> (entity);
-        Debug.LogFormat ("Weapon removed from {0}", entity);
+
+        // reason - detached component instance.
+        Debug.LogFormat ("{1} removed from {0}", entity, reason.GetType().Name);
     }
 }
 ```
@@ -220,16 +223,16 @@ public sealed class TestSystem1 : IEcsInitSystem, IEcsFilterListener {
         _weaponFilter.RemoveListener(this);
     }
 
-    void IEcsFilterListener.OnFilterEntityAdded (int entity) {
-        // Entity "entityId" was added to _weaponFilter due to component "WeaponComponent" was added to entity.
+    void IEcsFilterListener.OnFilterEntityAdded (int entity, object reason) {
+        // Entity "entityId" was added to _weaponFilter due to component "reason" with type "WeaponComponent" was added to entity.
     }
 
-    void IEcsFilterListener.OnFilterEntityUpdated(int entityId) {
-        // Component "WeaponComponent" was updated inplace on entity "entityId".
+    void IEcsFilterListener.OnFilterEntityUpdated(int entityId, object reason) {
+        // Component "reason" with type "WeaponComponent" was updated inplace on entity "entityId".
     }
 
-    void IEcsFilterListener.OnFilterEntityRemoved (int entity) {
-        // Entity "entityId" was removed from _weaponFilter due to component "WeaponComponent" was removed from entity.
+    void IEcsFilterListener.OnFilterEntityRemoved (int entity, object reason) {
+        // Entity "entityId" was removed from _weaponFilter due to component "reason" with type "WeaponComponent" was removed from entity.
     }
 }
 ```
