@@ -21,10 +21,14 @@ namespace LeopotamGroup.Ecs {
     }
 #endif
 
+    public interface IEcsReadOnlyWorld {
+        T GetComponent<T> (int entity) where T : class, new ();
+    }
+
     /// <summary>
     /// Basic ecs world implementation.
     /// </summary>
-    public class EcsWorld {
+    public class EcsWorld : IEcsReadOnlyWorld {
         /// <summary>
         /// Filter lists sorted by components for fast UpdateComponent processing.
         /// </summary>

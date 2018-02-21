@@ -25,6 +25,15 @@ namespace LeopotamGroup.Ecs {
 
         int _jobSize;
 
+        bool _forceSyncState;
+
+        /// <summary>
+        /// Force synchronized threads to main thread (lock main thread and await results from threads).
+        /// </summary>
+        public void ForceSync () {
+            WaitHandle.WaitAll (_syncs);
+        }
+
         void IEcsInitSystem.Destroy () {
             for (var i = 0; i < _descs.Length; i++) {
                 var desc = _descs[i];
@@ -44,6 +53,7 @@ namespace LeopotamGroup.Ecs {
             _filter = GetFilter ();
             _worker = GetWorker ();
             _jobSize = GetJobSize ();
+            _forceSyncState = GetForceSyncState ();
             var threadsCount = GetThreadsCount ();
 #if DEBUG
             if (_world == null) {
@@ -62,10 +72,10 @@ namespace LeopotamGroup.Ecs {
 #endif
             _descs = new WorkerDesc[threadsCount];
             _syncs = new ManualResetEvent[threadsCount];
-            var job = new EcsMultiThreadJob ();
-            job.World = _world;
-            job.Entities = _filter.Entities;
             for (var i = 0; i < _descs.Length; i++) {
+                var job = new EcsMultiThreadJob ();
+                job.World = _world;
+                job.Entities = _filter.Entities;
                 var desc = new WorkerDesc ();
                 desc.Job = job;
                 desc.Thread = new Thread (ThreadProc);
@@ -83,8 +93,11 @@ namespace LeopotamGroup.Ecs {
 
         void IEcsRunSystem.Run () {
             var count = _filter.Entities.Count;
+
+            ForceSync ();
+
             // no need to use threads on short tasks.
-            if (count < _jobSize * 2) {
+            if (_forceSyncState && count < _jobSize * 2) {
                 _descs[0].Job.From = 0;
                 _descs[0].Job.To = count;
                 _worker (_descs[0].Job);
@@ -108,7 +121,9 @@ namespace LeopotamGroup.Ecs {
                         _syncs[workerId].Reset ();
                     }
                 }
-                WaitHandle.WaitAll (_syncs);
+                if (_forceSyncState) {
+                    WaitHandle.WaitAll (_syncs);
+                }
             }
         }
 
@@ -149,6 +164,11 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         protected abstract int GetThreadsCount ();
 
+        /// <summary>
+        /// Should threads be force synchronized to main thread (lock main thread and await results from threads).
+        /// </summary>
+        protected abstract bool GetForceSyncState ();
+
         sealed class WorkerDesc {
             public Thread Thread;
             public ManualResetEvent HasWork;
@@ -165,7 +185,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// EcsWorld instance.
         /// </summary>
-        public EcsWorld World;
+        public IEcsReadOnlyWorld World;
 
         /// <summary>
         /// Entities list to processing.
