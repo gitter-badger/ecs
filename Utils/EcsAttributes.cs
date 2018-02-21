@@ -36,4 +36,10 @@ namespace LeopotamGroup.Ecs {
             Components = components;
         }
     }
+
+    /// <summary>
+    /// Processes injection to EcsFilter field - filter should be filled with compatible entities.
+    /// </summary>
+    [AttributeUsage (AttributeTargets.Field)]
+    public sealed class EcsFilterFillAttribute : Attribute { }
 }

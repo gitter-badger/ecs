@@ -7,21 +7,6 @@
 namespace LeopotamGroup.Ecs {
     public struct EcsWorldStats {
         /// <summary>
-        /// Amount of registered IEcsInitSystem systems.
-        /// </summary>
-        public int InitSystems;
-
-        /// <summary>
-        /// Amount of registered IEcsRunSystem systems with [EcsRunUpdate] attribute.
-        /// </summary>
-        public int RunUpdateSystems;
-
-        /// <summary>
-        /// Amount of registered IEcsRunSystem systems with [EcsRunFixedUpdate] attribute.
-        /// </summary>
-        public int RunFixedUpdateSystems;
-
-        /// <summary>
         /// Amount of active entities.
         /// </summary>
         public int ActiveEntities;
@@ -40,10 +25,5 @@ namespace LeopotamGroup.Ecs {
         /// Amount of registered component types.
         /// </summary>
         public int Components;
-
-        /// <summary>
-        /// Current amount of delayed updates.
-        /// </summary>
-        public int DelayedUpdates;
     }
 }

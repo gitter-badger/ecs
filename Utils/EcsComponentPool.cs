@@ -8,10 +8,9 @@ using System;
 
 namespace LeopotamGroup.Ecs.Internals {
     interface IEcsComponentPool {
-        object GetItem (int idx);
-        void RecycleIndex (int id);
-        int GetComponentIndex ();
-        void ConnectToWorld (EcsWorld world, int index);
+        object GetExistItemById (int idx);
+        void RecycleById (int id);
+        int GetComponentTypeIndex ();
     }
 
     /// <summary>
@@ -20,61 +19,64 @@ namespace LeopotamGroup.Ecs.Internals {
     sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
         public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
 
-        public T[] Items = new T[8];
+        public T[] Items = new T[MinSize];
 
-        public int TypeIndex = -1;
+        const int MinSize = 8;
 
-        public EcsWorld World;
+        int _typeIndex;
 
-        int[] _reservedItems = new int[8];
+        int[] _reservedItems = new int[MinSize];
 
         int _itemsCount;
 
         int _reservedItemsCount;
 
-        public int GetIndex () {
+        Func<T> _creator;
+
+        EcsComponentPool () {
+            _typeIndex = EcsHelpers.ComponentsCount++;
+        }
+
+        public int RequestNewId () {
             int id;
             if (_reservedItemsCount > 0) {
                 id = _reservedItems[--_reservedItemsCount];
             } else {
                 id = _itemsCount;
                 if (_itemsCount == Items.Length) {
-                    var newItems = new T[_itemsCount << 1];
-                    Array.Copy (Items, newItems, _itemsCount);
-                    Items = newItems;
+                    Array.Resize (ref Items, _itemsCount << 1);
                 }
-                Items[_itemsCount++] = new T ();
+                Items[_itemsCount++] = _creator != null ? _creator () : (T) Activator.CreateInstance (typeof (T));
             }
             return id;
         }
 
-        public void RecycleIndex (int id) {
+        public void RecycleById (int id) {
             if (_reservedItemsCount == _reservedItems.Length) {
-                var newItems = new int[_reservedItemsCount << 1];
-                Array.Copy (_reservedItems, newItems, _reservedItemsCount);
-                _reservedItems = newItems;
+                Array.Resize (ref _reservedItems, _reservedItemsCount << 1);
             }
             _reservedItems[_reservedItemsCount++] = id;
         }
 
-        object IEcsComponentPool.GetItem (int idx) {
+        object IEcsComponentPool.GetExistItemById (int idx) {
             return Items[idx];
         }
 
-        int IEcsComponentPool.GetComponentIndex () {
-            return TypeIndex;
+        public int GetComponentTypeIndex () {
+            return _typeIndex;
         }
 
-        public void ConnectToWorld (EcsWorld world, int index) {
-            if (world != null && World != null) {
-                throw new Exception ("Already connected to another world.");
+        public void SetCreator (Func<T> creator) {
+            _creator = creator;
+        }
+
+        public void Shrink () {
+            var newSize = EcsHelpers.GetPowerOfTwoSize (_itemsCount < MinSize ? MinSize : _itemsCount);
+            if (newSize < Items.Length) {
+                Array.Resize (ref Items, newSize);
             }
-            World = world;
-            TypeIndex = index;
-            if (World == null) {
-                Items = new T[8];
-                _reservedItems = new int[8];
-                _itemsCount = 0;
+            if (_reservedItems.Length > MinSize) {
+                _reservedItems = new int[MinSize];
                 _reservedItemsCount = 0;
             }
         }

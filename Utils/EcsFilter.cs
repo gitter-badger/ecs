@@ -4,9 +4,23 @@
 // Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
+using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
+    /// <summary>
+    /// Basic interface for filter events processing.
+    /// </summary>
+    public interface IEcsFilterListener {
+        void OnFilterEntityAdded (int entity, object reason);
+        void OnFilterEntityRemoved (int entity, object reason);
+        void OnFilterEntityUpdated (int entity, object reason);
+    }
+
+    /// <summary>
+    /// Container for filtered entities based on specified conditions.
+    /// </summary>
     public sealed class EcsFilter {
         /// <summary>
         /// Components mask for filtering entities with required components.
@@ -24,42 +38,87 @@ namespace LeopotamGroup.Ecs {
         /// List of filtered entities.
         /// Do not change it manually!
         /// </summary>
-        public readonly List<int> Entities = new List<int> (512);
+        public readonly List<int> Entities = new List<int> (64);
+
+        IEcsFilterListener[] _listeners = new IEcsFilterListener[4];
+
+        int _listenersCount;
 
         /// <summary>
-        /// Raises on entity added to filter.
+        /// Adds listener to events procesing.
         /// </summary>
-        public event OnFilterChangeHandler OnEntityAdded = delegate { };
+        /// <param name="listener">External listener.</param>
+        public void AddListener (IEcsFilterListener listener) {
+#if DEBUG
+            if (listener == null) {
+                throw new System.ArgumentNullException ();
+            }
 
-        /// <summary>
-        /// Raises on entity removed from filter.
-        /// </summary>
-        public event OnFilterChangeHandler OnEntityRemoved = delegate { };
-
-        /// <summary>
-        /// Raises on entity changed inplace.
-        /// </summary>
-        public event OnFilterChangeHandler OnEntityUpdated = delegate { };
-
-        internal void RaiseOnEntityAdded (int entity) {
-            OnEntityAdded (entity);
+            for (var i = 0; i < _listenersCount; i++) {
+                if (_listeners[i] == listener) {
+                    throw new System.Exception ("Listener already added");
+                }
+            }
+#endif
+            if (_listenersCount == _listeners.Length) {
+                Array.Resize (ref _listeners, _listenersCount << 1);
+            }
+            _listeners[_listenersCount++] = listener;
         }
 
-        internal void RaiseOnEntityRemoved (int entity) {
-            OnEntityRemoved (entity);
+        /// <summary>
+        /// Removes listener from events procesing.
+        /// </summary>
+        /// <param name="listener">External listener.</param>
+        public void RemoveListener (IEcsFilterListener listener) {
+            if (listener != null) {
+                for (var i = _listenersCount - 1; i >= 0; i--) {
+                    if (_listeners[i] == listener) {
+                        _listenersCount--;
+                        Array.Copy (_listeners, i + 1, _listeners, i, _listenersCount - i);
+                        break;
+                    }
+                }
+            }
         }
 
-        internal void RaiseOnEntityUpdated (int entity) {
-            OnEntityUpdated (entity);
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        internal void RaiseOnAddEvent (int entity, object reason) {
+            Entities.Add (entity);
+            for (var i = 0; i < _listenersCount; i++) {
+                _listeners[i].OnFilterEntityAdded (entity, reason);
+            }
+        }
+
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        internal void RaiseOnRemoveEvent (int entity, object reason) {
+            Entities.Remove (entity);
+            for (var i = 0; i < _listenersCount; i++) {
+                _listeners[i].OnFilterEntityRemoved (entity, reason);
+            }
+        }
+
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        internal void RaiseOnUpdateEvent (int entity, object reason) {
+            for (var i = 0; i < _listenersCount; i++) {
+                _listeners[i].OnFilterEntityUpdated (entity, reason);
+            }
         }
 
         internal EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {
             IncludeMask = include;
             ExcludeMask = exclude;
         }
-
+#if DEBUG
         public override string ToString () {
             return string.Format ("Filter(+{0} -{1})", IncludeMask, ExcludeMask);
         }
+#endif
     }
 }

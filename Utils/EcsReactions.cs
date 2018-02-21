@@ -5,15 +5,14 @@
 // ----------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Ecs system for stream processing events from EcsFilter.
     /// </summary>
-    public abstract class EcsReactSystem : IEcsPreInitSystem, IEcsRunSystem {
+    public abstract class EcsReactSystem : IEcsPreInitSystem, IEcsRunSystem, IEcsFilterListener {
         public abstract EcsFilter GetReactFilter ();
-
-        public abstract EcsRunSystemType GetRunSystemType ();
 
         public abstract EcsReactSystemType GetReactSystemType ();
 
@@ -23,66 +22,76 @@ namespace LeopotamGroup.Ecs {
 
         EcsReactSystemType _type;
 
-        readonly List<int> _entities = new List<int> (512);
+        readonly List<int> _entities = new List<int> (64);
+
+        int _entitiesCount;
+
+        readonly EcsEntityHashSet _entityHashes = new EcsEntityHashSet ();
 
         public void Run () {
-            if (_entities.Count > 0) {
+            if (_entitiesCount > 0) {
                 RunReact (_entities);
                 _entities.Clear ();
+                _entityHashes.Clear ();
+                _entitiesCount = 0;
             }
         }
 
-        void OnEntityAdded (int entity) {
-            if (_entities.IndexOf (entity) == -1) {
+        void IEcsFilterListener.OnFilterEntityAdded (int entity, object component) {
+#if DEBUG
+            if (_entityHashes.Contains (entity)) {
+                throw new System.Exception ("Entity already in processing list.");
+            }
+#endif
+            if (_type == EcsReactSystemType.OnAdd) {
                 _entities.Add (entity);
+                _entityHashes.Add (entity);
+                _entitiesCount++;
             }
         }
 
-        void OnEntityRemoved (int entity) {
-            _entities.Remove (entity);
+        void IEcsFilterListener.OnFilterEntityUpdated (int entity, object component) {
+            if (_type == EcsReactSystemType.OnUpdate) {
+                if (_entityHashes.Add (entity)) {
+                    _entities.Add (entity);
+                    _entitiesCount++;
+                }
+            }
+        }
+
+        void IEcsFilterListener.OnFilterEntityRemoved (int entity, object component) {
+            if (_entityHashes.Remove (entity)) {
+                _entities.Remove (entity);
+                _entitiesCount--;
+            }
         }
 
         void IEcsPreInitSystem.PreInitialize () {
             _reactFilter = GetReactFilter ();
             _type = GetReactSystemType ();
-            switch (_type) {
-                case EcsReactSystemType.OnAdd:
-                    _reactFilter.OnEntityAdded += OnEntityAdded;
-                    _reactFilter.OnEntityRemoved += OnEntityRemoved;
-                    break;
-                case EcsReactSystemType.OnUpdate:
-                    _reactFilter.OnEntityUpdated += OnEntityAdded;
-                    break;
-                case EcsReactSystemType.OnRemove:
-                    throw new System.NotSupportedException (
-                        "OnRemove type not supported for delayed processing, use EcsReactInstantSystem instead.");
+#if DEBUG
+            if (_type == EcsReactSystemType.OnRemove) {
+                throw new System.NotSupportedException (
+                    "OnRemove type not supported for delayed processing, use EcsReactInstantSystem instead.");
             }
+#endif
+            _reactFilter.AddListener (this);
         }
 
         void IEcsPreInitSystem.PreDestroy () {
-            switch (_type) {
-                case EcsReactSystemType.OnAdd:
-                    _reactFilter.OnEntityAdded -= OnEntityAdded;
-                    _reactFilter.OnEntityRemoved -= OnEntityRemoved;
-                    break;
-                case EcsReactSystemType.OnUpdate:
-                    _reactFilter.OnEntityUpdated -= OnEntityAdded;
-                    break;
-            }
+            _reactFilter.RemoveListener (this);
         }
     }
 
     /// <summary>
     /// Ecs system for instant processing events from EcsFilter.
     /// </summary>
-    public abstract class EcsReactInstantSystem : IEcsPreInitSystem {
+    public abstract class EcsReactInstantSystem : IEcsPreInitSystem, IEcsFilterListener {
         public abstract EcsFilter GetReactFilter ();
-
-        public abstract EcsRunSystemType GetRunSystemType ();
 
         public abstract EcsReactSystemType GetReactSystemType ();
 
-        public abstract void RunReact (int entity);
+        public abstract void RunReact (int entity, object reason);
 
         EcsFilter _reactFilter;
 
@@ -91,30 +100,28 @@ namespace LeopotamGroup.Ecs {
         void IEcsPreInitSystem.PreInitialize () {
             _reactFilter = GetReactFilter ();
             _type = GetReactSystemType ();
-            switch (_type) {
-                case EcsReactSystemType.OnAdd:
-                    _reactFilter.OnEntityAdded += RunReact;
-                    break;
-                case EcsReactSystemType.OnRemove:
-                    _reactFilter.OnEntityRemoved += RunReact;
-                    break;
-                case EcsReactSystemType.OnUpdate:
-                    _reactFilter.OnEntityUpdated += RunReact;
-                    break;
-            }
+            _reactFilter.AddListener (this);
         }
 
         void IEcsPreInitSystem.PreDestroy () {
-            switch (_type) {
-                case EcsReactSystemType.OnAdd:
-                    _reactFilter.OnEntityAdded -= RunReact;
-                    break;
-                case EcsReactSystemType.OnRemove:
-                    _reactFilter.OnEntityRemoved -= RunReact;
-                    break;
-                case EcsReactSystemType.OnUpdate:
-                    _reactFilter.OnEntityUpdated -= RunReact;
-                    break;
+            _reactFilter.RemoveListener (this);
+        }
+
+        void IEcsFilterListener.OnFilterEntityAdded (int entity, object reason) {
+            if (_type == EcsReactSystemType.OnAdd) {
+                RunReact (entity, reason);
+            }
+        }
+
+        void IEcsFilterListener.OnFilterEntityRemoved (int entity, object reason) {
+            if (_type == EcsReactSystemType.OnRemove) {
+                RunReact (entity, reason);
+            }
+        }
+
+        void IEcsFilterListener.OnFilterEntityUpdated (int entity, object reason) {
+            if (_type == EcsReactSystemType.OnUpdate) {
+                RunReact (entity, reason);
             }
         }
     }

@@ -7,10 +7,6 @@ Performance and zero memory allocation / no gc work / small size - main goals of
 
 > Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
 
-> Components limit - 256 **different** components at each world (256 C# classes), can be changed with preprocessor defines: `ECS_COMPONENT_LIMIT_512`, `ECS_COMPONENT_LIMIT_1024` or `ECS_COMPONENT_LIMIT_2048`.
-
-> Components limit on each entity: up to component limit at ecs-world, but better to keep it less or equal 6 for performance reason.
-
 # Main parts of ecs
 
 ## Component
@@ -53,14 +49,8 @@ class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem {
 
 ```
 class HealthSystem : IEcsRunSystem {
-    EcsRunSystemType IEcsRunSystem.GetRunSystemType () {
-        // Should returns type of run system,
-        // when Run method will be called - Update() or FixedUpdate.
-        return EcsRunSystemType.Update;
-    }
-
     void IEcsRunSystem.Run () {
-        // Will be called each FixedUpdate().
+        // Will be called on each EcsSystems.Run() call.
     }
 }
 ```
@@ -89,6 +79,8 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     // We wants to get entities with WeaponComponent and without HealthComponent.
     [EcsFilterInclude(typeof(WeaponComponent))]
     [EcsFilterExclude(typeof(HealthComponent))]
+    // If this filter not exists (will be created) - force scan world for compatible entities.
+    [EcsFilterFill]
     EcsFilter _filter;
 
     void IEcsInitSystem.Initialize () {
@@ -97,10 +89,6 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     }
 
     void IEcsInitSystem.Destroy () { }
-
-    EcsRunSystemType IEcsRunSystem.GetRunSystemType () {
-        return EcsRunSystemType.Update;
-    }
 
     void IEcsRunSystem.Run () {
         foreach (var entity in _filter.Entities) {
@@ -112,32 +100,30 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 
 ## EcsWorld
-Root level container for all systems / entities / components, works like isolated environment:
+Root level container for all entities / components, works like isolated environment.
+
+## EcsSystems
+Group of systems to process `EcsWorld` instance:
 ```
 class Startup : MonoBehaviour {
-    EcsWorld _world;
+    EcsSystems _systems;
 
     void OnEnable() {
         // create ecs environment.
-        _world = new EcsWorld ()
-            .AddSystem(new WeaponSystem ());
-        _world.Initialize();
+        var world = new EcsWorld ();
+        _systems = new EcsSystems(world)
+            .Add (new WeaponSystem ());
+        _systems.Initialize ();
     }
     
     void Update() {
         // process all dependent systems.
-        _world.RunUpdate ();
-    }
-
-    void FixedUpdate() {
-        // process all dependent systems.
-        _world.RunFixedUpdate ();
+        _systems.Run ();
     }
 
     void OnDisable() {
-        // destroy ecs environment.
-        _world.Destroy ();
-        _world = null;
+        // destroy systems logical group.
+        _systems.Destroy ();
     }
 }
 ```
@@ -167,11 +153,6 @@ public sealed class TestReactSystem : EcsReactSystem {
         return EcsReactSystemType.OnUpdate;
     }
 
-    // EcsReactSystem is IEcsRunSystem and should provides additional info.
-    public override EcsRunSystemType GetRunSystemType () {
-        return EcsRunSystemType.Update;
-    }
-
     // Filtered entities processing, will be raised only if entities presents.
     public override void RunReact (List<int> entities) {
         foreach (var entity in entities) {
@@ -185,7 +166,7 @@ public sealed class TestReactSystem : EcsReactSystem {
 ## Process events from EcsFilter immediately
 `EcsInstantReactSystem` class can be used for this case.
 
-Useful case for using this type of processing - reaction fro OnRemove event.
+Useful case for using this type of processing - reaction from OnRemove event.
 
 ```
 public sealed class TestReactInstantSystem : EcsReactInstantSystem {
@@ -206,26 +187,24 @@ public sealed class TestReactInstantSystem : EcsReactInstantSystem {
         return EcsReactSystemType.OnRemove;
     }
 
-    // EcsReactSystem is IEcsRunSystem and should provides additional info.
-    public override EcsRunSystemType GetRunSystemType () {
-        return EcsRunSystemType.Update;
-    }
-
     // Entity processing, will be raised only when entity will be removed from filter.
-    public override void RunReact (int entity) {
+    public override void RunReact (int entity, object reason) {
+        // not works - component already detached at this moment.
         var weapon = _world.GetComponent<WeaponComponent> (entity);
-        Debug.LogFormat ("Weapon removed from {0}", entity);
+
+        // reason - detached component instance.
+        Debug.LogFormat ("{1} removed from {0}", entity, reason.GetType().Name);
     }
 }
 ```
 
 ## Custom reaction
-Events `OnEntityComponentAdded` / `OnEntityComponentRemoved` at `EcsWorld` instance and `OnEntityAdded` / `OnEntityRemoved` / `OnEntityUpdated` at `EcsFilter` instance can be used to add reaction on component / filter changes to any ecs-system.
+For handling of filter events `custom class` should implements `IEcsFilterListener` interface with 3 methods: `OnFilterEntityAdded` / `OnFilterEntityRemoved` / `OnFilterEntityUpdated`. Then it can be added to any filter as compatible listener.
 
 > **Not recommended if you dont understand how it works internally, this api / behaviour can be changed later.**
 
 ```
-public sealed class TestSystem1 : IEcsInitSystem {
+public sealed class TestSystem1 : IEcsInitSystem, IEcsFilterListener {
     [EcsWorld]
     EcsWorld _world;
 
@@ -233,8 +212,7 @@ public sealed class TestSystem1 : IEcsInitSystem {
     EcsFilter _weaponFilter;
 
     void IEcsInitSystem.Initialize () {
-        _weaponFilter.OnEntityAdded += OnFilterEntityAdded;
-        _weaponFilter.OnEntityUpdated += OnFilterEntityUpdated;
+        _weaponFilter.AddListener(this);
 
         var entity = _world.CreateEntity ();
         _world.AddComponent<WeaponComponent> (entity);
@@ -242,21 +220,22 @@ public sealed class TestSystem1 : IEcsInitSystem {
     }
 
     void IEcsInitSystem.Destroy () {
-        _world.OnEntityComponentAdded -= OnEntityComponentAdded;
-        _weaponFilter.OnEntityAdded -= OnFilterEntityAdded;
-        _weaponFilter.OnEntityUpdated -= OnFilterEntityUpdated;
+        _weaponFilter.RemoveListener(this);
     }
 
-    void OnFilterEntityAdded (int entity) {
-        // Entity "entityId" was added to _weaponFilter due to component "WeaponComponent" was added.
+    void IEcsFilterListener.OnFilterEntityAdded (int entity, object reason) {
+        // Entity "entityId" was added to _weaponFilter due to component "reason" with type "WeaponComponent" was added to entity.
     }
 
-    void OnFilterEntityUpdated(int entityId) {
-        // Component "WeaponComponent" was updated inplace on entity "entityId".
+    void IEcsFilterListener.OnFilterEntityUpdated(int entityId, object reason) {
+        // Component "reason" with type "WeaponComponent" was updated inplace on entity "entityId".
+    }
+
+    void IEcsFilterListener.OnFilterEntityRemoved (int entity, object reason) {
+        // Entity "entityId" was removed from _weaponFilter due to component "reason" with type "WeaponComponent" was removed from entity.
     }
 }
 ```
-
 
 # Sharing data between systems
 If `EcsWorld` class should contains some shared fields (useful for sharing assets / prefabs), it can be implemented in this way:
@@ -304,13 +283,14 @@ class Startup : Monobehaviour {
     [SerializedField]
     MySharedData _sharedData;
 
-    MyWorld _world;
+    EcsSystems _systems;
 
     void OnEnable() {
-        _world = new MyWorld(_sharedData)
-            .AddSystem(ChangePlayerName())
-            .AddSystem(SpawnPlayerModel());
-        _world.Initialize();
+        var world = new MyWorld (_sharedData);
+        _systems = new EcsSystems(world)
+            .Add (ChangePlayerName())
+            .Add (SpawnPlayerModel());
+        _systems.Initialize();
     }
 }
 ```
@@ -319,7 +299,63 @@ class Startup : Monobehaviour {
 [Snake game](https://github.com/Leopotam/ecs-snake)
 
 # Extensions
+[UnityEditor integration](https://github.com/Leopotam/ecs-unityintegration)
+
 [uGui event bindings](https://github.com/Leopotam/ecs-ui)
 
 # License
 The software released under the terms of the MIT license. Enjoy.
+
+# FAQ
+
+### My project complex enough, I need more than 256 components. How I can do it?
+
+There are no components limit, but for performance / memory usage reason better to keep amount of components on each entity less or equals 8.
+
+### I want to create alot of new entities with new components on start, how to speed up this process?
+
+In this case custom component creator can be used (for speed up 2x or more):
+
+```
+class MyComponent { }
+
+class Startup : Monobehaviour {
+    EcsSystems _systems;
+
+    void OnEnable() {
+        var world = new MyWorld (_sharedData);
+        
+        EcsWorld.RegisterComponentCreator<MyComponent> (() => new MyComponent());
+        
+        _systems = new EcsSystems(world)
+            .Add (MySystem());
+        _systems.Initialize();
+    }
+}
+```
+
+### I want to process one system at `MonoBehaviour.Update` and another - at `MonoBehaviour.FixedUpdate`. How I can do it?
+
+For splitting systems by `MonoBehaviour`-method multiple `EcsSystems` logical groups should be used:
+```
+EcsSystems _update;
+EcsSystems _fixedUpdate;
+
+void OnEnable() {
+    var world = new EcsWorld();
+    _update = new EcsSystems(world).Add(new UpdateSystem());
+    _fixedUpdate = new EcsSystems(world).Add(new FixedUpdateSystem());
+}
+
+void Update() {
+    _update.Run();
+}
+
+void FixedUpdate() {
+    _fixedUpdate.Run();
+}
+```
+
+### How it fast relative to Entitas?
+
+Some test can be found at [this repo](https://github.com/echeg/unityecs_speedtest). Tests can be obsoleted, better to grab last versions of frameworks and check locally.
