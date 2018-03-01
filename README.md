@@ -299,7 +299,7 @@ class Startup : Monobehaviour {
 [Snake game](https://github.com/Leopotam/ecs-snake)
 
 # Extensions
-[UnityEditor integration](https://github.com/Leopotam/ecs-unityintegration)
+[Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
 [uGui event bindings](https://github.com/Leopotam/ecs-ui)
 
@@ -334,7 +334,7 @@ class Startup : Monobehaviour {
 }
 ```
 
-### I want to process one system at `MonoBehaviour.Update` and another - at `MonoBehaviour.FixedUpdate`. How I can do it?
+### I want to process one system at MonoBehaviour.Update() and another - at MonoBehaviour.FixedUpdate(). How I can do it?
 
 For splitting systems by `MonoBehaviour`-method multiple `EcsSystems` logical groups should be used:
 ```
