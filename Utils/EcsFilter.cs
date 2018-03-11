@@ -51,15 +51,6 @@ namespace LeopotamGroup.Ecs {
         int _listenersCount;
 
         /// <summary>
-        /// Returns filtered entities. Important: array should be iterated from 0 to "count" value, not to array.Length!
-        /// </summary>
-        /// <param name="count">Entites amount in array.</param>
-        public int[] GetEntities (out int count) {
-            count = EntitiesCount;
-            return Entities;
-        }
-
-        /// <summary>
         /// Adds listener to events procesing.
         /// </summary>
         /// <param name="listener">External listener.</param>
