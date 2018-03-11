@@ -5,7 +5,6 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 #if !UNITY_WEBGL
 using System.Threading;
 #endif
@@ -87,7 +86,6 @@ namespace LeopotamGroup.Ecs {
             for (var i = 0; i < _descs.Length; i++) {
                 job = new EcsMultiThreadJob ();
                 job.World = _world;
-                job.Entities = _filter.Entities;
                 var desc = new WorkerDesc ();
                 desc.Job = job;
                 desc.Thread = new Thread (ThreadProc);
@@ -105,11 +103,10 @@ namespace LeopotamGroup.Ecs {
 #endif
             _localJob = new EcsMultiThreadJob ();
             _localJob.World = _world;
-            _localJob.Entities = _filter.Entities;
         }
 
         void IEcsRunSystem.Run () {
-            var count = _filter.Entities.Count;
+            var count = _filter.EntitiesCount;
             var processed = 0;
 #if !UNITY_WEBGL
             var jobSize = count / (_threadsCount + 1);
@@ -122,6 +119,7 @@ namespace LeopotamGroup.Ecs {
             }
             for (var i = 0; i < workersCount - 1; i++) {
                 var desc = _descs[i];
+                desc.Job.Entities = _filter.Entities;
                 desc.Job.From = processed;
                 processed += jobSize;
                 desc.Job.To = processed;
@@ -129,6 +127,7 @@ namespace LeopotamGroup.Ecs {
                 desc.HasWork.Set ();
             }
 #endif
+            _localJob.Entities = _filter.Entities;
             _localJob.From = processed;
             _localJob.To = count;
             _worker (_localJob);
@@ -203,7 +202,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Entities list to processing.
         /// </summary>
-        public List<int> Entities;
+        public int[] Entities;
 
         /// <summary>
         /// Index of first entity in list to processing.
