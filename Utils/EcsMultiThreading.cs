@@ -11,76 +11,15 @@ using System.Threading;
 #endif
 
 namespace LeopotamGroup.Ecs {
-#if UNITY_WEBGL
-#warning Multithreading not supported in WebGL
     /// <summary>
-    /// Stub for base system of multithreading processing. Will work like IEcsRunSystem system.
+    /// Base system for multithreading processing. In WebGL - will work like IEcsRunSystem system.
     /// </summary>
     public abstract class EcsMultiThreadSystem : IEcsPreInitSystem, IEcsRunSystem {
-        EcsMultiThreadJob _localJob;
-
-        EcsWorld _world;
-
-        EcsFilter _filter;
-
-        Action<EcsMultiThreadJob> _worker;
-
-        public void ForceSync () { }
-
-        void IEcsPreInitSystem.PreInitialize () {
-            _world = GetWorld ();
-            _filter = GetFilter ();
-            _worker = GetWorker ();
-#if DEBUG
-            if (_world == null) {
-                throw new Exception ("Invalid EcsWorld");
-            }
-            if (_filter == null) {
-                throw new Exception ("Invalid EcsFilter");
-            }
-            if (GetMinJobSize () < 1) {
-                throw new Exception ("Invalid JobSize");
-            }
-            if (GetThreadsCount () < 1) {
-                throw new Exception ("Invalid ThreadsCount");
-            }
-#endif
-            _localJob = new EcsMultiThreadJob ();
-            _localJob.World = _world;
-            _localJob.From = 0;
-            _localJob.Entities = _filter.Entities;
-        }
-
-        void IEcsPreInitSystem.PreDestroy () {
-            _world = null;
-            _filter = null;
-            _worker = null;
-        }
-
-        void IEcsRunSystem.Run () {
-            _localJob.To = _filter.Entities.Count;
-            _worker (_localJob);
-        }
-
-        protected abstract EcsWorld GetWorld ();
-
-        protected abstract EcsFilter GetFilter ();
-
-        protected abstract Action<EcsMultiThreadJob> GetWorker ();
-
-        protected abstract int GetMinJobSize ();
-
-        protected abstract int GetThreadsCount ();
-    }
-#else
-    /// <summary>
-    /// Base system for multithreading processing.
-    /// </summary>
-    public abstract class EcsMultiThreadSystem : IEcsPreInitSystem, IEcsRunSystem {
+#if !UNITY_WEBGL
         WorkerDesc[] _descs;
 
         ManualResetEvent[] _syncs;
-
+#endif
         EcsMultiThreadJob _localJob;
 
         EcsWorld _world;
@@ -99,10 +38,13 @@ namespace LeopotamGroup.Ecs {
         /// Force synchronized threads to main thread (lock main thread and await results from threads).
         /// </summary>
         public void ForceSync () {
+#if !UNITY_WEBGL
             WaitHandle.WaitAll (_syncs);
+#endif
         }
 
         void IEcsPreInitSystem.PreDestroy () {
+#if !UNITY_WEBGL
             for (var i = 0; i < _descs.Length; i++) {
                 var desc = _descs[i];
                 _descs[i] = null;
@@ -111,6 +53,7 @@ namespace LeopotamGroup.Ecs {
                 _syncs[i].Close ();
                 _syncs[i] = null;
             }
+#endif
             _world = null;
             _filter = null;
             _worker = null;
@@ -136,8 +79,8 @@ namespace LeopotamGroup.Ecs {
             if (_threadsCount < 1) {
                 throw new Exception ("Invalid ThreadsCount");
             }
-            var hash = this.GetHashCode ();
 #endif
+#if !UNITY_WEBGL
             _descs = new WorkerDesc[_threadsCount];
             _syncs = new ManualResetEvent[_threadsCount];
             EcsMultiThreadJob job;
@@ -150,7 +93,7 @@ namespace LeopotamGroup.Ecs {
                 desc.Thread = new Thread (ThreadProc);
                 desc.Thread.IsBackground = true;
 #if DEBUG
-                desc.Thread.Name = string.Format ("ECS-{0:X}-{1}", hash, i);
+                desc.Thread.Name = string.Format ("ECS-{0:X}-{1}", this.GetHashCode (), i);
 #endif
                 desc.HasWork = new ManualResetEvent (false);
                 desc.WorkDone = new ManualResetEvent (true);
@@ -159,6 +102,7 @@ namespace LeopotamGroup.Ecs {
                 _syncs[i] = desc.WorkDone;
                 desc.Thread.Start (desc);
             }
+#endif
             _localJob = new EcsMultiThreadJob ();
             _localJob.World = _world;
             _localJob.Entities = _filter.Entities;
@@ -167,6 +111,7 @@ namespace LeopotamGroup.Ecs {
         void IEcsRunSystem.Run () {
             var count = _filter.Entities.Count;
             var processed = 0;
+#if !UNITY_WEBGL
             var jobSize = count / (_threadsCount + 1);
             int workersCount;
             if (jobSize > _minJobSize) {
@@ -183,6 +128,7 @@ namespace LeopotamGroup.Ecs {
                 desc.WorkDone.Reset ();
                 desc.HasWork.Set ();
             }
+#endif
             _localJob.From = processed;
             _localJob.To = count;
             _worker (_localJob);
@@ -190,7 +136,7 @@ namespace LeopotamGroup.Ecs {
                 ForceSync ();
             }
         }
-
+#if !UNITY_WEBGL
         void ThreadProc (object rawDesc) {
             var desc = (WorkerDesc) rawDesc;
             try {
@@ -203,6 +149,14 @@ namespace LeopotamGroup.Ecs {
             } catch { }
         }
 
+        sealed class WorkerDesc {
+            public Thread Thread;
+            public ManualResetEvent HasWork;
+            public ManualResetEvent WorkDone;
+            public Action<EcsMultiThreadJob> Worker;
+            public EcsMultiThreadJob Job;
+        }
+#endif
         /// <summary>
         /// EcsWorld instance to use in custom worker.
         /// </summary>
@@ -235,17 +189,8 @@ namespace LeopotamGroup.Ecs {
         protected virtual bool GetForceSyncState () {
             return true;
         }
-
-        sealed class WorkerDesc {
-            public Thread Thread;
-            public ManualResetEvent HasWork;
-            public ManualResetEvent WorkDone;
-            public Action<EcsMultiThreadJob> Worker;
-            public EcsMultiThreadJob Job;
-        }
-
     }
-#endif
+
     /// <summary>
     /// Job info for multithreading processing.
     /// </summary>
