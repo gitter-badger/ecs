@@ -21,10 +21,14 @@ namespace LeopotamGroup.Ecs {
     }
 #endif
 
+    public interface IEcsReadOnlyWorld {
+        T GetComponent<T> (int entity) where T : class, new ();
+    }
+
     /// <summary>
     /// Basic ecs world implementation.
     /// </summary>
-    public class EcsWorld {
+    public class EcsWorld : IEcsReadOnlyWorld {
         /// <summary>
         /// Filter lists sorted by components for fast UpdateComponent processing.
         /// </summary>
@@ -487,7 +491,10 @@ namespace LeopotamGroup.Ecs {
             for (var i = 0; i < _entitiesCount; i++) {
                 var entity = _entities[i];
                 if (!entity.IsReserved && entity.Mask.IsCompatible (filter)) {
-                    filter.Entities.Add (i);
+                    if (filter.Entities.Length == filter.EntitiesCount) {
+                        Array.Resize (ref filter.Entities, filter.EntitiesCount << 1);
+                    }
+                    filter.Entities[filter.EntitiesCount++] = i;
                 }
             }
         }
@@ -508,7 +515,13 @@ namespace LeopotamGroup.Ecs {
                 if (oldMask.IsCompatible (filter)) {
                     if (!isNewMaskCompatible) {
 #if DEBUG
-                        if (filter.Entities.IndexOf (entity) == -1) {
+                        var ii = filter.EntitiesCount - 1;
+                        for (; ii >= 0; ii--) {
+                            if (filter.Entities[ii] == entity) {
+                                break;
+                            }
+                        }
+                        if (ii == -1) {
                             throw new Exception (
                                 string.Format ("Something wrong - entity {0} should be in filter {1}, but not exits.", entity, filter));
                         }

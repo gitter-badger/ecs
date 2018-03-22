@@ -197,14 +197,14 @@ namespace LeopotamGroup.Ecs {
             _debugListeners.Clear ();
 #endif
 
-            for (var i = 0; i < _initSystems.Count; i++) {
+            for (var i = _initSystems.Count - 1; i >= 0; i--) {
                 _initSystems[i].Destroy ();
             }
-            for (var i = 0; i < _preInitSystems.Count; i++) {
+            for (var i = _preInitSystems.Count - 1; i >= 0; i--) {
                 _preInitSystems[i].PreDestroy ();
             }
-
             _initSystems.Clear ();
+            _preInitSystems.Clear ();
             for (var i = _runSystemsCount - 1; i >= 0; i--) {
                 _runSystems[i] = null;
             }

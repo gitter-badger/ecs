@@ -91,13 +91,16 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     void IEcsInitSystem.Destroy () { }
 
     void IEcsRunSystem.Run () {
-        foreach (var entity in _filter.Entities) {
+        // Important: foreach-loop cant be used for filtered entities!
+        for (var i = 0; i < _filter.EntitiesCount; i++) {
+            var entity = _filter.Entities[i];
             var weapon = _world.GetComponent<WeaponComponent> (entity);
             weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
         }
     }
 }
 ```
+> Important: filter.Entities cant be iterated with foreach-loop, for-loop should be used instead with filter.EntitiesCount value as upper-bound.
 
 ## EcsWorld
 Root level container for all entities / components, works like isolated environment.
@@ -154,8 +157,9 @@ public sealed class TestReactSystem : EcsReactSystem {
     }
 
     // Filtered entities processing, will be raised only if entities presents.
-    public override void RunReact (List<int> entities) {
-        foreach (var entity in entities) {
+    public override void RunReact (int[] entities, int count) {
+        for (var i = 0; i < count; i++) {
+            var entity = entities[i];
             var weapon = _world.GetComponent<WeaponComponent> (entity);
             Debug.LogFormat ("Weapon updated on {0}", entity);
         }
@@ -299,7 +303,7 @@ class Startup : Monobehaviour {
 [Snake game](https://github.com/Leopotam/ecs-snake)
 
 # Extensions
-[UnityEditor integration](https://github.com/Leopotam/ecs-unityintegration)
+[Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
 [uGui event bindings](https://github.com/Leopotam/ecs-ui)
 
@@ -334,7 +338,7 @@ class Startup : Monobehaviour {
 }
 ```
 
-### I want to process one system at `MonoBehaviour.Update` and another - at `MonoBehaviour.FixedUpdate`. How I can do it?
+### I want to process one system at MonoBehaviour.Update() and another - at MonoBehaviour.FixedUpdate(). How I can do it?
 
 For splitting systems by `MonoBehaviour`-method multiple `EcsSystems` logical groups should be used:
 ```

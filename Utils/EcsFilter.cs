@@ -5,7 +5,6 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
@@ -35,10 +34,17 @@ namespace LeopotamGroup.Ecs {
         internal readonly EcsComponentMask ExcludeMask;
 
         /// <summary>
-        /// List of filtered entities.
+        /// Storage of filtered entities.
+        /// Important: Length of this storage can be larger than real amount of items,
+        /// use EntitiesCount instead of Entities.Length!
         /// Do not change it manually!
         /// </summary>
-        public readonly List<int> Entities = new List<int> (64);
+        public int[] Entities = new int[32];
+
+        /// <summary>
+        /// Amount of filtered entities.
+        /// </summary>
+        public int EntitiesCount;
 
         IEcsFilterListener[] _listeners = new IEcsFilterListener[4];
 
@@ -86,7 +92,10 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         internal void RaiseOnAddEvent (int entity, object reason) {
-            Entities.Add (entity);
+            if (Entities.Length == EntitiesCount) {
+                Array.Resize (ref Entities, EntitiesCount << 1);
+            }
+            Entities[EntitiesCount++] = entity;
             for (var i = 0; i < _listenersCount; i++) {
                 _listeners[i].OnFilterEntityAdded (entity, reason);
             }
@@ -96,8 +105,17 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         internal void RaiseOnRemoveEvent (int entity, object reason) {
-            Entities.Remove (entity);
-            for (var i = 0; i < _listenersCount; i++) {
+            var i = EntitiesCount - 1;
+            for (; i >= 0; i--) {
+                if (Entities[i] == entity) {
+                    break;
+                }
+            }
+            if (i != -1) {
+                EntitiesCount--;
+                Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
+            }
+            for (i = 0; i < _listenersCount; i++) {
                 _listeners[i].OnFilterEntityRemoved (entity, reason);
             }
         }
