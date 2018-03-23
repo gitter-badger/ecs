@@ -1,11 +1,9 @@
 [![gitter](https://img.shields.io/gitter/room/leopotam/ecs.svg)](https://gitter.im/leopotam/ecs)
 [![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
 # Another one Entity Component System framework
-Performance and zero memory allocation / no gc work / small size - main goals of this project.
+Performance and zero memory allocation / no gc pressure / small size, no dependencies on any game engine - main goals of this project.
 
-> **This software in work-in-progress stage, api mostly stable.**
-
-> Tested / developed on unity 2017.3 and contains assembly definition for compiling to separate assembly file for performance reason.
+> Tested on unity 2017.4 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
 # Main parts of ecs
 
