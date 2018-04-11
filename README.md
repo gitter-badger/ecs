@@ -135,6 +135,8 @@ class Startup : MonoBehaviour {
 
 > Important: this system not supported processing of `OnRemove` event.
 
+> **Will not work with LEOECS_DISABLE_REACTIVE preprocessor define.**
+
 ```
 public sealed class TestReactSystem : EcsReactSystem {
     [EcsWorld]
@@ -170,6 +172,8 @@ public sealed class TestReactSystem : EcsReactSystem {
 
 Useful case for using this type of processing - reaction from OnRemove event.
 
+> **Will not work with LEOECS_DISABLE_REACTIVE preprocessor define.**
+
 ```
 public sealed class TestReactInstantSystem : EcsReactInstantSystem {
     [EcsWorld]
@@ -203,7 +207,9 @@ public sealed class TestReactInstantSystem : EcsReactInstantSystem {
 ## Custom reaction
 For handling of filter events `custom class` should implements `IEcsFilterListener` interface with 3 methods: `OnFilterEntityAdded` / `OnFilterEntityRemoved` / `OnFilterEntityUpdated`. Then it can be added to any filter as compatible listener.
 
-> **Not recommended if you dont understand how it works internally, this api / behaviour can be changed later.**
+> **Not recommended if you dont understand how it works internally.**
+
+> **Will not work with LEOECS_DISABLE_REACTIVE preprocessor define.**
 
 ```
 public sealed class TestSystem1 : IEcsInitSystem, IEcsFilterListener {
@@ -357,6 +363,14 @@ void FixedUpdate() {
     _fixedUpdate.Run();
 }
 ```
+
+### I dont need reactive events processing and want more performance. How I can do it?
+
+Reactive events support can be removed with **LEOECS_DISABLE_REACTIVE** preprocessor define:
+* No any reaction on filter entities list change.
+* Related code will be eliminated from ECS assembly.
+* Filters should be updated faster.
+* Less memory usage.
 
 ### How it fast relative to Entitas?
 
