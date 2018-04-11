@@ -207,7 +207,7 @@ namespace LeopotamGroup.Ecs {
             }
             return i != -1 ? pool.Items[link.ItemId] : null;
         }
-
+#if !LEOECS_DISABLE_REACTIVE
         /// <summary>
         /// Updates component on entity - OnUpdated event will be raised on compatible filters.
         /// </summary>
@@ -237,7 +237,7 @@ namespace LeopotamGroup.Ecs {
                 AddDelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, pool, link.ItemId);
             }
         }
-
+#endif
         /// <summary>
         /// Gets all components on entity.
         /// </summary>
@@ -335,6 +335,7 @@ namespace LeopotamGroup.Ecs {
                             AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1);
                         }
                         break;
+#if !LEOECS_DISABLE_REACTIVE
                     case DelayedUpdate.Op.UpdateComponent:
                         var filterList = _componentPoolFilters[op.Pool.GetComponentTypeIndex ()];
                         var componentToUpdate = op.Pool.GetExistItemById (op.ComponentId);
@@ -345,6 +346,7 @@ namespace LeopotamGroup.Ecs {
                             }
                         }
                         break;
+#endif
                 }
             }
             if (iMax > 0) {
@@ -543,7 +545,9 @@ namespace LeopotamGroup.Ecs {
                 SafeRemoveEntity,
                 AddComponent,
                 RemoveComponent,
+#if !LEOECS_DISABLE_REACTIVE
                 UpdateComponent
+#endif
             }
             public Op Type;
             public int Entity;

@@ -8,6 +8,7 @@ using System;
 using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
+#if !LEOECS_DISABLE_REACTIVE
     /// <summary>
     /// Basic interface for filter events processing.
     /// </summary>
@@ -16,6 +17,7 @@ namespace LeopotamGroup.Ecs {
         void OnFilterEntityRemoved (int entity, object reason);
         void OnFilterEntityUpdated (int entity, object reason);
     }
+#endif
 
     /// <summary>
     /// Container for filtered entities based on specified conditions.
@@ -46,6 +48,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         public int EntitiesCount;
 
+#if !LEOECS_DISABLE_REACTIVE
         IEcsFilterListener[] _listeners = new IEcsFilterListener[4];
 
         int _listenersCount;
@@ -87,6 +90,7 @@ namespace LeopotamGroup.Ecs {
                 }
             }
         }
+#endif
 
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -96,9 +100,11 @@ namespace LeopotamGroup.Ecs {
                 Array.Resize (ref Entities, EntitiesCount << 1);
             }
             Entities[EntitiesCount++] = entity;
+#if !LEOECS_DISABLE_REACTIVE
             for (var i = 0; i < _listenersCount; i++) {
                 _listeners[i].OnFilterEntityAdded (entity, reason);
             }
+#endif
         }
 
 #if NET_4_6
@@ -115,11 +121,14 @@ namespace LeopotamGroup.Ecs {
                 EntitiesCount--;
                 Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
             }
+#if !LEOECS_DISABLE_REACTIVE
             for (i = 0; i < _listenersCount; i++) {
                 _listeners[i].OnFilterEntityRemoved (entity, reason);
             }
+#endif
         }
 
+#if !LEOECS_DISABLE_REACTIVE
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
@@ -128,6 +137,7 @@ namespace LeopotamGroup.Ecs {
                 _listeners[i].OnFilterEntityUpdated (entity, reason);
             }
         }
+#endif
 
         internal EcsFilter (EcsComponentMask include, EcsComponentMask exclude) {
             IncludeMask = include;
