@@ -3,7 +3,7 @@
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
 // Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
-
+#if !LEOECS_DISABLE_REACTIVE
 using System;
 
 namespace LeopotamGroup.Ecs.Internals {
@@ -143,3 +143,4 @@ namespace LeopotamGroup.Ecs.Internals {
         }
     }
 }
+#endif
