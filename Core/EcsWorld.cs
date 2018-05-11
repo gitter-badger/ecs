@@ -30,11 +30,6 @@ namespace LeopotamGroup.Ecs {
     /// </summary>
     public class EcsWorld : IEcsReadOnlyWorld {
         /// <summary>
-        /// Filter lists sorted by components for fast UpdateComponent processing.
-        /// </summary>
-        EcsFilterList[] _componentPoolFilters = new EcsFilterList[512];
-
-        /// <summary>
         /// List of all entities (their components).
         /// </summary>
         EcsEntity[] _entities = new EcsEntity[1024];
@@ -207,37 +202,7 @@ namespace LeopotamGroup.Ecs {
             }
             return i != -1 ? pool.Items[link.ItemId] : null;
         }
-#if !LEOECS_DISABLE_REACTIVE
-        /// <summary>
-        /// Updates component on entity - OnUpdated event will be raised on compatible filters.
-        /// </summary>
-        /// <param name="entity">Entity.</param>
-#if NET_4_6
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public void UpdateComponent<T> (int entity) where T : class, new () {
-            var entityData = _entities[entity];
-            var pool = EcsComponentPool<T>.Instance;
-            ComponentLink link;
-            link.ItemId = -1;
-            var i = entityData.ComponentsCount - 1;
-            for (; i >= 0; i--) {
-                link = entityData.Components[i];
-                if (link.Pool == pool) {
-                    break;
-                }
-            }
-#if DEBUG
-            if (i == -1) {
-                throw new Exception (string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
-            }
-#endif
-            var typeId = EcsComponentPool<T>.Instance.GetComponentTypeIndex ();
-            if (typeId < _componentPoolFilters.Length && _componentPoolFilters[typeId] != null) {
-                AddDelayedUpdate (DelayedUpdate.Op.UpdateComponent, entity, pool, link.ItemId);
-            }
-        }
-#endif
+
         /// <summary>
         /// Gets all components on entity.
         /// </summary>
@@ -288,13 +253,13 @@ namespace LeopotamGroup.Ecs {
                             var link = entityData.Components[entityData.ComponentsCount - 1];
                             var componentId = link.Pool.GetComponentTypeIndex ();
                             entityData.Mask.SetBit (componentId, false);
-                            var componentToRemove = link.Pool.GetExistItemById (link.ItemId);
 #if DEBUG
+                            var componentToRemove = link.Pool.GetExistItemById (link.ItemId);
                             for (var ii = 0; ii < _debugListeners.Count; ii++) {
                                 _debugListeners[ii].OnComponentRemoved (op.Entity, componentToRemove);
                             }
 #endif
-                            UpdateFilters (op.Entity, componentToRemove, _delayedOpMask, entityData.Mask);
+                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
                             link.Pool.RecycleById (link.ItemId);
                             _delayedOpMask.SetBit (componentId, false);
                             entityData.ComponentsCount--;
@@ -314,39 +279,27 @@ namespace LeopotamGroup.Ecs {
                         }
 #endif
                         entityData.Mask.SetBit (bit, true);
-                        UpdateFilters (op.Entity, op.Pool.GetExistItemById (op.ComponentId), _delayedOpMask, entityData.Mask);
+                        UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
                         break;
                     case DelayedUpdate.Op.RemoveComponent:
                         var bitRemove = op.Pool.GetComponentTypeIndex ();
-                        var componentInstance = op.Pool.GetExistItemById (op.ComponentId);
 #if DEBUG
                         if (!entityData.Mask.GetBit (bitRemove)) {
                             throw new Exception (string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity));
                         }
 
+                        var componentInstance = op.Pool.GetExistItemById (op.ComponentId);
                         for (var ii = 0; ii < _debugListeners.Count; ii++) {
                             _debugListeners[ii].OnComponentRemoved (op.Entity, componentInstance);
                         }
 #endif
                         entityData.Mask.SetBit (bitRemove, false);
-                        UpdateFilters (op.Entity, componentInstance, _delayedOpMask, entityData.Mask);
+                        UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
                         op.Pool.RecycleById (op.ComponentId);
                         if (entityData.ComponentsCount == 0) {
                             AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1);
                         }
                         break;
-#if !LEOECS_DISABLE_REACTIVE
-                    case DelayedUpdate.Op.UpdateComponent:
-                        var filterList = _componentPoolFilters[op.Pool.GetComponentTypeIndex ()];
-                        var componentToUpdate = op.Pool.GetExistItemById (op.ComponentId);
-                        for (var filterId = 0; filterId < filterList.Count; filterId++) {
-                            var filter = filterList.Filters[filterId];
-                            if (filter.ExcludeMask.BitsCount == 0 || !_delayedOpMask.IsIntersects (filter.ExcludeMask)) {
-                                filter.RaiseOnUpdateEvent (op.Entity, componentToUpdate);
-                            }
-                        }
-                        break;
-#endif
                 }
             }
             if (iMax > 0) {
@@ -374,54 +327,50 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Gets filter for specific components.
+        /// Gets filter with specific include / exclude masks.
         /// </summary>
-        /// <param name="include">Component mask for required components.</param>
-        /// <param name="include">Component mask for denied components.</param>
-        /// <param name="shouldBeFilled">New filter should be filled with compatible entities on creation.</param>
-        internal EcsFilter GetFilter (EcsComponentMask include, EcsComponentMask exclude, bool shouldBeFilled) {
+        public T GetFilter<T> () where T : EcsFilter {
+            return GetFilter (typeof (T)) as T;
+        }
+
+        /// <summary>
+        /// Gets filter with specific include / exclude masks.
+        /// </summary>
+        /// <param name="filterType">Type of filter.</param>
+        public EcsFilter GetFilter (Type filterType) {
 #if DEBUG
-            if (include == null) {
-                throw new ArgumentNullException ("include");
+            if (filterType == null) {
+                throw new ArgumentNullException ("filterType");
             }
-            if (exclude == null) {
-                throw new ArgumentNullException ("exclude");
+            if (!filterType.IsSubclassOf (typeof (EcsFilter))) {
+                throw new ArgumentException (string.Format ("Invalid filter-type: {0}", filterType));
             }
 #endif
             var i = _filtersCount - 1;
             for (; i >= 0; i--) {
-                if (this._filters[i].IncludeMask.IsEquals (include) && _filters[i].ExcludeMask.IsEquals (exclude)) {
+                if (this._filters[i].GetType () == filterType) {
                     break;
                 }
             }
             if (i == -1) {
                 i = _filtersCount;
 
-                var filter = new EcsFilter (include, exclude);
-                if (shouldBeFilled) {
-                    FillFilter (filter);
+                var filter = Activator.CreateInstance (filterType, true) as EcsFilter;
+#if DEBUG
+                for (var j = 0; j < _filtersCount; j++) {
+                    if (_filters[j].IncludeMask.IsEquals (filter.IncludeMask) &&
+                        _filters[j].ExcludeMask.IsEquals (filter.ExcludeMask)) {
+                        throw new Exception (
+                            string.Format ("Duplicate filter type \"{0}\": filter type \"{1}\" already has same types in different order.",
+                                filterType, _filters[j].GetType ()));
+                    }
                 }
-
+#endif
                 if (_filtersCount == _filters.Length) {
                     Array.Resize (ref _filters, _filtersCount << 1);
                 }
-                _filters[_filtersCount++] = filter;
 
-                for (var bit = 0; bit < include.BitsCount; bit++) {
-                    var typeId = include.Bits[bit];
-                    if (typeId >= _componentPoolFilters.Length) {
-                        Array.Resize (ref _componentPoolFilters, EcsHelpers.GetPowerOfTwoSize (typeId + 1));
-                    }
-                    var filterList = _componentPoolFilters[typeId];
-                    if (filterList == null) {
-                        filterList = new EcsFilterList ();
-                        _componentPoolFilters[typeId] = filterList;
-                    }
-                    if (filterList.Count == filterList.Filters.Length) {
-                        Array.Resize (ref filterList.Filters, filterList.Count << 1);
-                    }
-                    filterList.Filters[filterList.Count++] = filter;
-                }
+                _filters[_filtersCount++] = filter;
             }
             return _filters[i];
         }
@@ -486,22 +435,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Fills filter with compatible entities.
-        /// </summary>
-        /// <param name="filter">Filter.</param>
-        void FillFilter (EcsFilter filter) {
-            for (var i = 0; i < _entitiesCount; i++) {
-                var entity = _entities[i];
-                if (!entity.IsReserved && entity.Mask.IsCompatible (filter)) {
-                    if (filter.Entities.Length == filter.EntitiesCount) {
-                        Array.Resize (ref filter.Entities, filter.EntitiesCount << 1);
-                    }
-                    filter.Entities[filter.EntitiesCount++] = i;
-                }
-            }
-        }
-
-        /// <summary>
         /// Updates all filters for changed component mask.
         /// </summary>
         /// <param name="entity">Entity.</param>
@@ -510,7 +443,7 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        void UpdateFilters (int entity, object component, EcsComponentMask oldMask, EcsComponentMask newMask) {
+        void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
             for (var i = _filtersCount - 1; i >= 0; i--) {
                 var filter = _filters[i];
                 var isNewMaskCompatible = newMask.IsCompatible (filter);
@@ -528,11 +461,11 @@ namespace LeopotamGroup.Ecs {
                                 string.Format ("Something wrong - entity {0} should be in filter {1}, but not exits.", entity, filter));
                         }
 #endif
-                        filter.RaiseOnRemoveEvent (entity, component);
+                        filter.RaiseOnRemoveEvent (entity);
                     }
                 } else {
                     if (isNewMaskCompatible) {
-                        filter.RaiseOnAddEvent (entity, component);
+                        filter.RaiseOnAddEvent (this, entity);
                     }
                 }
             }
@@ -544,10 +477,7 @@ namespace LeopotamGroup.Ecs {
                 RemoveEntity,
                 SafeRemoveEntity,
                 AddComponent,
-                RemoveComponent,
-#if !LEOECS_DISABLE_REACTIVE
-                UpdateComponent
-#endif
+                RemoveComponent
             }
             public Op Type;
             public int Entity;
@@ -570,11 +500,6 @@ namespace LeopotamGroup.Ecs {
                 Pool = pool;
                 ItemId = itemId;
             }
-        }
-
-        sealed class EcsFilterList {
-            public EcsFilter[] Filters = new EcsFilter[4];
-            public int Count;
         }
 
         sealed class EcsEntity {

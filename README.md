@@ -1,9 +1,9 @@
 [![gitter](https://img.shields.io/gitter/room/leopotam/ecs.svg)](https://gitter.im/leopotam/ecs)
 [![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
-# Another one Entity Component System framework
+# LeoECS - Another one Entity Component System framework
 Performance and zero memory allocation / no gc pressure / small size, no dependencies on any game engine - main goals of this project.
 
-> Tested on unity 2017.4 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
+> Tested on unity 2018.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
 # Main parts of ecs
 
@@ -54,36 +54,32 @@ class HealthSystem : IEcsRunSystem {
 ```
 
 # Data injection
-With `[EcsWorld]`, `[EcsFilterInclude(typeof(X))]` and `[EcsFilterExclude(typeof(X))]` attributes any compatible field of custom `IEcsSystem` class can be auto initialized (auto injected):
-```
-class HealthSystem : IEcsSystem {
-    [EcsWorld]
-    EcsWorld _world;
+> **Will not work with LEOECS_DISABLE_INJECT preprocessor define.**
 
-    [EcsFilterInclude(typeof(WeaponComponent))]
-    EcsFilter _weaponFilter;
+With `[EcsInject]` attribute over `IEcsSystem` class all compatible `EcsWorld` and `EcsFilter<>` fields of instance of this class will be auto-initialized (auto-injected):
+```
+[EcsInject]
+class HealthSystem : IEcsSystem {
+    EcsWorld _world = null;
+
+    EcsFilter<WeaponComponent> _weaponFilter = null;
 }
 ```
 
 # Special classes
 
-## EcsFilter
+## EcsFilter<>
 Container for keep filtered entities with specified component list:
 ```
+[EcsInject]
 class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
-    [EcsWorld]
-    EcsWorld _world;
+    EcsWorld _world = null;
 
-    // We wants to get entities with WeaponComponent and without HealthComponent.
-    [EcsFilterInclude(typeof(WeaponComponent))]
-    [EcsFilterExclude(typeof(HealthComponent))]
-    // If this filter not exists (will be created) - force scan world for compatible entities.
-    [EcsFilterFill]
-    EcsFilter _filter;
+    // We wants to get entities with "WeaponComponent" and without "HealthComponent".
+    EcsFilter<WeaponComponent>.Exclude<HealthComponent> _filter = null;
 
     void IEcsInitSystem.Initialize () {
-        var newEntity = _world.CreateEntity ();
-        _world.AddComponent<WeaponComponent> (newEntity);
+        _world.CreateEntityWith<WeaponComponent> ();
     }
 
     void IEcsInitSystem.Destroy () { }
@@ -91,14 +87,23 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     void IEcsRunSystem.Run () {
         // Important: foreach-loop cant be used for filtered entities!
         for (var i = 0; i < _filter.EntitiesCount; i++) {
-            var entity = _filter.Entities[i];
-            var weapon = _world.GetComponent<WeaponComponent> (entity);
+            // Components1 array fill be automatically filled with instances of type "WeaponComponent".
+            var weapon = _filter.Components1[i];
             weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
         }
     }
 }
 ```
-> Important: filter.Entities cant be iterated with foreach-loop, for-loop should be used instead with filter.EntitiesCount value as upper-bound.
+
+All compatible entities will be stored at `filter.Entities` array, amount of them - at `filter.EntitiesCount`.
+
+> Important: `filter.Entities` cant be iterated with foreach-loop, for-loop should be used instead with filter.EntitiesCount value as upper-bound.
+
+All components from filter `Include`-ruleset will be stored at `filter.Components1`, `filter.Components2`, etc - in same order as they were used in filter type declaration.
+
+> Important: Any filter supports up to 5 component types as "include" ruleset and up to 2 component types as "exclude" ruleset. Shorter rulesets - better performance.
+
+> Important: If you will try to use 2 filters with same components but in different order - you will get exception with detailed info about conflicted types, but only in `DEBUG` mode. In `RELEASE` mode all checks will be skipped.
 
 ## EcsWorld
 Root level container for all entities / components, works like isolated environment.
@@ -129,122 +134,6 @@ class Startup : MonoBehaviour {
 }
 ```
 
-# Reaction on component / filter changes
-## Process events from EcsFilter as stream
-`EcsReactSystem` class can be used for this case.
-
-> Important: this system not supported processing of `OnRemove` event.
-
-> **Will not work with LEOECS_DISABLE_REACTIVE preprocessor define.**
-
-```
-public sealed class TestReactSystem : EcsReactSystem {
-    [EcsWorld]
-    EcsWorld _world;
-
-    [EcsFilterInclude (typeof (WeaponComponent))]
-    EcsFilter _weaponFilter;
-
-    // Should returns filter that react system will watch for.
-    public override EcsFilter GetReactFilter () {
-        return _weaponFilter;
-    }
-
-    // On which event at filter this react-system should be alerted -
-    // "new entity in filter" or "entity inplace update".
-    public override EcsReactSystemType GetReactSystemType () {
-        return EcsReactSystemType.OnUpdate;
-    }
-
-    // Filtered entities processing, will be raised only if entities presents.
-    public override void RunReact (int[] entities, int count) {
-        for (var i = 0; i < count; i++) {
-            var entity = entities[i];
-            var weapon = _world.GetComponent<WeaponComponent> (entity);
-            Debug.LogFormat ("Weapon updated on {0}", entity);
-        }
-    }
-}
-```
-
-## Process events from EcsFilter immediately
-`EcsInstantReactSystem` class can be used for this case.
-
-Useful case for using this type of processing - reaction from OnRemove event.
-
-> **Will not work with LEOECS_DISABLE_REACTIVE preprocessor define.**
-
-```
-public sealed class TestReactInstantSystem : EcsReactInstantSystem {
-    [EcsWorld]
-    EcsWorld _world;
-
-    [EcsFilterInclude (typeof (WeaponComponent))]
-    EcsFilter _weaponFilter;
-
-    // Should returns filter that react system will watch for.
-    public override EcsFilter GetReactFilter () {
-        return _weaponFilter;
-    }
-
-    // On which event at filter this react-system should be alerted -
-    // "enity was removed from filter".
-    public override EcsReactSystemType GetReactSystemType () {
-        return EcsReactSystemType.OnRemove;
-    }
-
-    // Entity processing, will be raised only when entity will be removed from filter.
-    public override void RunReact (int entity, object reason) {
-        // not works - component already detached at this moment.
-        var weapon = _world.GetComponent<WeaponComponent> (entity);
-
-        // reason - detached component instance.
-        Debug.LogFormat ("{1} removed from {0}", entity, reason.GetType().Name);
-    }
-}
-```
-
-## Custom reaction
-For handling of filter events `custom class` should implements `IEcsFilterListener` interface with 3 methods: `OnFilterEntityAdded` / `OnFilterEntityRemoved` / `OnFilterEntityUpdated`. Then it can be added to any filter as compatible listener.
-
-> **Not recommended if you dont understand how it works internally.**
-
-> **Will not work with LEOECS_DISABLE_REACTIVE preprocessor define.**
-
-```
-public sealed class TestSystem1 : IEcsInitSystem, IEcsFilterListener {
-    [EcsWorld]
-    EcsWorld _world;
-
-    [EcsFilterInclude (typeof (WeaponComponent))]
-    EcsFilter _weaponFilter;
-
-    void IEcsInitSystem.Initialize () {
-        _weaponFilter.AddListener(this);
-
-        var entity = _world.CreateEntity ();
-        _world.AddComponent<WeaponComponent> (entity);
-        _world.AddComponent<HealthComponent> (entity);
-    }
-
-    void IEcsInitSystem.Destroy () {
-        _weaponFilter.RemoveListener(this);
-    }
-
-    void IEcsFilterListener.OnFilterEntityAdded (int entity, object reason) {
-        // Entity "entityId" was added to _weaponFilter due to component "reason" with type "WeaponComponent" was added to entity.
-    }
-
-    void IEcsFilterListener.OnFilterEntityUpdated(int entityId, object reason) {
-        // Component "reason" with type "WeaponComponent" was updated inplace on entity "entityId".
-    }
-
-    void IEcsFilterListener.OnFilterEntityRemoved (int entity, object reason) {
-        // Entity "entityId" was removed from _weaponFilter due to component "reason" with type "WeaponComponent" was removed from entity.
-    }
-}
-```
-
 # Sharing data between systems
 If `EcsWorld` class should contains some shared fields (useful for sharing assets / prefabs), it can be implemented in this way:
 ```
@@ -261,13 +150,12 @@ class MyWorld: EcsWorld {
     }
 }
 
+[EcsInject]
 class ChangePlayerName : IEcsInitSystem {
-    [EcsWorld]
-    MyWorld _world;
+    MyWorld _world = null;
 
     // This field will be initialized with same reference as _world field.
-    [EcsWorld]
-    EcsWorld _standardWorld;
+    EcsWorld _standardWorld = null;
 
     void IEcsInitSystem.Initialize () {
         _world.Assets.PlayerName = "Jack";
@@ -275,10 +163,9 @@ class ChangePlayerName : IEcsInitSystem {
 
     void IEcsInitSystem.Destroy () { }
 }
-
+[EcsInject]
 class SpawnPlayerModel : IEcsInitSystem {
-    [EcsWorld]
-    MyWorld _world;
+    MyWorld _world = null;
 
     void IEcsInitSystem.Initialize () {
         GameObject.Instantiate(_world.Assets.PlayerModel);
@@ -364,14 +251,23 @@ void FixedUpdate() {
 }
 ```
 
-### I dont need reactive events processing and want more performance. How I can do it?
+### I dont need dependency injection (I heard, it's very slooooow! / I want to use my own way to inject). How I can do it?
 
-Reactive events support can be removed with **LEOECS_DISABLE_REACTIVE** preprocessor define:
-* No any reaction on filter entities list change.
-* Related code will be eliminated from ECS assembly.
-* Filters should be updated faster.
+Builtin DI can be removed with **LEOECS_DISABLE_INJECT** preprocessor define:
+* No `EcsInject` attribute.
+* No automatic injection for `EcsWorld` and `EcsFilter<>` fields.
+* Less code size.
+
+### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
+
+Reactive events support was removed for performance reason and for more clear execution flow of components processing by systems:
+* Less internal magic.
+* Less code size.
+* Small performance gain.
 * Less memory usage.
+
+If you really need them - better to stay on ["v20180422 release"](https://github.com/Leopotam/ecs/releases/tag/v20180422).
 
 ### How it fast relative to Entitas?
 
-Some test can be found at [this repo](https://github.com/echeg/unityecs_speedtest). Tests can be obsoleted, better to grab last versions of frameworks and check locally.
+[Previous version](https://github.com/Leopotam/ecs/releases/tag/v20180422) was benchmarked at [this repo](https://github.com/echeg/unityecs_speedtest). Current version works in slightly different manner, better to grab last versions of ECS frameworks and check boths locally on your code.
