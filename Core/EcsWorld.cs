@@ -342,7 +342,9 @@ namespace LeopotamGroup.Ecs {
             if (filterType == null) {
                 throw new ArgumentNullException ("filterType");
             }
-            // TODO: type check
+            if (!filterType.IsSubclassOf (typeof (EcsFilter))) {
+                throw new ArgumentException (string.Format ("Invalid filter-type: {0}", filterType));
+            }
 #endif
             var i = _filtersCount - 1;
             for (; i >= 0; i--) {
@@ -354,7 +356,16 @@ namespace LeopotamGroup.Ecs {
                 i = _filtersCount;
 
                 var filter = Activator.CreateInstance (filterType, true) as EcsFilter;
-
+#if DEBUG
+                for (var j = 0; j < _filtersCount; j++) {
+                    if (_filters[j].IncludeMask.IsEquals (filter.IncludeMask) &&
+                        _filters[j].ExcludeMask.IsEquals (filter.ExcludeMask)) {
+                        throw new Exception (
+                            string.Format ("Duplicate filter type \"{0}\": filter type \"{1}\" already has same types in different order.",
+                                filterType, _filters[j].GetType ()));
+                    }
+                }
+#endif
                 if (_filtersCount == _filters.Length) {
                     Array.Resize (ref _filters, _filtersCount << 1);
                 }

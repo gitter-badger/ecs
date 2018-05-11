@@ -62,13 +62,13 @@ With `[EcsInject]` attribute over `IEcsSystem` class all compatible `EcsWorld` a
 class HealthSystem : IEcsSystem {
     EcsWorld _world = null;
 
-    EcsFilter<WeaponComponent> _weaponFilter;
+    EcsFilter<WeaponComponent> _weaponFilter = null;
 }
 ```
 
 # Special classes
 
-## EcsFilter
+## EcsFilter<>
 Container for keep filtered entities with specified component list:
 ```
 [EcsInject]
@@ -76,7 +76,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     EcsWorld _world = null;
 
     // We wants to get entities with "WeaponComponent" and without "HealthComponent".
-    EcsFilter<WeaponComponent>.Exclude<HealthComponent> _filter;
+    EcsFilter<WeaponComponent>.Exclude<HealthComponent> _filter = null;
 
     void IEcsInitSystem.Initialize () {
         _world.CreateEntityWith<WeaponComponent> ();
@@ -94,7 +94,16 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     }
 }
 ```
-> Important: filter.Entities cant be iterated with foreach-loop, for-loop should be used instead with filter.EntitiesCount value as upper-bound.
+
+All compatible entities will be stored at `filter.Entities` array, amount of them - at `filter.EntitiesCount`.
+
+> Important: `filter.Entities` cant be iterated with foreach-loop, for-loop should be used instead with filter.EntitiesCount value as upper-bound.
+
+All components from filter `Include`-ruleset will be stored at `filter.Components1`, `filter.Components2`, etc - in same order as they were used in filter type declaration.
+
+> Important: Any filter supports up to 5 component types as "include" ruleset and up to 2 component types as "exclude" ruleset. Shorter rulesets - better performance.
+
+> Important: If you will try to use 2 filters with same components but in different order - you will get exception with detailed info about conflicted types, but only in `DEBUG` mode. In `RELEASE` mode all checks will be skipped.
 
 ## EcsWorld
 Root level container for all entities / components, works like isolated environment.
@@ -242,14 +251,23 @@ void FixedUpdate() {
 }
 ```
 
-### I dont need reactive events processing and want more performance. How I can do it?
+### I dont need dependency injection (I heard, it's very slooooow! / I want to use my own way to inject). How I can do it?
 
-Reactive events support can be removed with **LEOECS_DISABLE_REACTIVE** preprocessor define:
-* No any reaction on filter entities list change.
-* Related code will be eliminated from ECS assembly.
-* Filters should be updated faster.
+Builtin DI can be removed with **LEOECS_DISABLE_INJECT** preprocessor define:
+* No `EcsInject` attribute.
+* No automatic injection for `EcsWorld` and `EcsFilter<>` fields.
+* Less code size.
+
+### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
+
+Reactive events support was removed for performance reason and for more clear execution flow of components processing by systems:
+* Less internal magic.
+* Less code size.
+* Small performance gain.
 * Less memory usage.
+
+If you really need them - better to stay on ["v20180422 release"](https://github.com/Leopotam/ecs/releases/tag/v20180422).
 
 ### How it fast relative to Entitas?
 
-Some test can be found at [this repo](https://github.com/echeg/unityecs_speedtest). Tests can be obsoleted, better to grab last versions of frameworks and check locally.
+[Previous version](https://github.com/Leopotam/ecs/releases/tag/v20180422) was benchmarked at [this repo](https://github.com/echeg/unityecs_speedtest). Current version works in slightly different manner, better to grab last versions of ECS frameworks and check boths locally on your code.
