@@ -24,14 +24,11 @@ namespace LeopotamGroup.Ecs {
     public sealed class EcsSystems {
 #if DEBUG
         /// <summary>
-        /// Temporary disable RunUpdate / RunFixedUpdate / RunLateUpdate calls for debug reason.
-        /// </summary>
-        public bool IsRunActive = true;
-
-        /// <summary>
         /// List of all debug listeners.
         /// </summary>
         readonly List<IEcsSystemsDebugListener> _debugListeners = new List<IEcsSystemsDebugListener> (4);
+
+        readonly public List<bool> DisabledInDebugSystems = new List<bool> (4);
 #endif
 
         /// <summary>
@@ -171,8 +168,11 @@ namespace LeopotamGroup.Ecs {
             if (_inited) {
                 throw new Exception ("Group already initialized.");
             }
-            _inited = true;
+            for (var i = 0; i < _runSystemsCount; i++) {
+                DisabledInDebugSystems.Add (false);
+            }
 #endif
+            _inited = true;
             for (var i = 0; i < _preInitSystems.Count; i++) {
                 _preInitSystems[i].PreInitialize ();
                 _world.ProcessDelayedUpdates ();
@@ -195,8 +195,9 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[i].OnSystemsDestroyed ();
             }
             _debugListeners.Clear ();
+            DisabledInDebugSystems.Clear ();
+            _inited = false;
 #endif
-
             for (var i = _initSystems.Count - 1; i >= 0; i--) {
                 _initSystems[i].Destroy ();
             }
@@ -219,9 +220,13 @@ namespace LeopotamGroup.Ecs {
             if (!_inited) {
                 throw new Exception ("Group not initialized.");
             }
-            if (!IsRunActive) { return; }
 #endif
             for (var i = 0; i < _runSystemsCount; i++) {
+#if DEBUG
+                if (DisabledInDebugSystems[i]) {
+                    continue;
+                }
+#endif
                 _runSystems[i].Run ();
                 _world.ProcessDelayedUpdates ();
             }
