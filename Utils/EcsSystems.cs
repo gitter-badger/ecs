@@ -171,8 +171,8 @@ namespace LeopotamGroup.Ecs {
             for (var i = 0; i < _runSystemsCount; i++) {
                 DisabledInDebugSystems.Add (false);
             }
-#endif
             _inited = true;
+#endif
             for (var i = 0; i < _preInitSystems.Count; i++) {
                 _preInitSystems[i].PreInitialize ();
                 _world.ProcessDelayedUpdates ();
