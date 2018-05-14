@@ -99,9 +99,32 @@ All compatible entities will be stored at `filter.Entities` array, amount of the
 
 > Important: `filter.Entities` cant be iterated with foreach-loop, for-loop should be used instead with filter.EntitiesCount value as upper-bound.
 
-All components from filter `Include`-ruleset will be stored at `filter.Components1`, `filter.Components2`, etc - in same order as they were used in filter type declaration.
+All components from filter `Include` constraint will be stored at `filter.Components1`, `filter.Components2`, etc - in same order as they were used in filter type declaration.
 
-> Important: Any filter supports up to 5 component types as "include" ruleset and up to 2 component types as "exclude" ruleset. Shorter rulesets - better performance.
+If autofilling not required (for example, for flag-based components without data), `EcsIgnoreInFilter` attribute can be used for decrease memory usage and increase performance:
+```
+class Component1 { }
+
+[EcsIgnoreInFilter]
+class Component2 { }
+
+[EcsInject]
+class TestSystem : IEcsSystem {
+    EcsFilter<Component1, Component2> _filter;
+
+    public Test() {
+        for (var i = 0; i < _filter.EntitiesCount; i++) {
+            // its valid code.
+            var component1 = _filter.Components1[i];
+
+            // its invalid code due to _filter.Components2 is null for memory / performance reasons.
+            var component2 = _filter.Components2[i];
+        }
+    }
+}
+```
+
+> Important: Any filter supports up to 5 component types as "include" constraint and up to 2 component types as "exclude" constraint. Shorter constraints - better performance.
 
 > Important: If you will try to use 2 filters with same components but in different order - you will get exception with detailed info about conflicted types, but only in `DEBUG` mode. In `RELEASE` mode all checks will be skipped.
 
