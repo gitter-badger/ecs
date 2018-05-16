@@ -138,7 +138,9 @@ namespace LeopotamGroup.Ecs {
                 throw new ArgumentNullException ();
             }
 #endif
+#if !LEOECS_DISABLE_INJECT
             EcsInjections.Inject (_world, system);
+#endif
 
             var preInitSystem = system as IEcsPreInitSystem;
             if (preInitSystem != null) {
