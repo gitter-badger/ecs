@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
 #if DEBUG
@@ -139,7 +138,7 @@ namespace LeopotamGroup.Ecs {
             }
 #endif
 #if !LEOECS_DISABLE_INJECT
-            EcsInjections.Inject (_world, system);
+            Internals.EcsInjections.Inject (_world, system);
 #endif
 
             var preInitSystem = system as IEcsPreInitSystem;
