@@ -356,6 +356,7 @@ namespace LeopotamGroup.Ecs {
                 i = _filtersCount;
 
                 var filter = Activator.CreateInstance (filterType, true) as EcsFilter;
+                filter.SetWorld (this);
 #if DEBUG
                 for (var j = 0; j < _filtersCount; j++) {
                     if (_filters[j].IncludeMask.IsEquals (filter.IncludeMask) &&
@@ -465,7 +466,7 @@ namespace LeopotamGroup.Ecs {
                     }
                 } else {
                     if (isNewMaskCompatible) {
-                        filter.RaiseOnAddEvent (this, entity);
+                        filter.RaiseOnAddEvent (entity);
                     }
                 }
             }

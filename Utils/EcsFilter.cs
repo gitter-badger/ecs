@@ -29,7 +29,7 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal override void RaiseOnAddEvent (EcsWorld world, int entity) {
+        internal override void RaiseOnAddEvent (int entity) {
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
                 if (_allow1) {
@@ -37,7 +37,7 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = world.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             Entities[EntitiesCount++] = entity;
         }
@@ -100,7 +100,7 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal override void RaiseOnAddEvent (EcsWorld world, int entity) {
+        internal override void RaiseOnAddEvent (int entity) {
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
                 if (_allow1) {
@@ -111,10 +111,10 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = world.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = world.GetComponent<Inc2> (entity);
+                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             Entities[EntitiesCount++] = entity;
         }
@@ -185,7 +185,7 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal override void RaiseOnAddEvent (EcsWorld world, int entity) {
+        internal override void RaiseOnAddEvent (int entity) {
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
                 if (_allow1) {
@@ -199,13 +199,13 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = world.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = world.GetComponent<Inc2> (entity);
+                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             if (_allow3) {
-                Components3[EntitiesCount] = world.GetComponent<Inc3> (entity);
+                Components3[EntitiesCount] = _world.GetComponent<Inc3> (entity);
             }
             Entities[EntitiesCount++] = entity;
         }
@@ -284,7 +284,7 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal override void RaiseOnAddEvent (EcsWorld world, int entity) {
+        internal override void RaiseOnAddEvent (int entity) {
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
                 if (_allow1) {
@@ -301,16 +301,16 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = world.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = world.GetComponent<Inc2> (entity);
+                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             if (_allow3) {
-                Components3[EntitiesCount] = world.GetComponent<Inc3> (entity);
+                Components3[EntitiesCount] = _world.GetComponent<Inc3> (entity);
             }
             if (_allow4) {
-                Components4[EntitiesCount] = world.GetComponent<Inc4> (entity);
+                Components4[EntitiesCount] = _world.GetComponent<Inc4> (entity);
             }
             Entities[EntitiesCount++] = entity;
         }
@@ -397,7 +397,7 @@ namespace LeopotamGroup.Ecs {
 #if NET_4_6
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        internal override void RaiseOnAddEvent (EcsWorld world, int entity) {
+        internal override void RaiseOnAddEvent (int entity) {
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
                 if (_allow1) {
@@ -417,19 +417,19 @@ namespace LeopotamGroup.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = world.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = world.GetComponent<Inc2> (entity);
+                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             if (_allow3) {
-                Components3[EntitiesCount] = world.GetComponent<Inc3> (entity);
+                Components3[EntitiesCount] = _world.GetComponent<Inc3> (entity);
             }
             if (_allow4) {
-                Components4[EntitiesCount] = world.GetComponent<Inc4> (entity);
+                Components4[EntitiesCount] = _world.GetComponent<Inc4> (entity);
             }
             if (_allow5) {
-                Components5[EntitiesCount] = world.GetComponent<Inc5> (entity);
+                Components5[EntitiesCount] = _world.GetComponent<Inc5> (entity);
             }
             Entities[EntitiesCount++] = entity;
         }
@@ -493,7 +493,13 @@ namespace LeopotamGroup.Ecs {
 
         internal readonly EcsComponentMask ExcludeMask = new EcsComponentMask ();
 
-        internal abstract void RaiseOnAddEvent (EcsWorld world, int entity);
+        protected EcsWorld _world;
+
+        internal void SetWorld (EcsWorld world) {
+            _world = world;
+        }
+
+        internal abstract void RaiseOnAddEvent (int entity);
 
         internal abstract void RaiseOnRemoveEvent (int entity);
 
