@@ -17,11 +17,13 @@ namespace LeopotamGroup.Ecs.Internals {
     /// Components pool container.
     /// </summary>
     sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
+        const int MinSize = 8;
+
         public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
 
         public T[] Items = new T[MinSize];
 
-        const int MinSize = 8;
+        public bool IsIgnoreInFilter = Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
 
         int _typeIndex;
 

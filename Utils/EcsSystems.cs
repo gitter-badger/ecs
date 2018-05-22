@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
 #if DEBUG
@@ -24,14 +23,11 @@ namespace LeopotamGroup.Ecs {
     public sealed class EcsSystems {
 #if DEBUG
         /// <summary>
-        /// Temporary disable RunUpdate / RunFixedUpdate / RunLateUpdate calls for debug reason.
-        /// </summary>
-        public bool IsRunActive = true;
-
-        /// <summary>
         /// List of all debug listeners.
         /// </summary>
         readonly List<IEcsSystemsDebugListener> _debugListeners = new List<IEcsSystemsDebugListener> (4);
+
+        readonly public List<bool> DisabledInDebugSystems = new List<bool> (4);
 #endif
 
         /// <summary>
@@ -141,7 +137,9 @@ namespace LeopotamGroup.Ecs {
                 throw new ArgumentNullException ();
             }
 #endif
-            EcsInjections.Inject (_world, system);
+#if !LEOECS_DISABLE_INJECT
+            Internals.EcsInjections.Inject (_world, system);
+#endif
 
             var preInitSystem = system as IEcsPreInitSystem;
             if (preInitSystem != null) {
@@ -171,6 +169,9 @@ namespace LeopotamGroup.Ecs {
             if (_inited) {
                 throw new Exception ("Group already initialized.");
             }
+            for (var i = 0; i < _runSystemsCount; i++) {
+                DisabledInDebugSystems.Add (false);
+            }
             _inited = true;
 #endif
             for (var i = 0; i < _preInitSystems.Count; i++) {
@@ -195,8 +196,9 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[i].OnSystemsDestroyed ();
             }
             _debugListeners.Clear ();
+            DisabledInDebugSystems.Clear ();
+            _inited = false;
 #endif
-
             for (var i = _initSystems.Count - 1; i >= 0; i--) {
                 _initSystems[i].Destroy ();
             }
@@ -219,9 +221,13 @@ namespace LeopotamGroup.Ecs {
             if (!_inited) {
                 throw new Exception ("Group not initialized.");
             }
-            if (!IsRunActive) { return; }
 #endif
             for (var i = 0; i < _runSystemsCount; i++) {
+#if DEBUG
+                if (DisabledInDebugSystems[i]) {
+                    continue;
+                }
+#endif
                 _runSystems[i].Run ();
                 _world.ProcessDelayedUpdates ();
             }
