@@ -5,9 +5,38 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 
 namespace LeopotamGroup.Ecs {
+    /// <summary>
+    /// Base interface for all ecs systems.
+    /// </summary>
+    public interface IEcsSystem { }
+
+    /// <summary>
+    /// Allows custom initialization / deinitialization for ecs system.
+    /// </summary>
+    public interface IEcsInitSystem : IEcsSystem {
+        /// <summary>
+        /// Initializes system inside EcsWorld instance.
+        /// </summary>
+        void Initialize ();
+
+        /// <summary>
+        /// Destroys all internal allocated data.
+        /// </summary>
+        void Destroy ();
+    }
+
+    /// <summary>
+    /// Allows custom logic processing.
+    /// </summary>
+    public interface IEcsRunSystem : IEcsSystem {
+        /// <summary>
+        /// Custom logic.
+        /// </summary>
+        void Run ();
+    }
+
 #if DEBUG
     /// <summary>
     /// Debug interface for systems events processing.
@@ -25,9 +54,9 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of all debug listeners.
         /// </summary>
-        readonly List<IEcsSystemsDebugListener> _debugListeners = new List<IEcsSystemsDebugListener> (4);
+        readonly System.Collections.Generic.List<IEcsSystemsDebugListener> _debugListeners = new System.Collections.Generic.List<IEcsSystemsDebugListener> (4);
 
-        readonly public List<bool> DisabledInDebugSystems = new List<bool> (4);
+        readonly public System.Collections.Generic.List<bool> DisabledInDebugSystems = new System.Collections.Generic.List<bool> (4);
 #endif
 
         /// <summary>
@@ -36,14 +65,14 @@ namespace LeopotamGroup.Ecs {
         readonly EcsWorld _world;
 
         /// <summary>
-        /// Registered IEcsPreInitSystem systems.
-        /// </summary>
-        readonly List<IEcsPreInitSystem> _preInitSystems = new List<IEcsPreInitSystem> (4);
-
-        /// <summary>
         /// Registered IEcsInitSystem systems.
         /// </summary>
-        readonly List<IEcsInitSystem> _initSystems = new List<IEcsInitSystem> (8);
+        IEcsInitSystem[] _initSystems = new IEcsInitSystem[16];
+
+        /// <summary>
+        /// Count of registered IEcsInitSystem systems.
+        /// </summary>
+        int _initSystemsCount;
 
         /// <summary>
         /// Registered IEcsRunSystem systems.
@@ -93,38 +122,29 @@ namespace LeopotamGroup.Ecs {
 #endif
 
         /// <summary>
-        /// Gets all pre-init systems.
-        /// </summary>
-        /// <param name="list">List to put results in it.</param>
-        public void GetPreInitSystems (List<IEcsPreInitSystem> list) {
-            if (list != null) {
-                list.Clear ();
-                list.AddRange (_preInitSystems);
-            }
-        }
-
-        /// <summary>
         /// Gets all init systems.
         /// </summary>
-        /// <param name="list">List to put results in it.</param>
-        public void GetInitSystems (List<IEcsInitSystem> list) {
-            if (list != null) {
-                list.Clear ();
-                list.AddRange (_initSystems);
+        /// <param name="list">List to put results in it. If null - will be created.</param>
+        /// <returns>Amount of systems in list.</returns>
+        public int GetInitSystems (ref IEcsInitSystem[] list) {
+            if (list == null || list.Length < _initSystemsCount) {
+                list = new IEcsInitSystem[_initSystemsCount];
             }
+            Array.Copy (_initSystems, 0, list, 0, _initSystemsCount);
+            return _initSystemsCount;
         }
 
         /// <summary>
         /// Gets all run systems.
         /// </summary>
-        /// <param name="list">List to put results in it.</param>
-        public void GetRunSystems (List<IEcsRunSystem> list) {
-            if (list != null) {
-                list.Clear ();
-                for (var i = 0; i < _runSystemsCount; i++) {
-                    list.Add (_runSystems[i]);
-                }
+        /// <param name="list">List to put results in it. If null - will be created.</param>
+        /// <returns>Amount of systems in list.</returns>
+        public int GetRunSystems (ref IEcsRunSystem[] list) {
+            if (list == null || list.Length < _runSystemsCount) {
+                list = new IEcsRunSystem[_runSystemsCount];
             }
+            Array.Copy (_runSystems, 0, list, 0, _runSystemsCount);
+            return _runSystemsCount;
         }
 
         /// <summary>
@@ -141,14 +161,12 @@ namespace LeopotamGroup.Ecs {
             Internals.EcsInjections.Inject (_world, system);
 #endif
 
-            var preInitSystem = system as IEcsPreInitSystem;
-            if (preInitSystem != null) {
-                _preInitSystems.Add (preInitSystem);
-            }
-
             var initSystem = system as IEcsInitSystem;
             if (initSystem != null) {
-                _initSystems.Add (initSystem);
+                if (_initSystemsCount == _initSystems.Length) {
+                    Array.Resize (ref _initSystems, _initSystemsCount << 1);
+                }
+                _initSystems[_initSystemsCount++] = initSystem;
             }
 
             var runSystem = system as IEcsRunSystem;
@@ -174,11 +192,7 @@ namespace LeopotamGroup.Ecs {
             }
             _inited = true;
 #endif
-            for (var i = 0; i < _preInitSystems.Count; i++) {
-                _preInitSystems[i].PreInitialize ();
-                _world.ProcessDelayedUpdates ();
-            }
-            for (var i = 0; i < _initSystems.Count; i++) {
+            for (var i = 0; i < _initSystemsCount; i++) {
                 _initSystems[i].Initialize ();
                 _world.ProcessDelayedUpdates ();
             }
@@ -199,14 +213,12 @@ namespace LeopotamGroup.Ecs {
             DisabledInDebugSystems.Clear ();
             _inited = false;
 #endif
-            for (var i = _initSystems.Count - 1; i >= 0; i--) {
+            for (var i = _initSystemsCount - 1; i >= 0; i--) {
                 _initSystems[i].Destroy ();
+                _initSystems[i] = null;
             }
-            for (var i = _preInitSystems.Count - 1; i >= 0; i--) {
-                _preInitSystems[i].PreDestroy ();
-            }
-            _initSystems.Clear ();
-            _preInitSystems.Clear ();
+            _initSystemsCount = 0;
+
             for (var i = _runSystemsCount - 1; i >= 0; i--) {
                 _runSystems[i] = null;
             }

@@ -5,7 +5,6 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using LeopotamGroup.Ecs.Internals;
 
 namespace LeopotamGroup.Ecs {
@@ -66,7 +65,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// List of all debug listeners.
         /// </summary>
-        readonly List<IEcsWorldDebugListener> _debugListeners = new List<IEcsWorldDebugListener> (4);
+        readonly System.Collections.Generic.List<IEcsWorldDebugListener> _debugListeners = new System.Collections.Generic.List<IEcsWorldDebugListener> (4);
 
         /// <summary>
         /// Adds external event listener.
@@ -207,16 +206,19 @@ namespace LeopotamGroup.Ecs {
         /// Gets all components on entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        /// <param name="list">List to put results in it.</param>
-        public void GetComponents (int entity, IList<object> list) {
-            if (list != null) {
-                list.Clear ();
-                var entityData = _entities[entity];
-                for (var i = 0; i < entityData.ComponentsCount; i++) {
-                    var link = entityData.Components[i];
-                    list.Add (link.Pool.GetExistItemById (link.ItemId));
-                }
+        /// <param name="list">List to put results in it. if null - will be created.</param>
+        /// <returns>Amount of components in list.</returns>
+        public int GetComponents (int entity, ref object[] list) {
+            var entityData = _entities[entity];
+            var count = entityData.ComponentsCount;
+            if (list == null || list.Length < count) {
+                list = new object[entityData.ComponentsCount];
             }
+            for (var i = 0; i < count; i++) {
+                var link = entityData.Components[i];
+                list[i] = link.Pool.GetExistItemById (link.ItemId);
+            }
+            return count;
         }
 
         /// <summary>
