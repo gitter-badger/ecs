@@ -24,19 +24,11 @@ _world.RemoveEntity (entity);
 ```
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements `IEcsPreInitSystem`, `IEcsInitSystem` or `IEcsRunSystem` interfaces:
+Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
 ```
-class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem {
-    void IEcsPreInitSystem.PreInitialize () {
-        // Will be called once during world initialization before IEcsInitSystem.Initialize().
-    }
-
+class WeaponSystem : IEcsInitSystem {
     void IEcsInitSystem.Initialize () {
         // Will be called once during world initialization.
-    }
-
-    void IEcsPreInitSystem.PreDestroy () {
-        // Will be called once during world destruction before IEcsInitSystem.Destroy().
     }
 
     void IEcsInitSystem.Destroy () {
