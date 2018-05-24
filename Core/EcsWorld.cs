@@ -190,16 +190,12 @@ namespace LeopotamGroup.Ecs {
         public T GetComponent<T> (int entity) where T : class, new () {
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
-            ComponentLink link;
-            link.ItemId = -1;
-            var i = entityData.ComponentsCount - 1;
-            for (; i >= 0; i--) {
-                link = entityData.Components[i];
-                if (link.Pool == pool) {
-                    break;
+            for (var i = 0; i < entityData.ComponentsCount; i++) {
+                if (entityData.Components[i].Pool == pool) {
+                    return pool.Items[entityData.Components[i].ItemId];
                 }
             }
-            return i != -1 ? pool.Items[link.ItemId] : null;
+            return null;
         }
 
         /// <summary>
