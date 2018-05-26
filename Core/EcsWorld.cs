@@ -27,7 +27,13 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Basic ecs world implementation.
     /// </summary>
-    public class EcsWorld : IEcsReadOnlyWorld {
+    public class EcsWorld : IEcsReadOnlyWorld, IDisposable {
+        /// <summary>
+        /// Last created instance of EcsWorld.
+        /// Can be force reassigned manually when multiple worlds in use.
+        /// </summary>
+        public static EcsWorld Active = null;
+
         /// <summary>
         /// List of all entities (their components).
         /// </summary>
@@ -60,6 +66,16 @@ namespace LeopotamGroup.Ecs {
         /// Temporary buffer for filter updates.
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
+
+        public EcsWorld () {
+            Active = this;
+        }
+
+        public void Dispose () {
+            if (this == Active) {
+                Active = null;
+            }
+        }
 
 #if DEBUG
         /// <summary>
