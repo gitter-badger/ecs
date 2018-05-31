@@ -16,6 +16,10 @@ namespace LeopotamGroup.Ecs.Internals {
     /// <summary>
     /// Processes dependency injection to ecs systems. For internal use only.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     static class EcsInjections {
         public static void Inject (EcsWorld world, IEcsSystem system) {
             var systemType = system.GetType ();

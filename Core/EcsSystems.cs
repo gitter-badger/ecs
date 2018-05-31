@@ -49,6 +49,10 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Logical group of systems.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     public sealed class EcsSystems {
 #if DEBUG
         /// <summary>
