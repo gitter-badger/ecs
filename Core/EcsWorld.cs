@@ -97,6 +97,24 @@ namespace LeopotamGroup.Ecs {
             if (this == Active) {
                 Active = null;
             }
+            for (var i = 0; i < _entitiesCount; i++) {
+                // already reserved entities cant contains components.
+                if (_entities[i].ComponentsCount > 0) {
+                    var entity = _entities[i];
+                    for (var ii = 0; ii < entity.ComponentsCount; ii++) {
+                        entity.Components[ii].Pool.RecycleById (entity.Components[ii].ItemId);
+                    }
+                }
+            }
+            // any next usage of this EcsWorld instance will throw exception.
+            _entities = null;
+            _entitiesCount = 0;
+            _filters = null;
+            _filtersCount = 0;
+            _reservedEntities = null;
+            _reservedEntitiesCount = 0;
+            _delayedUpdates = null;
+            _delayedUpdatesCount = 0;
         }
 
 #if DEBUG
