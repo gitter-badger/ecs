@@ -163,7 +163,117 @@ namespace LeopotamGroup.Ecs {
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
-            return AddComponent<T> (CreateEntityInternal (false));
+            var entity = CreateEntityInternal (false);
+            var pool = EcsComponentPool<T>.Instance;
+            var entityData = _entities[entity];
+            if (entityData.ComponentsCount == entityData.Components.Length) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
+            }
+            ComponentLink link;
+            link.Pool = pool;
+            link.ItemId = pool.RequestNewId ();
+            var component = pool.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, component);
+            }
+#endif
+            return component;
+        }
+
+        /// <summary>
+        /// Creates new entity and adds component to it.
+        /// Faster than CreateEntity() and multiple AddComponent() calls sequence.
+        /// </summary>
+        /// <param name="c1">Added component of type T1.</param>
+        /// <param name="c2">Added component of type T2.</param>
+        public void CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
+            var entity = CreateEntityInternal (false);
+#if DEBUG
+            if (typeof (T1) == typeof (T2)) {
+                throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T2).Name, entity));
+            }
+#endif
+            var pool1 = EcsComponentPool<T1>.Instance;
+            var pool2 = EcsComponentPool<T2>.Instance;
+            var entityData = _entities[entity];
+            while ((entityData.ComponentsCount + 2) > entityData.Components.Length) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
+            }
+            ComponentLink link;
+            link.Pool = pool1;
+            link.ItemId = pool1.RequestNewId ();
+            c1 = pool1.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool1, link.ItemId);
+            link.Pool = pool2;
+            link.ItemId = pool2.RequestNewId ();
+            c2 = pool2.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool2, link.ItemId);
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c1);
+            }
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c2);
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Creates new entity and adds component to it.
+        /// Faster than CreateEntity() and multiple AddComponent() calls sequence.
+        /// </summary>
+        /// <param name="c1">Added component of type T1.</param>
+        /// <param name="c2">Added component of type T2.</param>
+        /// <param name="c3">Added component of type T3.</param>
+        public void CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
+            var entity = CreateEntityInternal (false);
+#if DEBUG
+            if (typeof (T1) == typeof (T2)) {
+                throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T2).Name, entity));
+            }
+            if (typeof (T1) == typeof (T3) || typeof (T2) == typeof (T3)) {
+                throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T3).Name, entity));
+            }
+#endif
+            var pool1 = EcsComponentPool<T1>.Instance;
+            var pool2 = EcsComponentPool<T2>.Instance;
+            var pool3 = EcsComponentPool<T3>.Instance;
+            var entityData = _entities[entity];
+            while ((entityData.ComponentsCount + 3) > entityData.Components.Length) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
+            }
+            ComponentLink link;
+            link.Pool = pool1;
+            link.ItemId = pool1.RequestNewId ();
+            c1 = pool1.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool1, link.ItemId);
+            link.Pool = pool2;
+            link.ItemId = pool2.RequestNewId ();
+            c2 = pool2.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool2, link.ItemId);
+            link.Pool = pool3;
+            link.ItemId = pool3.RequestNewId ();
+            c3 = pool3.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool3, link.ItemId);
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c1);
+            }
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c2);
+            }
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c3);
+            }
+#endif
         }
 
         /// <summary>
@@ -434,6 +544,9 @@ namespace LeopotamGroup.Ecs {
         /// Create entity with support of re-using reserved instances.
         /// </summary>
         /// <param name="addSafeRemove">Add delayed command for proper removing entities without components.</param>
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         int CreateEntityInternal (bool addSafeRemove) {
             int entity;
             if (_reservedEntitiesCount > 0) {
