@@ -13,7 +13,11 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Base system for multithreading processing. In WebGL - will work like IEcsRunSystem system.
     /// </summary>
-    public abstract class EcsMultiThreadSystem : IEcsPreInitSystem, IEcsRunSystem {
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+    public abstract class EcsMultiThreadSystem : IEcsInitSystem, IEcsRunSystem {
 #if !UNITY_WEBGL
         WorkerDesc[] _descs;
 
@@ -42,7 +46,7 @@ namespace LeopotamGroup.Ecs {
 #endif
         }
 
-        void IEcsPreInitSystem.PreDestroy () {
+        public virtual void Destroy () {
 #if !UNITY_WEBGL
             for (var i = 0; i < _descs.Length; i++) {
                 var desc = _descs[i];
@@ -58,7 +62,7 @@ namespace LeopotamGroup.Ecs {
             _worker = null;
         }
 
-        void IEcsPreInitSystem.PreInitialize () {
+        public virtual void Initialize () {
             _world = GetWorld ();
             _filter = GetFilter ();
             _worker = GetWorker ();

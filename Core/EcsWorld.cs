@@ -5,8 +5,25 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using LeopotamGroup.Ecs.Internals;
+
+#if ENABLE_IL2CPP
+// Unity IL2CPP performance optimization attribute.
+namespace Unity.IL2CPP.CompilerServices {
+    enum Option {
+        NullChecks = 1,
+        ArrayBoundsChecks = 2
+    }
+
+    [AttributeUsage (AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    class Il2CppSetOptionAttribute : Attribute {
+        public Option Option { get; private set; }
+        public object Value { get; private set; }
+
+        public Il2CppSetOptionAttribute (Option option, object value) { Option = option; Value = value; }
+    }
+}
+#endif
 
 namespace LeopotamGroup.Ecs {
 #if DEBUG
@@ -28,7 +45,17 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Basic ecs world implementation.
     /// </summary>
-    public class EcsWorld : IEcsReadOnlyWorld {
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+    public class EcsWorld : IEcsReadOnlyWorld, IDisposable {
+        /// <summary>
+        /// Last created instance of EcsWorld.
+        /// Can be force reassigned manually when multiple worlds in use.
+        /// </summary>
+        public static EcsWorld Active = null;
+
         /// <summary>
         /// List of all entities (their components).
         /// </summary>
@@ -62,11 +89,39 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
 
+        public EcsWorld () {
+            Active = this;
+        }
+
+        public void Dispose () {
+            if (this == Active) {
+                Active = null;
+            }
+            for (var i = 0; i < _entitiesCount; i++) {
+                // already reserved entities cant contains components.
+                if (_entities[i].ComponentsCount > 0) {
+                    var entity = _entities[i];
+                    for (var ii = 0; ii < entity.ComponentsCount; ii++) {
+                        entity.Components[ii].Pool.RecycleById (entity.Components[ii].ItemId);
+                    }
+                }
+            }
+            // any next usage of this EcsWorld instance will throw exception.
+            _entities = null;
+            _entitiesCount = 0;
+            _filters = null;
+            _filtersCount = 0;
+            _reservedEntities = null;
+            _reservedEntitiesCount = 0;
+            _delayedUpdates = null;
+            _delayedUpdatesCount = 0;
+        }
+
 #if DEBUG
         /// <summary>
         /// List of all debug listeners.
         /// </summary>
-        readonly List<IEcsWorldDebugListener> _debugListeners = new List<IEcsWorldDebugListener> (4);
+        readonly System.Collections.Generic.List<IEcsWorldDebugListener> _debugListeners = new System.Collections.Generic.List<IEcsWorldDebugListener> (4);
 
         /// <summary>
         /// Adds external event listener.
@@ -108,7 +163,117 @@ namespace LeopotamGroup.Ecs {
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
-            return AddComponent<T> (CreateEntityInternal (false));
+            var entity = CreateEntityInternal (false);
+            var pool = EcsComponentPool<T>.Instance;
+            var entityData = _entities[entity];
+            if (entityData.ComponentsCount == entityData.Components.Length) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
+            }
+            ComponentLink link;
+            link.Pool = pool;
+            link.ItemId = pool.RequestNewId ();
+            var component = pool.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, component);
+            }
+#endif
+            return component;
+        }
+
+        /// <summary>
+        /// Creates new entity and adds component to it.
+        /// Faster than CreateEntity() and multiple AddComponent() calls sequence.
+        /// </summary>
+        /// <param name="c1">Added component of type T1.</param>
+        /// <param name="c2">Added component of type T2.</param>
+        public void CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
+            var entity = CreateEntityInternal (false);
+#if DEBUG
+            if (typeof (T1) == typeof (T2)) {
+                throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T2).Name, entity));
+            }
+#endif
+            var pool1 = EcsComponentPool<T1>.Instance;
+            var pool2 = EcsComponentPool<T2>.Instance;
+            var entityData = _entities[entity];
+            while ((entityData.ComponentsCount + 2) > entityData.Components.Length) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
+            }
+            ComponentLink link;
+            link.Pool = pool1;
+            link.ItemId = pool1.RequestNewId ();
+            c1 = pool1.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool1, link.ItemId);
+            link.Pool = pool2;
+            link.ItemId = pool2.RequestNewId ();
+            c2 = pool2.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool2, link.ItemId);
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c1);
+            }
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c2);
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Creates new entity and adds component to it.
+        /// Faster than CreateEntity() and multiple AddComponent() calls sequence.
+        /// </summary>
+        /// <param name="c1">Added component of type T1.</param>
+        /// <param name="c2">Added component of type T2.</param>
+        /// <param name="c3">Added component of type T3.</param>
+        public void CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
+            var entity = CreateEntityInternal (false);
+#if DEBUG
+            if (typeof (T1) == typeof (T2)) {
+                throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T2).Name, entity));
+            }
+            if (typeof (T1) == typeof (T3) || typeof (T2) == typeof (T3)) {
+                throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T3).Name, entity));
+            }
+#endif
+            var pool1 = EcsComponentPool<T1>.Instance;
+            var pool2 = EcsComponentPool<T2>.Instance;
+            var pool3 = EcsComponentPool<T3>.Instance;
+            var entityData = _entities[entity];
+            while ((entityData.ComponentsCount + 3) > entityData.Components.Length) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
+            }
+            ComponentLink link;
+            link.Pool = pool1;
+            link.ItemId = pool1.RequestNewId ();
+            c1 = pool1.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool1, link.ItemId);
+            link.Pool = pool2;
+            link.ItemId = pool2.RequestNewId ();
+            c2 = pool2.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool2, link.ItemId);
+            link.Pool = pool3;
+            link.ItemId = pool3.RequestNewId ();
+            c3 = pool3.Items[link.ItemId];
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool3, link.ItemId);
+#if DEBUG
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c1);
+            }
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c2);
+            }
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, c3);
+            }
+#endif
         }
 
         /// <summary>
@@ -191,32 +356,31 @@ namespace LeopotamGroup.Ecs {
         public T GetComponent<T> (int entity) where T : class, new () {
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
-            ComponentLink link;
-            link.ItemId = -1;
-            var i = entityData.ComponentsCount - 1;
-            for (; i >= 0; i--) {
-                link = entityData.Components[i];
-                if (link.Pool == pool) {
-                    break;
+            for (var i = 0; i < entityData.ComponentsCount; i++) {
+                if (entityData.Components[i].Pool == pool) {
+                    return pool.Items[entityData.Components[i].ItemId];
                 }
             }
-            return i != -1 ? pool.Items[link.ItemId] : null;
+            return null;
         }
 
         /// <summary>
         /// Gets all components on entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        /// <param name="list">List to put results in it.</param>
-        public void GetComponents (int entity, IList<object> list) {
-            if (list != null) {
-                list.Clear ();
-                var entityData = _entities[entity];
-                for (var i = 0; i < entityData.ComponentsCount; i++) {
-                    var link = entityData.Components[i];
-                    list.Add (link.Pool.GetExistItemById (link.ItemId));
-                }
+        /// <param name="list">List to put results in it. if null - will be created.</param>
+        /// <returns>Amount of components in list.</returns>
+        public int GetComponents (int entity, ref object[] list) {
+            var entityData = _entities[entity];
+            var count = entityData.ComponentsCount;
+            if (list == null || list.Length < count) {
+                list = new object[entityData.ComponentsCount];
             }
+            for (var i = 0; i < count; i++) {
+                var link = entityData.Components[i];
+                list[i] = link.Pool.GetExistItemById (link.ItemId);
+            }
+            return count;
         }
 
         /// <summary>
@@ -380,6 +544,9 @@ namespace LeopotamGroup.Ecs {
         /// Create entity with support of re-using reserved instances.
         /// </summary>
         /// <param name="addSafeRemove">Add delayed command for proper removing entities without components.</param>
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         int CreateEntityInternal (bool addSafeRemove) {
             int entity;
             if (_reservedEntitiesCount > 0) {

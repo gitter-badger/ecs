@@ -17,6 +17,10 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     public class EcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
         public Inc1[] Components1;
         bool _allow1;
@@ -82,6 +86,10 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     public class EcsFilter<Inc1, Inc2> : EcsFilter where Inc1 : class, new () where Inc2 : class, new () {
         public Inc1[] Components1;
         public Inc2[] Components2;
@@ -162,6 +170,10 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter where Inc1 : class, new () where Inc2 : class, new () where Inc3 : class, new () {
         public Inc1[] Components1;
         public Inc2[] Components2;
@@ -256,6 +268,10 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter where Inc1 : class, new () where Inc2 : class, new () where Inc3 : class, new () where Inc4 : class, new () {
         public Inc1[] Components1;
         public Inc2[] Components2;
@@ -364,6 +380,10 @@ namespace LeopotamGroup.Ecs {
     /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5> : EcsFilter where Inc1 : class, new () where Inc2 : class, new () where Inc3 : class, new () where Inc4 : class, new () where Inc5 : class, new () {
         public Inc1[] Components1;
         public Inc2[] Components2;

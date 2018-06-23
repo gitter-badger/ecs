@@ -16,6 +16,10 @@ namespace LeopotamGroup.Ecs.Internals {
     /// <summary>
     /// Components pool container.
     /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
     sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
         const int MinSize = 8;
 
