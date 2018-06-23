@@ -154,6 +154,7 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Creates new entity.
         /// </summary>
+        /// <returns>Entity Id.</returns>
         public int CreateEntity () {
             return CreateEntityInternal (true);
         }
@@ -163,6 +164,18 @@ namespace LeopotamGroup.Ecs {
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
+            T component;
+            CreateEntityWith<T> (out component);
+            return component;
+        }
+
+        /// <summary>
+        /// Creates new entity and adds component to it.
+        /// Faster than CreateEntity() + AddComponent() sequence.
+        /// </summary>
+        /// <param name="component">Added component of type T.</param>
+        /// <returns>New entity Id.</returns>
+        public int CreateEntityWith<T> (out T component) where T : class, new () {
             var entity = CreateEntityInternal (false);
             var pool = EcsComponentPool<T>.Instance;
             var entityData = _entities[entity];
@@ -172,7 +185,7 @@ namespace LeopotamGroup.Ecs {
             ComponentLink link;
             link.Pool = pool;
             link.ItemId = pool.RequestNewId ();
-            var component = pool.Items[link.ItemId];
+            component = pool.Items[link.ItemId];
             entityData.Components[entityData.ComponentsCount++] = link;
             AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
 #if DEBUG
@@ -180,7 +193,7 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, component);
             }
 #endif
-            return component;
+            return entity;
         }
 
         /// <summary>
@@ -189,7 +202,8 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="c1">Added component of type T1.</param>
         /// <param name="c2">Added component of type T2.</param>
-        public void CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
+        /// <returns>New entity Id.</returns>
+        public int CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
             var entity = CreateEntityInternal (false);
 #if DEBUG
             if (typeof (T1) == typeof (T2)) {
@@ -221,6 +235,7 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, c2);
             }
 #endif
+            return entity;
         }
 
         /// <summary>
@@ -230,7 +245,8 @@ namespace LeopotamGroup.Ecs {
         /// <param name="c1">Added component of type T1.</param>
         /// <param name="c2">Added component of type T2.</param>
         /// <param name="c3">Added component of type T3.</param>
-        public void CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
+        /// <returns>New entity Id.</returns>
+        public int CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
             var entity = CreateEntityInternal (false);
 #if DEBUG
             if (typeof (T1) == typeof (T2)) {
@@ -274,6 +290,7 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, c3);
             }
 #endif
+            return entity;
         }
 
         /// <summary>
