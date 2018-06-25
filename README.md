@@ -207,8 +207,10 @@ class Startup : Monobehaviour {
 
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)
+[Pacman game](https://github.com/SH42913/pacmanecs)
 
 # Extensions
+[Engine independent types](https://github.com/Leopotam/ecs-types)
 [Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
 [uGui event bindings](https://github.com/Leopotam/ecs-ui)
