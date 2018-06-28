@@ -23,6 +23,8 @@ int entity = _world.CreateEntity ();
 _world.RemoveEntity (entity);
 ```
 
+> Important: Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
+
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
 ```
