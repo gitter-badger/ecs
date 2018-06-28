@@ -500,14 +500,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Removes free space from cache, in-use items will be kept.
-        /// Useful for free memory when this component will not be used in quantity as before.
-        /// </summary>
-        public static void ShrinkComponentPool<T> () where T : class, new () {
-            EcsComponentPool<T>.Instance.Shrink ();
-        }
-
-        /// <summary>
         /// Gets filter with specific include / exclude masks.
         /// </summary>
         public T GetFilter<T> () where T : EcsFilter {

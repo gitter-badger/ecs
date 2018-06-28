@@ -6,7 +6,7 @@
 
 using System;
 
-namespace LeopotamGroup.Ecs.Internals {
+namespace LeopotamGroup.Ecs {
     interface IEcsComponentPool {
         object GetExistItemById (int idx);
         void RecycleById (int id);
@@ -20,14 +20,14 @@ namespace LeopotamGroup.Ecs.Internals {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
+    public sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
         const int MinSize = 8;
 
         public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
 
         public T[] Items = new T[MinSize];
 
-        public bool IsIgnoreInFilter = Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
+        public readonly bool IsIgnoreInFilter = Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
 
         int _typeIndex;
 
@@ -40,9 +40,12 @@ namespace LeopotamGroup.Ecs.Internals {
         Func<T> _creator;
 
         EcsComponentPool () {
-            _typeIndex = EcsHelpers.ComponentsCount++;
+            _typeIndex = Internals.EcsHelpers.ComponentsCount++;
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public int RequestNewId () {
             int id;
             if (_reservedItemsCount > 0) {
@@ -57,6 +60,9 @@ namespace LeopotamGroup.Ecs.Internals {
             return id;
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public void RecycleById (int id) {
             if (_reservedItemsCount == _reservedItems.Length) {
                 Array.Resize (ref _reservedItems, _reservedItemsCount << 1);
@@ -64,27 +70,22 @@ namespace LeopotamGroup.Ecs.Internals {
             _reservedItems[_reservedItemsCount++] = id;
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         object IEcsComponentPool.GetExistItemById (int idx) {
             return Items[idx];
         }
 
+#if NET_4_6
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public int GetComponentTypeIndex () {
             return _typeIndex;
         }
 
         public void SetCreator (Func<T> creator) {
             _creator = creator;
-        }
-
-        public void Shrink () {
-            var newSize = EcsHelpers.GetPowerOfTwoSize (_itemsCount < MinSize ? MinSize : _itemsCount);
-            if (newSize < Items.Length) {
-                Array.Resize (ref Items, newSize);
-            }
-            if (_reservedItems.Length > MinSize) {
-                _reservedItems = new int[MinSize];
-                _reservedItemsCount = 0;
-            }
         }
     }
 }
