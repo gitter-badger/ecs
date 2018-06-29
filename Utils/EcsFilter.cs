@@ -15,6 +15,51 @@ namespace LeopotamGroup.Ecs {
     public sealed class EcsIgnoreInFilterAttribute : Attribute { }
 
     /// <summary>
+    /// Container for single component for sharing between systems.
+    /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+    public class EcsFilterSingle<Inc1> : EcsFilter where Inc1 : class, new () {
+        public Inc1 Data;
+
+        protected EcsFilterSingle () {
+            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
+        }
+
+        /// <summary>
+        /// Creates entity with single component at specified EcsWorld.
+        /// </summary>
+        /// <param name="world">World instance.</param>
+        public static Inc1 Create (EcsWorld world) {
+            world.GetFilter<EcsFilterSingle<Inc1>> ();
+            var data = world.CreateEntityWith<Inc1> ();
+            world.ProcessDelayedUpdates ();
+            return data;
+        }
+
+        public override void RaiseOnAddEvent (int entity) {
+#if DEBUG
+            if (EntitiesCount > 0) {
+                throw new Exception (string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
+            }
+#endif
+            Data = World.GetComponent<Inc1> (entity);
+        }
+
+        public override void RaiseOnRemoveEvent (int entity) {
+#if DEBUG
+            if (EntitiesCount != 1 || Entities[0] != entity) {
+                throw new Exception (string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
+            }
+#endif
+            EntitiesCount--;
+            Data = null;
+        }
+    }
+
+    /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
 #if ENABLE_IL2CPP

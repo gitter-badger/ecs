@@ -16,6 +16,8 @@ class WeaponComponent {
 }
 ```
 
+> Important: Dont forget to cleanup reference links to instances of another components / engine classes before removing components from entity, otherwise it can lead to memory leaks.
+
 ## Entity
 Сontainer for components. Implemented with int id-s for more simplified api:
 ```
@@ -152,60 +154,70 @@ class Startup : MonoBehaviour {
 ```
 
 # Sharing data between systems
-If `EcsWorld` class should contains some shared fields (useful for sharing assets / prefabs), it can be implemented in this way:
+If some component should be shared between systems `EcsFilterSingle<>` filter class can be used in this case:
 ```
-class MySharedData : ScriptableObject {
-    public string PlayerName = "Unknown";
-    public GameObject PlayerModel;
-}
-
-class MyWorld: EcsWorld {
-    public readonly MySharedData Assets;
-
-    public MyWorld(MySharedData data) {
-        Assets = data;
-    }
+class MySharedData {
+    public string PlayerName;
+    public int AchivementsCount;
 }
 
 [EcsInject]
 class ChangePlayerName : IEcsInitSystem {
-    MyWorld _world = null;
-
-    // This field will be initialized with same reference as _world field.
-    EcsWorld _standardWorld = null;
+    EcsFilterSingle<MySharedData> _shared = null;
 
     void IEcsInitSystem.Initialize () {
-        _world.Assets.PlayerName = "Jack";
+        _shared.Data.PlayerName = "Jack";
     }
 
     void IEcsInitSystem.Destroy () { }
 }
+
 [EcsInject]
 class SpawnPlayerModel : IEcsInitSystem {
-    MyWorld _world = null;
+    EcsFilterSingle<MySharedData> _shared = null;
 
     void IEcsInitSystem.Initialize () {
-        GameObject.Instantiate(_world.Assets.PlayerModel);
+        Debug.LogFormat("Player with name {0} should be spawn here", _shared.Data.PlayerName);
     }
 
     void IEcsInitSystem.Destroy () { }
 }
 
 class Startup : Monobehaviour {
-    [SerializedField]
-    MySharedData _sharedData;
+    EcsWorld _world;
 
     EcsSystems _systems;
 
     void OnEnable() {
-        var world = new MyWorld (_sharedData);
-        _systems = new EcsSystems(world)
+        _world = new MyWorld (_sharedData);
+        
+        // This method should be called before any system will be added to EcsSystems group.
+        var data = EcsFilterSingle<MySharedData>.Create(_world);
+        data.PlayerName = "Unknown";
+        data.AchivementsCount = 123;
+
+        _systems = new EcsSystems(_world)
             .Add (ChangePlayerName())
             .Add (SpawnPlayerModel());
+        // All EcsFilterSingle<MySharedData> fields already injected here and systems can be initialized correctly.
         _systems.Initialize();
+    }
+
+    void OnDisable() {
+        // var data = _world.GetFilter<EcsFilterSingle<MySharedData>>().Data;
+        // Do not forget to cleanup all reference links inside shared components to another data here.
+        // ...
+
+        _world.Dispose();
+        _systems = null;
+        _world = null;
     }
 }
 ```
+
+> Important: `EcsFilterSingle<>.Create(EcsWorld)` method should be called before any system will be added to EcsSystems group connected to same `EcsWorld` instance.
+
+Another way - creating custom world class with inheritance from `EcsWorld` and filling shared fields manually.
 
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)
