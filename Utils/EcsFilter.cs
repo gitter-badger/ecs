@@ -46,6 +46,7 @@ namespace LeopotamGroup.Ecs {
             }
 #endif
             Data = World.GetComponent<Inc1> (entity);
+            Entities[EntitiesCount++] = entity;
         }
 
         public override void RaiseOnRemoveEvent (int entity) {
