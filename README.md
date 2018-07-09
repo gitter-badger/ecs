@@ -16,7 +16,9 @@ class WeaponComponent {
 }
 ```
 
-> Important: Dont forget to cleanup reference links to instances of another components / engine classes before removing components from entity, otherwise it can lead to memory leaks.
+> **Important!** Dont forget to manually init all fields of new added component: default values will not work due all components will be reused automatically multiple times through internal pool (no destroying / creating new instance for each request for performance reason).
+
+> **Important!** Dont forget to cleanup reference links to instances of another components / engine classes before removing components from entity, otherwise it can lead to memory leaks.
 
 ## Entity
 Сontainer for components. Implemented with int id-s for more simplified api:
@@ -25,7 +27,7 @@ int entity = _world.CreateEntity ();
 _world.RemoveEntity (entity);
 ```
 
-> Important: Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
+> **Important!** Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
 
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
@@ -50,7 +52,7 @@ class HealthSystem : IEcsRunSystem {
 ```
 
 # Data injection
-> **Will not work with LEOECS_DISABLE_INJECT preprocessor define.**
+> **Important!** Will not work when LEOECS_DISABLE_INJECT preprocessor constant defined.
 
 With `[EcsInject]` attribute over `IEcsSystem` class all compatible `EcsWorld` and `EcsFilter<>` fields of instance of this class will be auto-initialized (auto-injected):
 ```
