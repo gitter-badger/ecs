@@ -76,7 +76,7 @@ namespace LeopotamGroup.Ecs {
             Components1 = _allow1 ? new Inc1[MinSize] : null;
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
@@ -91,7 +91,7 @@ namespace LeopotamGroup.Ecs {
             }
             Entities[EntitiesCount++] = entity;
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {
@@ -151,7 +151,7 @@ namespace LeopotamGroup.Ecs {
             IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
             ValidateMasks (2, 0);
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
@@ -172,7 +172,7 @@ namespace LeopotamGroup.Ecs {
             }
             Entities[EntitiesCount++] = entity;
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {
@@ -240,7 +240,7 @@ namespace LeopotamGroup.Ecs {
             IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.GetComponentTypeIndex (), true);
             ValidateMasks (3, 0);
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
@@ -267,7 +267,7 @@ namespace LeopotamGroup.Ecs {
             }
             Entities[EntitiesCount++] = entity;
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {
@@ -343,7 +343,7 @@ namespace LeopotamGroup.Ecs {
             IncludeMask.SetBit (EcsComponentPool<Inc4>.Instance.GetComponentTypeIndex (), true);
             ValidateMasks (4, 0);
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
@@ -376,7 +376,7 @@ namespace LeopotamGroup.Ecs {
             }
             Entities[EntitiesCount++] = entity;
         }
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {

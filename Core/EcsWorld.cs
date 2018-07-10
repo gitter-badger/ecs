@@ -367,7 +367,7 @@ namespace LeopotamGroup.Ecs {
         /// Gets component on entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public T GetComponent<T> (int entity) where T : class, new () {
@@ -553,7 +553,7 @@ namespace LeopotamGroup.Ecs {
         /// Create entity with support of re-using reserved instances.
         /// </summary>
         /// <param name="addSafeRemove">Add delayed command for proper removing entities without components.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         int CreateEntityInternal (bool addSafeRemove) {
@@ -580,7 +580,7 @@ namespace LeopotamGroup.Ecs {
             return entity;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         void AddDelayedUpdate (DelayedUpdate.Op type, int entity, IEcsComponentPool component, int componentId) {
@@ -595,7 +595,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity Id.</param>
         /// <param name="entityData">EcsEntity instance.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         void ReserveEntity (int entity, EcsEntity entityData) {
@@ -617,7 +617,7 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entity">Entity.</param>
         /// <param name="oldMask">Old component state.</param>
         /// <param name="newMask">New component state.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {

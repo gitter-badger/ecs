@@ -43,7 +43,7 @@ namespace LeopotamGroup.Ecs {
             _typeIndex = Internals.EcsHelpers.ComponentsCount++;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public int RequestNewId () {
@@ -60,7 +60,7 @@ namespace LeopotamGroup.Ecs {
             return id;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void RecycleById (int id) {
@@ -70,14 +70,14 @@ namespace LeopotamGroup.Ecs {
             _reservedItems[_reservedItemsCount++] = id;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         object IEcsComponentPool.GetExistItemById (int idx) {
             return Items[idx];
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public int GetComponentTypeIndex () {
