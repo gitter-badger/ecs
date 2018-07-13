@@ -681,7 +681,7 @@ namespace LeopotamGroup.Ecs {
 
         sealed class EcsEntity {
             public bool IsReserved;
-            public EcsComponentMask Mask = new EcsComponentMask ();
+            public readonly EcsComponentMask Mask = new EcsComponentMask ();
             public int ComponentsCount;
             public ComponentLink[] Components = new ComponentLink[8];
         }

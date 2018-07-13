@@ -15,7 +15,7 @@ namespace LeopotamGroup.Ecs.Internals {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
     public sealed class EcsComponentMask {
-        public int[] Bits = new int[4];
+        public int[] Bits = new int[8];
 
         public int BitsCount;
 #if DEBUG
