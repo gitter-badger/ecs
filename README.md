@@ -5,6 +5,8 @@ Performance and zero memory allocation / small size, no dependencies on any game
 
 > Tested on unity 2018.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
+> **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
+
 # Main parts of ecs
 
 ## Component
@@ -16,7 +18,7 @@ class WeaponComponent {
 }
 ```
 
-> **Important!** Dont forget to manually init all fields of new added component: default values will not work due all components will be reused automatically multiple times through internal pool (no destroying / creating new instance for each request for performance reason).
+> **Important!** Dont forget to manually init all fields of new added component. Default value initializers will not work due all components can be reused automatically multiple times through builtin pooling mechanism (no destroying / creating new instance for each request for performance reason).
 
 > **Important!** Dont forget to cleanup reference links to instances of another components / engine classes before removing components from entity, otherwise it can lead to memory leaks.
 
