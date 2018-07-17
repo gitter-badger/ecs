@@ -25,8 +25,9 @@ class WeaponComponent {
 ## Entity
 Сontainer for components. Implemented with int id-s for more simplified api:
 ```
-int entity = _world.CreateEntity ();
-_world.RemoveEntity (entity);
+WeaponComponent myWeapon;
+int entityId = _world.CreateEntityWith<WeaponComponent> (out myWeapon);
+_world.RemoveEntity (entityId);
 ```
 
 > **Important!** Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.

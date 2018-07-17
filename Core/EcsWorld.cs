@@ -155,6 +155,9 @@ namespace LeopotamGroup.Ecs {
         /// Creates new entity.
         /// </summary>
         /// <returns>Entity Id.</returns>
+#if DEBUG
+        [Obsolete ("Use CreateEntityWith<>() method instead.")]
+#endif
         public int CreateEntity () {
             return CreateEntityInternal (true);
         }
