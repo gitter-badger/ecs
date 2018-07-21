@@ -14,6 +14,14 @@ namespace LeopotamGroup.Ecs {
     }
 
     /// <summary>
+    /// Marks field of component to be not checked for null on component removing.
+    /// Works only in DEBUG mode!
+    /// </summary>
+    [System.Diagnostics.Conditional ("DEBUG")]
+    [AttributeUsage (AttributeTargets.Field)]
+    public sealed class EcsIgnoreNullCheckAttribute : Attribute { }
+
+    /// <summary>
     /// Components pool container.
     /// </summary>
 #if ENABLE_IL2CPP
@@ -39,8 +47,26 @@ namespace LeopotamGroup.Ecs {
 
         Func<T> _creator;
 
+#if DEBUG
+        System.Collections.Generic.List<System.Reflection.FieldInfo> _nullableFields = new System.Collections.Generic.List<System.Reflection.FieldInfo> (8);
+#endif
+
         EcsComponentPool () {
             _typeIndex = Internals.EcsHelpers.ComponentsCount++;
+#if DEBUG
+            // collect all marshal-by-reference fields.
+            var testInstance = new T ();
+            var fields = typeof (T).GetFields ();
+            for (var i = 0; i < fields.Length; i++) {
+                var field = fields[i];
+                var type = field.FieldType;
+                if (!type.IsValueType || (Nullable.GetUnderlyingType (type) != null) && !Nullable.GetUnderlyingType (type).IsValueType) {
+                    if (type != typeof (string) && !Attribute.IsDefined (field, typeof (EcsIgnoreNullCheckAttribute))) {
+                        _nullableFields.Add (fields[i]);
+                    }
+                }
+            }
+#endif
         }
 
 #if NET_4_6 || NET_STANDARD_2_0
@@ -64,6 +90,17 @@ namespace LeopotamGroup.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void RecycleById (int id) {
+#if DEBUG
+            // check all marshal-by-reference types for nulls.
+            var obj = Items[id];
+            for (var i = 0; i < _nullableFields.Count; i++) {
+                if (_nullableFields[i].GetValue (obj) != null) {
+                    throw new Exception (string.Format (
+                        "Memory leak for \"{0}\" component: \"{1}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute",
+                        typeof (T).Name, _nullableFields[i].Name));
+                }
+            }
+#endif
             if (_reservedItemsCount == _reservedItems.Length) {
                 Array.Resize (ref _reservedItems, _reservedItemsCount << 1);
             }
