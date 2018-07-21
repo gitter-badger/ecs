@@ -152,17 +152,6 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Creates new entity.
-        /// </summary>
-        /// <returns>Entity Id.</returns>
-#if DEBUG
-        [Obsolete ("Use CreateEntityWith<>() method instead.")]
-#endif
-        public int CreateEntity () {
-            return CreateEntityInternal (true);
-        }
-
-        /// <summary>
         /// Creates new entity and adds component to it.
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
@@ -179,7 +168,7 @@ namespace Leopotam.Ecs {
         /// <param name="component">Added component of type T.</param>
         /// <returns>New entity Id.</returns>
         public int CreateEntityWith<T> (out T component) where T : class, new () {
-            var entity = CreateEntityInternal (false);
+            var entity = CreateEntityInternal ();
             var pool = EcsComponentPool<T>.Instance;
             var entityData = _entities[entity];
             if (entityData.ComponentsCount == entityData.Components.Length) {
@@ -207,7 +196,7 @@ namespace Leopotam.Ecs {
         /// <param name="c2">Added component of type T2.</param>
         /// <returns>New entity Id.</returns>
         public int CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
-            var entity = CreateEntityInternal (false);
+            var entity = CreateEntityInternal ();
 #if DEBUG
             if (typeof (T1) == typeof (T2)) {
                 throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T2).Name, entity));
@@ -250,7 +239,7 @@ namespace Leopotam.Ecs {
         /// <param name="c3">Added component of type T3.</param>
         /// <returns>New entity Id.</returns>
         public int CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
-            var entity = CreateEntityInternal (false);
+            var entity = CreateEntityInternal ();
 #if DEBUG
             if (typeof (T1) == typeof (T2)) {
                 throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T2).Name, entity));
@@ -555,11 +544,10 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Create entity with support of re-using reserved instances.
         /// </summary>
-        /// <param name="addSafeRemove">Add delayed command for proper removing entities without components.</param>
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        int CreateEntityInternal (bool addSafeRemove) {
+        int CreateEntityInternal () {
             int entity;
             if (_reservedEntitiesCount > 0) {
                 _reservedEntitiesCount--;
@@ -571,9 +559,6 @@ namespace Leopotam.Ecs {
                     Array.Resize (ref _entities, _entitiesCount << 1);
                 }
                 _entities[_entitiesCount++] = new EcsEntity ();
-            }
-            if (addSafeRemove) {
-                AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null, -1);
             }
 #if DEBUG
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
