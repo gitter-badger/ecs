@@ -55,7 +55,6 @@ namespace Leopotam.Ecs {
             _typeIndex = Internals.EcsHelpers.ComponentsCount++;
 #if DEBUG
             // collect all marshal-by-reference fields.
-            var testInstance = new T ();
             var fields = typeof (T).GetFields ();
             for (var i = 0; i < fields.Length; i++) {
                 var field = fields[i];
