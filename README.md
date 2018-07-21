@@ -11,7 +11,7 @@ Performance and zero memory allocation / small size, no dependencies on any game
 
 ## Component
 Container for user data without / with small logic inside. Can be used any user class without any additional inheritance:
-```
+```c#
 class WeaponComponent {
     public int Ammo;
     public string GunName;
@@ -26,7 +26,7 @@ class WeaponComponent {
 
 ## Entity
 Сontainer for components. Implemented with int id-s for more simplified api:
-```
+```c#
 WeaponComponent myWeapon;
 int entityId = _world.CreateEntityWith<WeaponComponent> (out myWeapon);
 _world.RemoveEntity (entityId);
@@ -36,7 +36,7 @@ _world.RemoveEntity (entityId);
 
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
-```
+```c#
 class WeaponSystem : IEcsInitSystem {
     void IEcsInitSystem.Initialize () {
         // Will be called once during world initialization.
@@ -48,7 +48,7 @@ class WeaponSystem : IEcsInitSystem {
 }
 ```
 
-```
+```c#
 class HealthSystem : IEcsRunSystem {
     void IEcsRunSystem.Run () {
         // Will be called on each EcsSystems.Run() call.
@@ -60,7 +60,7 @@ class HealthSystem : IEcsRunSystem {
 > **Important!** Will not work when LEOECS_DISABLE_INJECT preprocessor constant defined.
 
 With `[EcsInject]` attribute over `IEcsSystem` class all compatible `EcsWorld` and `EcsFilter<>` fields of instance of this class will be auto-initialized (auto-injected):
-```
+```c#
 [EcsInject]
 class HealthSystem : IEcsSystem {
     EcsWorld _world = null;
@@ -73,7 +73,7 @@ class HealthSystem : IEcsSystem {
 
 ## EcsFilter<>
 Container for keep filtered entities with specified component list:
-```
+```c#
 [EcsInject]
 class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     EcsWorld _world = null;
@@ -105,7 +105,7 @@ All compatible entities will be stored at `filter.Entities` array, amount of the
 All components from filter `Include` constraint will be stored at `filter.Components1`, `filter.Components2`, etc - in same order as they were used in filter type declaration.
 
 If autofilling not required (for example, for flag-based components without data), `EcsIgnoreInFilter` attribute can be used for decrease memory usage and increase performance:
-```
+```c#
 class Component1 { }
 
 [EcsIgnoreInFilter]
@@ -136,7 +136,7 @@ Root level container for all entities / components, works like isolated environm
 
 ## EcsSystems
 Group of systems to process `EcsWorld` instance:
-```
+```c#
 class Startup : MonoBehaviour {
     EcsSystems _systems;
 
@@ -162,7 +162,7 @@ class Startup : MonoBehaviour {
 
 # Sharing data between systems
 If some component should be shared between systems `EcsFilterSingle<>` filter class can be used in this case:
-```
+```c#
 class MySharedData {
     public string PlayerName;
     public int AchivementsCount;
@@ -251,7 +251,7 @@ There are no components limit, but for performance / memory usage reason better 
 
 In this case custom component creator can be used (for speed up 2x or more):
 
-```
+```c#
 class MyComponent { }
 
 class Startup : Monobehaviour {
@@ -272,7 +272,7 @@ class Startup : Monobehaviour {
 ### I want to process one system at MonoBehaviour.Update() and another - at MonoBehaviour.FixedUpdate(). How I can do it?
 
 For splitting systems by `MonoBehaviour`-method multiple `EcsSystems` logical groups should be used:
-```
+```c#
 EcsSystems _update;
 EcsSystems _fixedUpdate;
 
@@ -314,7 +314,7 @@ If you really need them - better to stay on ["v20180422 release"](https://github
 
 First of all - looks like there are problems in architecture and better to rethink it. Anyway, custom filter can be implemented it this way:
 
-```
+```c#
 // Custom class should be inherited from EcsFilter.
 public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
     public Inc1[] Components1;
