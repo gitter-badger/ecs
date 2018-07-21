@@ -14,8 +14,8 @@ namespace LeopotamGroup.Ecs.Internals {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    sealed class EcsComponentMask {
-        public int[] Bits = new int[4];
+    public sealed class EcsComponentMask {
+        public int[] Bits = new int[8];
 
         public int BitsCount;
 #if DEBUG
@@ -28,7 +28,7 @@ namespace LeopotamGroup.Ecs.Internals {
         }
 #endif
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void SetBit (int bitId, bool state) {
@@ -53,14 +53,14 @@ namespace LeopotamGroup.Ecs.Internals {
             }
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public bool IsEmpty () {
             return BitsCount == 0;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public bool GetBit (int bitId) {
@@ -73,7 +73,7 @@ namespace LeopotamGroup.Ecs.Internals {
             return i != -1;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void CopyFrom (EcsComponentMask mask) {
@@ -103,7 +103,7 @@ namespace LeopotamGroup.Ecs.Internals {
             return true;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public bool IsCompatible (EcsFilter filter) {
@@ -129,7 +129,7 @@ namespace LeopotamGroup.Ecs.Internals {
             return false;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public bool IsIntersects (EcsComponentMask mask) {

@@ -9,7 +9,7 @@ namespace LeopotamGroup.Ecs.Internals {
     /// Internal helpers.
     /// </summary>
     static class EcsHelpers {
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public static int GetPowerOfTwoSize (int n) {

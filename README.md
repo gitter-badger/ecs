@@ -5,6 +5,8 @@ Performance and zero memory allocation / small size, no dependencies on any game
 
 > Tested on unity 2018.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
+> **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
+
 # Main parts of ecs
 
 ## Component
@@ -16,12 +18,19 @@ class WeaponComponent {
 }
 ```
 
+> **Important!** Dont forget to manually init all fields of new added component. Default value initializers will not work due all components can be reused automatically multiple times through builtin pooling mechanism (no destroying / creating new instance for each request for performance reason).
+
+> **Important!** Dont forget to cleanup reference links to instances of another components / engine classes before removing components from entity, otherwise it can lead to memory leaks.
+
 ## Entity
 Сontainer for components. Implemented with int id-s for more simplified api:
 ```
-int entity = _world.CreateEntity ();
-_world.RemoveEntity (entity);
+WeaponComponent myWeapon;
+int entityId = _world.CreateEntityWith<WeaponComponent> (out myWeapon);
+_world.RemoveEntity (entityId);
 ```
+
+> **Important!** Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
 
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
@@ -46,7 +55,7 @@ class HealthSystem : IEcsRunSystem {
 ```
 
 # Data injection
-> **Will not work with LEOECS_DISABLE_INJECT preprocessor define.**
+> **Important!** Will not work when LEOECS_DISABLE_INJECT preprocessor constant defined.
 
 With `[EcsInject]` attribute over `IEcsSystem` class all compatible `EcsWorld` and `EcsFilter<>` fields of instance of this class will be auto-initialized (auto-injected):
 ```
@@ -116,7 +125,7 @@ class TestSystem : IEcsSystem {
 }
 ```
 
-> Important: Any filter supports up to 5 component types as "include" constraint and up to 2 component types as "exclude" constraint. Shorter constraints - better performance.
+> Important: Any filter supports up to 4 component types as "include" constraints and up to 2 component types as "exclude" constraints. Shorter constraints - better performance.
 
 > Important: If you will try to use 2 filters with same components but in different order - you will get exception with detailed info about conflicted types, but only in `DEBUG` mode. In `RELEASE` mode all checks will be skipped.
 
@@ -150,68 +159,82 @@ class Startup : MonoBehaviour {
 ```
 
 # Sharing data between systems
-If `EcsWorld` class should contains some shared fields (useful for sharing assets / prefabs), it can be implemented in this way:
+If some component should be shared between systems `EcsFilterSingle<>` filter class can be used in this case:
 ```
-class MySharedData : ScriptableObject {
-    public string PlayerName = "Unknown";
-    public GameObject PlayerModel;
-}
-
-class MyWorld: EcsWorld {
-    public readonly MySharedData Assets;
-
-    public MyWorld(MySharedData data) {
-        Assets = data;
-    }
+class MySharedData {
+    public string PlayerName;
+    public int AchivementsCount;
 }
 
 [EcsInject]
 class ChangePlayerName : IEcsInitSystem {
-    MyWorld _world = null;
-
-    // This field will be initialized with same reference as _world field.
-    EcsWorld _standardWorld = null;
+    EcsFilterSingle<MySharedData> _shared = null;
 
     void IEcsInitSystem.Initialize () {
-        _world.Assets.PlayerName = "Jack";
+        _shared.Data.PlayerName = "Jack";
     }
 
     void IEcsInitSystem.Destroy () { }
 }
+
 [EcsInject]
 class SpawnPlayerModel : IEcsInitSystem {
-    MyWorld _world = null;
+    EcsFilterSingle<MySharedData> _shared = null;
 
     void IEcsInitSystem.Initialize () {
-        GameObject.Instantiate(_world.Assets.PlayerModel);
+        Debug.LogFormat("Player with name {0} should be spawn here", _shared.Data.PlayerName);
     }
 
     void IEcsInitSystem.Destroy () { }
 }
 
 class Startup : Monobehaviour {
-    [SerializedField]
-    MySharedData _sharedData;
+    EcsWorld _world;
 
     EcsSystems _systems;
 
     void OnEnable() {
-        var world = new MyWorld (_sharedData);
-        _systems = new EcsSystems(world)
+        _world = new MyWorld (_sharedData);
+        
+        // This method should be called before any system will be added to EcsSystems group.
+        var data = EcsFilterSingle<MySharedData>.Create(_world);
+        data.PlayerName = "Unknown";
+        data.AchivementsCount = 123;
+
+        _systems = new EcsSystems(_world)
             .Add (ChangePlayerName())
             .Add (SpawnPlayerModel());
+        // All EcsFilterSingle<MySharedData> fields already injected here and systems can be initialized correctly.
         _systems.Initialize();
+    }
+
+    void OnDisable() {
+        // var data = _world.GetFilter<EcsFilterSingle<MySharedData>>().Data;
+        // Do not forget to cleanup all reference links inside shared components to another data here.
+        // ...
+
+        _world.Dispose();
+        _systems = null;
+        _world = null;
     }
 }
 ```
 
+> Important: `EcsFilterSingle<>.Create(EcsWorld)` method should be called before any system will be added to EcsSystems group connected to same `EcsWorld` instance.
+
+Another way - creating custom world class with inheritance from `EcsWorld` and filling shared fields manually.
+
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)
 
+[Pacman game](https://github.com/SH42913/pacmanecs)
+
 # Extensions
+[Engine independent types](https://github.com/Leopotam/ecs-types)
+
 [Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
-[uGui event bindings](https://github.com/Leopotam/ecs-ui)
+[Unity uGui event bindings](https://github.com/Leopotam/ecs-ui)
 
 # License
 The software released under the terms of the MIT license. Enjoy.
@@ -266,12 +289,14 @@ void FixedUpdate() {
 }
 ```
 
-### I dont need dependency injection (I heard, it's very slooooow! / I want to use my own way to inject). How I can do it?
+### I do not need dependency injection through `Reflection` (I heard, it's very slooooow! / I want to use my own way to inject). How I can do it?
 
-Builtin DI can be removed with **LEOECS_DISABLE_INJECT** preprocessor define:
+Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** preprocessor define:
 * No `EcsInject` attribute.
 * No automatic injection for `EcsWorld` and `EcsFilter<>` fields.
-* Less code size.
+* Less code size.`
+
+`EcsWorld` should be injected somehow (for example, through constructor of system), `EcsFilter<>` data can be requested through `EcsWorld.GetFilter<>` method.
 
 ### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
 
@@ -282,6 +307,72 @@ Reactive events support was removed for performance reason and for more clear ex
 * Less memory usage.
 
 If you really need them - better to stay on ["v20180422 release"](https://github.com/Leopotam/ecs/releases/tag/v20180422).
+
+### I need more than 4 components in filter, how i can do it?
+
+First of all - looks like there are problems in architecture and better to rethink it. Anyway, custom filter can be implemented it this way:
+
+```
+// Custom class should be inherited from EcsFilter.
+public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
+    public Inc1[] Components1;
+    bool _allow1;
+
+    // Access can be any, even non-public.
+    protected CustomEcsFilter () {
+        // We should check - is requested type should be not auto-filled in Components1 array.
+        _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
+        Components1 = _allow1 ? new Inc1[MinSize] : null;
+
+        // And set valid bit of required component at IncludeMask.
+        IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
+
+        // Its recommended method for masks validation (will be auto-removed in RELEASE-mode).
+        ValidateMasks (1, 0);
+    }
+
+    // This method will be called for all new compatible entities.
+    public override void RaiseOnAddEvent (int entity) {
+        if (Entities.Length == EntitiesCount) {
+            Array.Resize (ref Entities, EntitiesCount << 1);
+            if (_allow1) {
+                Array.Resize (ref Components1, EntitiesCount << 1);
+            }
+        }
+        if (_allow1) {
+            Components1[EntitiesCount] = World.GetComponent<Inc1> (entity);
+        }
+        Entities[EntitiesCount++] = entity;
+    }
+
+    // This method will be removed for added before, but already non-compatible entities.
+    public override void RaiseOnRemoveEvent (int entity) {
+        for (var i = 0; i < EntitiesCount; i++) {
+            if (Entities[i] == entity) {
+                EntitiesCount--;
+                Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
+                if (_allow1) {
+                    Array.Copy (Components1, i + 1, Components1, i, EntitiesCount - i);
+                }
+                break;
+            }
+        }
+    }
+
+    // Even exclude filters can be declared in this way.
+    public class Exclude<Exc1, Exc2> : CustomEcsFilter<Inc1> where Exc1 : class, new () {
+        internal Exclude () {
+            // Update ExcludeMask for 2 denied types.
+            ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
+            ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.GetComponentTypeIndex (), true);
+            // And validate all masks (1 included type, 2 excluded type).
+            ValidateMasks (1, 2);
+        }
+    }
+}
+```
+
+> You can even add your own events inside `RaiseOnAddEvent` / `RaiseOnRemoveEvent` calls, but i do not recommend it and you will do it at your own peril.
 
 ### How it fast relative to Entitas?
 

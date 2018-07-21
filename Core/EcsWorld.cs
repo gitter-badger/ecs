@@ -154,6 +154,10 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Creates new entity.
         /// </summary>
+        /// <returns>Entity Id.</returns>
+#if DEBUG
+        [Obsolete ("Use CreateEntityWith<>() method instead.")]
+#endif
         public int CreateEntity () {
             return CreateEntityInternal (true);
         }
@@ -163,6 +167,18 @@ namespace LeopotamGroup.Ecs {
         /// Faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
+            T component;
+            CreateEntityWith<T> (out component);
+            return component;
+        }
+
+        /// <summary>
+        /// Creates new entity and adds component to it.
+        /// Faster than CreateEntity() + AddComponent() sequence.
+        /// </summary>
+        /// <param name="component">Added component of type T.</param>
+        /// <returns>New entity Id.</returns>
+        public int CreateEntityWith<T> (out T component) where T : class, new () {
             var entity = CreateEntityInternal (false);
             var pool = EcsComponentPool<T>.Instance;
             var entityData = _entities[entity];
@@ -172,7 +188,7 @@ namespace LeopotamGroup.Ecs {
             ComponentLink link;
             link.Pool = pool;
             link.ItemId = pool.RequestNewId ();
-            var component = pool.Items[link.ItemId];
+            component = pool.Items[link.ItemId];
             entityData.Components[entityData.ComponentsCount++] = link;
             AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
 #if DEBUG
@@ -180,7 +196,7 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, component);
             }
 #endif
-            return component;
+            return entity;
         }
 
         /// <summary>
@@ -189,7 +205,8 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="c1">Added component of type T1.</param>
         /// <param name="c2">Added component of type T2.</param>
-        public void CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
+        /// <returns>New entity Id.</returns>
+        public int CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
             var entity = CreateEntityInternal (false);
 #if DEBUG
             if (typeof (T1) == typeof (T2)) {
@@ -221,6 +238,7 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, c2);
             }
 #endif
+            return entity;
         }
 
         /// <summary>
@@ -230,7 +248,8 @@ namespace LeopotamGroup.Ecs {
         /// <param name="c1">Added component of type T1.</param>
         /// <param name="c2">Added component of type T2.</param>
         /// <param name="c3">Added component of type T3.</param>
-        public void CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
+        /// <returns>New entity Id.</returns>
+        public int CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
             var entity = CreateEntityInternal (false);
 #if DEBUG
             if (typeof (T1) == typeof (T2)) {
@@ -274,6 +293,7 @@ namespace LeopotamGroup.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, c3);
             }
 #endif
+            return entity;
         }
 
         /// <summary>
@@ -350,7 +370,7 @@ namespace LeopotamGroup.Ecs {
         /// Gets component on entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public T GetComponent<T> (int entity) where T : class, new () {
@@ -483,14 +503,6 @@ namespace LeopotamGroup.Ecs {
         }
 
         /// <summary>
-        /// Removes free space from cache, in-use items will be kept.
-        /// Useful for free memory when this component will not be used in quantity as before.
-        /// </summary>
-        public static void ShrinkComponentPool<T> () where T : class, new () {
-            EcsComponentPool<T>.Instance.Shrink ();
-        }
-
-        /// <summary>
         /// Gets filter with specific include / exclude masks.
         /// </summary>
         public T GetFilter<T> () where T : EcsFilter {
@@ -544,7 +556,7 @@ namespace LeopotamGroup.Ecs {
         /// Create entity with support of re-using reserved instances.
         /// </summary>
         /// <param name="addSafeRemove">Add delayed command for proper removing entities without components.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         int CreateEntityInternal (bool addSafeRemove) {
@@ -571,7 +583,7 @@ namespace LeopotamGroup.Ecs {
             return entity;
         }
 
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         void AddDelayedUpdate (DelayedUpdate.Op type, int entity, IEcsComponentPool component, int componentId) {
@@ -586,7 +598,7 @@ namespace LeopotamGroup.Ecs {
         /// </summary>
         /// <param name="entity">Entity Id.</param>
         /// <param name="entityData">EcsEntity instance.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         void ReserveEntity (int entity, EcsEntity entityData) {
@@ -608,7 +620,7 @@ namespace LeopotamGroup.Ecs {
         /// <param name="entity">Entity.</param>
         /// <param name="oldMask">Old component state.</param>
         /// <param name="newMask">New component state.</param>
-#if NET_4_6
+#if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         void UpdateFilters (int entity, EcsComponentMask oldMask, EcsComponentMask newMask) {
@@ -672,7 +684,7 @@ namespace LeopotamGroup.Ecs {
 
         sealed class EcsEntity {
             public bool IsReserved;
-            public EcsComponentMask Mask = new EcsComponentMask ();
+            public readonly EcsComponentMask Mask = new EcsComponentMask ();
             public int ComponentsCount;
             public ComponentLink[] Components = new ComponentLink[8];
         }
