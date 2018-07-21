@@ -5,9 +5,9 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using LeopotamGroup.Ecs.Internals;
+using Leopotam.Ecs.Internals;
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     /// <summary>
     /// Marks component class to be not autofilled as ComponentX in filter.
     /// </summary>

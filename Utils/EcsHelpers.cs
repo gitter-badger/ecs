@@ -4,7 +4,7 @@
 // Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
-namespace LeopotamGroup.Ecs.Internals {
+namespace Leopotam.Ecs.Internals {
     /// <summary>
     /// Internal helpers.
     /// </summary>

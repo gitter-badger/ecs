@@ -7,12 +7,12 @@
 using System;
 using System.Reflection;
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     [AttributeUsage (AttributeTargets.Class)]
     public sealed class EcsInjectAttribute : Attribute { }
 }
 
-namespace LeopotamGroup.Ecs.Internals {
+namespace Leopotam.Ecs.Internals {
     /// <summary>
     /// Processes dependency injection to ecs systems. For internal use only.
     /// </summary>

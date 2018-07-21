@@ -4,7 +4,7 @@
 // Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     public struct EcsWorldStats {
         /// <summary>
         /// Amount of active entities.

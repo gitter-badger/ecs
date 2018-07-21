@@ -6,7 +6,7 @@
 
 using System;
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     interface IEcsComponentPool {
         object GetExistItemById (int idx);
         void RecycleById (int id);

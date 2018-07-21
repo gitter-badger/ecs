@@ -6,7 +6,7 @@
 
 using System;
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     /// <summary>
     /// Base interface for all ecs systems.
     /// </summary>

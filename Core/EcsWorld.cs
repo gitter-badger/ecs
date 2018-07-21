@@ -5,7 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using LeopotamGroup.Ecs.Internals;
+using Leopotam.Ecs.Internals;
 
 #if ENABLE_IL2CPP
 // Unity IL2CPP performance optimization attribute.
@@ -25,7 +25,7 @@ namespace Unity.IL2CPP.CompilerServices {
 }
 #endif
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
 #if DEBUG
     /// <summary>
     /// Debug interface for world events processing.
