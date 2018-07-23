@@ -90,7 +90,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     void IEcsRunSystem.Run () {
         // Important: foreach-loop cant be used for filtered entities!
         for (var i = 0; i < _filter.EntitiesCount; i++) {
-            // Components1 array fill be automatically filled with instances of type "WeaponComponent".
+            // Components1 array will be automatically filled with instances of type "WeaponComponent".
             var weapon = _filter.Components1[i];
             weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
         }
@@ -296,7 +296,7 @@ void FixedUpdate() {
 Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** preprocessor define:
 * No `EcsInject` attribute.
 * No automatic injection for `EcsWorld` and `EcsFilter<>` fields.
-* Less code size.`
+* Less code size.
 
 `EcsWorld` should be injected somehow (for example, through constructor of system), `EcsFilter<>` data can be requested through `EcsWorld.GetFilter<>` method.
 
