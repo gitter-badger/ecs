@@ -408,86 +408,73 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Manually processes delayed updates. Use carefully!
         /// </summary>
-        /// <param name="level">Level of recursion for internal usage, always use 0.</param>
-        public void ProcessDelayedUpdates (int level = 0) {
-            var iMax = _delayedUpdatesCount;
-            for (var i = 0; i < iMax; i++) {
-                var op = _delayedUpdates[i];
-                var entityData = _entities[op.Entity];
-                _delayedOpMask.CopyFrom (entityData.Mask);
-                switch (op.Type) {
-                    case DelayedUpdate.Op.RemoveEntity:
+        public void ProcessDelayedUpdates () {
+            if (_delayedUpdatesCount > 0) {
+                for (var i = 0; i < _delayedUpdatesCount; i++) {
+                    var op = _delayedUpdates[i];
+                    var entityData = _entities[op.Entity];
+                    _delayedOpMask.CopyFrom (entityData.Mask);
+                    switch (op.Type) {
+                        case DelayedUpdate.Op.RemoveEntity:
 #if DEBUG
-                        if (entityData.IsReserved) {
-                            throw new Exception (string.Format ("Entity {0} already removed", op.Entity));
-                        }
-#endif
-                        while (entityData.ComponentsCount > 0) {
-                            var link = entityData.Components[entityData.ComponentsCount - 1];
-                            var componentId = link.Pool.GetComponentTypeIndex ();
-                            entityData.Mask.SetBit (componentId, false);
-#if DEBUG
-                            var componentToRemove = link.Pool.GetExistItemById (link.ItemId);
-                            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                                _debugListeners[ii].OnComponentRemoved (op.Entity, componentToRemove);
+                            if (entityData.IsReserved) {
+                                throw new Exception (string.Format ("Entity {0} already removed", op.Entity));
                             }
 #endif
-                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
-                            link.Pool.RecycleById (link.ItemId);
-                            _delayedOpMask.SetBit (componentId, false);
-                            entityData.ComponentsCount--;
-                        }
-                        ReserveEntity (op.Entity, entityData);
-                        break;
-                    case DelayedUpdate.Op.SafeRemoveEntity:
-                        if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
+                            while (entityData.ComponentsCount > 0) {
+                                var link = entityData.Components[entityData.ComponentsCount - 1];
+                                var componentId = link.Pool.GetComponentTypeIndex ();
+                                entityData.Mask.SetBit (componentId, false);
+#if DEBUG
+                                var componentToRemove = link.Pool.GetExistItemById (link.ItemId);
+                                for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                                    _debugListeners[ii].OnComponentRemoved (op.Entity, componentToRemove);
+                                }
+#endif
+                                UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                                link.Pool.RecycleById (link.ItemId);
+                                _delayedOpMask.SetBit (componentId, false);
+                                entityData.ComponentsCount--;
+                            }
                             ReserveEntity (op.Entity, entityData);
-                        }
-                        break;
-                    case DelayedUpdate.Op.AddComponent:
-                        var bit = op.Pool.GetComponentTypeIndex ();
+                            break;
+                        case DelayedUpdate.Op.SafeRemoveEntity:
+                            if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
+                                ReserveEntity (op.Entity, entityData);
+                            }
+                            break;
+                        case DelayedUpdate.Op.AddComponent:
+                            var bit = op.Pool.GetComponentTypeIndex ();
 #if DEBUG
-                        if (entityData.Mask.GetBit (bit)) {
-                            throw new Exception (string.Format ("Cant add component on entity {0}, already marked as added in mask", op.Entity));
-                        }
+                            if (entityData.Mask.GetBit (bit)) {
+                                throw new Exception (string.Format ("Cant add component on entity {0}, already marked as added in mask", op.Entity));
+                            }
 #endif
-                        entityData.Mask.SetBit (bit, true);
-                        UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
-                        break;
-                    case DelayedUpdate.Op.RemoveComponent:
-                        var bitRemove = op.Pool.GetComponentTypeIndex ();
+                            entityData.Mask.SetBit (bit, true);
+                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                            break;
+                        case DelayedUpdate.Op.RemoveComponent:
+                            var bitRemove = op.Pool.GetComponentTypeIndex ();
 #if DEBUG
-                        if (!entityData.Mask.GetBit (bitRemove)) {
-                            throw new Exception (string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity));
-                        }
+                            if (!entityData.Mask.GetBit (bitRemove)) {
+                                throw new Exception (string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity));
+                            }
 
-                        var componentInstance = op.Pool.GetExistItemById (op.ComponentId);
-                        for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                            _debugListeners[ii].OnComponentRemoved (op.Entity, componentInstance);
-                        }
+                            var componentInstance = op.Pool.GetExistItemById (op.ComponentId);
+                            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                                _debugListeners[ii].OnComponentRemoved (op.Entity, componentInstance);
+                            }
 #endif
-                        entityData.Mask.SetBit (bitRemove, false);
-                        UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
-                        op.Pool.RecycleById (op.ComponentId);
-                        if (entityData.ComponentsCount == 0) {
-                            AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1);
-                        }
-                        break;
-                }
-            }
-            if (iMax > 0) {
-                if (_delayedUpdatesCount == iMax) {
-                    _delayedUpdatesCount = 0;
-                } else {
-                    Array.Copy (_delayedUpdates, iMax, _delayedUpdates, 0, _delayedUpdatesCount - iMax);
-                    _delayedUpdatesCount -= iMax;
-#if DEBUG
-                    if (level > 0) {
-                        throw new Exception ("Recursive updating in filters");
+                            entityData.Mask.SetBit (bitRemove, false);
+                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                            op.Pool.RecycleById (op.ComponentId);
+                            if (entityData.ComponentsCount == 0) {
+                                AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1);
+                            }
+                            break;
                     }
-#endif
-                    ProcessDelayedUpdates (level + 1);
                 }
+                _delayedUpdatesCount = 0;
             }
         }
 
