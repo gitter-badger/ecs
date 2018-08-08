@@ -133,6 +133,7 @@ class TestSystem : IEcsSystem {
 
 ## EcsWorld
 Root level container for all entities / components, works like isolated environment.
+> Important: Do not forget to call `EcsWorld.Dispose` method when instance will not be used anymore.
 
 ## EcsSystems
 Group of systems to process `EcsWorld` instance:
@@ -155,10 +156,15 @@ class Startup : MonoBehaviour {
 
     void OnDisable() {
         // destroy systems logical group.
-        _systems.Destroy ();
+        _systems.Dispose ();
+        _systems = null;
+        // destroy world.
+        _world.Dispose ();
+        _world = null;
     }
 }
 ```
+> Important: Do not forget to call `EcsSystems.Dispose` method when instance will not be used anymore.
 
 # Sharing data between systems
 If some component should be shared between systems `EcsFilterSingle<>` filter class can be used in this case:
@@ -215,8 +221,9 @@ class Startup : Monobehaviour {
         // Do not forget to cleanup all reference links inside shared components to another data here.
         // ...
 
-        _world.Dispose();
+        _systems.Dispose();
         _systems = null;
+        _world.Dispose();
         _world = null;
     }
 }

@@ -35,6 +35,7 @@ namespace Leopotam.Ecs {
         void OnEntityRemoved (int entity);
         void OnComponentAdded (int entity, object component);
         void OnComponentRemoved (int entity, object component);
+        void OnWorldDestroyed (EcsWorld world);
     }
 #endif
 
@@ -89,11 +90,34 @@ namespace Leopotam.Ecs {
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
 
-        public EcsWorld () {
-            Active = this;
+#if DEBUG
+        bool _isDisposed;
+#endif
+
+        /// <summary>
+        /// Creates new instance of ecs world container.
+        /// </summary>
+        /// <param name="useAsActive">Should this instance be set as Active or not.</param>
+        public EcsWorld (bool useAsActive = true) {
+            if (useAsActive) {
+                Active = this;
+            }
         }
 
+        /// <summary>
+        /// Destroys all registered external data, full cleanup for internal data.
+        /// </summary>
         public void Dispose () {
+#if DEBUG
+            if (_isDisposed) {
+                throw new Exception ("World already disposed");
+            }
+            _isDisposed = true;
+
+            for (var i = _debugListeners.Count - 1; i >= 0; i--) {
+                _debugListeners[i].OnWorldDestroyed (this);
+            }
+#endif
             if (this == Active) {
                 Active = null;
             }
