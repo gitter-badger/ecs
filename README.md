@@ -340,7 +340,7 @@ public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
         ValidateMasks (1, 0);
     }
 
-    // This method will be called for all new compatible entities.
+    // This method will be called for new compatible entities.
     public override void RaiseOnAddEvent (int entity) {
         if (Entities.Length == EntitiesCount) {
             Array.Resize (ref Entities, EntitiesCount << 1);
@@ -354,7 +354,7 @@ public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
         Entities[EntitiesCount++] = entity;
     }
 
-    // This method will be removed for added before, but already non-compatible entities.
+    // This method will be called for added before, but already non-compatible entities.
     public override void RaiseOnRemoveEvent (int entity) {
         for (var i = 0; i < EntitiesCount; i++) {
             if (Entities[i] == entity) {
