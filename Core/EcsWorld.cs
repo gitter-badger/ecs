@@ -553,6 +553,20 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Removes specific filter.
+        /// Use carefully! Filter will be removed from world without notification of any systems!
+        /// </summary>
+        public void RemoveFilter<T> () where T : EcsFilter {
+            var filterType = typeof (T);
+            for (var i = 0; i < _filtersCount; i++) {
+                if (_filters[i].GetType () == filterType) {
+                    _filtersCount--;
+                    Array.Copy (_filters, i + 1, _filters, i, _filtersCount - i);
+                }
+            }
+        }
+
+        /// <summary>
         /// Create entity with support of re-using reserved instances.
         /// </summary>
 #if NET_4_6 || NET_STANDARD_2_0
