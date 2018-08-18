@@ -482,6 +482,15 @@ namespace Leopotam.Ecs {
         public int EntitiesCount;
 
         /// <summary>
+        /// Removes all filtered entities from world.
+        /// </summary>
+        public void RemoveAllEntities () {
+            for (var i = 0; i < EntitiesCount; i++) {
+                World.RemoveEntity (Entities[i]);
+            }
+        }
+
+        /// <summary>
         /// Vaidates amount of constraint components.
         /// </summary>
         /// <param name="inc">Valid amount for included components.</param>

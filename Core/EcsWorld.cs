@@ -327,6 +327,9 @@ namespace Leopotam.Ecs {
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
 #if DEBUG
+            if (entityData.IsReserved) {
+                throw new Exception (string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity));
+            }
             var i = entityData.ComponentsCount - 1;
             for (; i >= 0; i--) {
                 if (entityData.Components[i].Pool == pool) {
@@ -414,6 +417,14 @@ namespace Leopotam.Ecs {
                 list[i] = link.Pool.GetExistItemById (link.ItemId);
             }
             return count;
+        }
+
+        /// <summary>
+        /// Returns true if entity exists.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        public bool IsEntityExists (int entity) {
+            return entity >= 0 && entity < _entitiesCount && !_entities[entity].IsReserved;
         }
 
         /// <summary>
