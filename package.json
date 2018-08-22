@@ -1,8 +1,0 @@
-{
-    "name": "com.leopotamgroup.ecs",
-    "description": "Lightweight Entity Component System Framework for Unity.",
-    "version": "2018.8.22-preview",
-    "unity": "2018.1",
-    "author": "Leopotam",
-    "displayName": "LeoECS Core"
-}
