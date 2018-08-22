@@ -164,7 +164,7 @@ namespace Leopotam.Ecs {
             }
 #endif
 #if !LEOECS_DISABLE_INJECT
-            Internals.EcsInjections.Inject (_world, system);
+            EcsInjections.Inject (system, _world);
 #endif
 
             var initSystem = system as IEcsInitSystem;

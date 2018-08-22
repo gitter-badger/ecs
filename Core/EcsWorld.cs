@@ -710,4 +710,29 @@ namespace Leopotam.Ecs {
             public ComponentLink[] Components = new ComponentLink[8];
         }
     }
+
+    /// <summary>
+    /// Stats of EcsWorld instance.
+    /// </summary>
+    public struct EcsWorldStats {
+        /// <summary>
+        /// Amount of active entities.
+        /// </summary>
+        public int ActiveEntities;
+
+        /// <summary>
+        /// Amount of cached (not in use) entities.
+        /// </summary>
+        public int ReservedEntities;
+
+        /// <summary>
+        /// Amount of registered filters.
+        /// </summary>
+        public int Filters;
+
+        /// <summary>
+        /// Amount of registered component types.
+        /// </summary>
+        public int Components;
+    }
 }

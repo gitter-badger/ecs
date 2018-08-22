@@ -8,20 +8,26 @@ using System;
 using System.Reflection;
 
 namespace Leopotam.Ecs {
+    /// <summary>
+    /// Attribute for automatic DI injection at ECS systems.
+    /// </summary>
     [AttributeUsage (AttributeTargets.Class)]
     public sealed class EcsInjectAttribute : Attribute { }
-}
 
-namespace Leopotam.Ecs.Internals {
     /// <summary>
-    /// Processes dependency injection to ecs systems. For internal use only.
+    /// Processes dependency injection to ecs systems.
     /// </summary>
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    static class EcsInjections {
-        public static void Inject (EcsWorld world, IEcsSystem system) {
+    public static class EcsInjections {
+        /// <summary>
+        /// Injects EcsWorld / EcsFilter fields to IEcsSystem.
+        /// </summary>
+        /// <param name="system">System to scan for injection.</param>
+        /// <param name="world">EcsWorld instance to inject.</param>
+        public static void Inject (IEcsSystem system, EcsWorld world) {
             var systemType = system.GetType ();
             if (!Attribute.IsDefined (systemType, typeof (EcsInjectAttribute))) {
                 return;
