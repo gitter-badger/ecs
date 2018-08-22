@@ -6,7 +6,7 @@
 
 using System;
 
-namespace Leopotam.Ecs.Internals {
+namespace Leopotam.Ecs {
     /// <summary>
     /// Mask for components selection.
     /// </summary>

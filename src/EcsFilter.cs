@@ -5,7 +5,6 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using Leopotam.Ecs.Internals;
 
 namespace Leopotam.Ecs {
     /// <summary>
