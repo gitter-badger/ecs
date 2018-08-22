@@ -9,7 +9,7 @@ using System;
 using System.Threading;
 #endif
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     /// <summary>
     /// Base system for multithreading processing. In WebGL - will work like IEcsRunSystem system.
     /// </summary>

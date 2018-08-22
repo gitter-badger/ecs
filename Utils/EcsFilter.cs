@@ -5,9 +5,9 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using LeopotamGroup.Ecs.Internals;
+using Leopotam.Ecs.Internals;
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     /// <summary>
     /// Marks component class to be not autofilled as ComponentX in filter.
     /// </summary>
@@ -480,6 +480,15 @@ namespace LeopotamGroup.Ecs {
         /// Amount of filtered entities.
         /// </summary>
         public int EntitiesCount;
+
+        /// <summary>
+        /// Removes all filtered entities from world.
+        /// </summary>
+        public void RemoveAllEntities () {
+            for (var i = 0; i < EntitiesCount; i++) {
+                World.RemoveEntity (Entities[i]);
+            }
+        }
 
         /// <summary>
         /// Vaidates amount of constraint components.

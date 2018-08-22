@@ -6,7 +6,7 @@
 
 using System;
 
-namespace LeopotamGroup.Ecs {
+namespace Leopotam.Ecs {
     /// <summary>
     /// Base interface for all ecs systems.
     /// </summary>
@@ -53,7 +53,7 @@ namespace LeopotamGroup.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    public sealed class EcsSystems {
+    public sealed class EcsSystems : IDisposable {
 #if DEBUG
         /// <summary>
         /// List of all debug listeners.
@@ -93,6 +93,8 @@ namespace LeopotamGroup.Ecs {
         /// Is Initialize method was called?
         /// </summary>
         bool _inited;
+
+        bool _isDisposed;
 #endif
 
         public EcsSystems (EcsWorld world) {
@@ -189,7 +191,7 @@ namespace LeopotamGroup.Ecs {
         public void Initialize () {
 #if DEBUG
             if (_inited) {
-                throw new Exception ("Group already initialized.");
+                throw new Exception ("EcsSystems instance already initialized.");
             }
             for (var i = 0; i < _runSystemsCount; i++) {
                 DisabledInDebugSystems.Add (false);
@@ -205,10 +207,24 @@ namespace LeopotamGroup.Ecs {
         /// <summary>
         /// Destroys all registered external data, full cleanup for internal data.
         /// </summary>
-        public void Destroy () {
 #if DEBUG
+        [Obsolete ("Use Dispose() instead.")]
+#endif
+        public void Destroy () {
+            Dispose ();
+        }
+
+        /// <summary>
+        /// Destroys all registered external data, full cleanup for internal data.
+        /// </summary>
+        public void Dispose () {
+#if DEBUG
+            if (_isDisposed) {
+                throw new Exception ("EcsSystems instance already disposed");
+            }
+            _isDisposed = true;
             if (!_inited) {
-                throw new Exception ("Group not initialized.");
+                throw new Exception ("EcsSystems instance was not initialized.");
             }
             for (var i = _debugListeners.Count - 1; i >= 0; i--) {
                 _debugListeners[i].OnSystemsDestroyed ();
@@ -235,7 +251,7 @@ namespace LeopotamGroup.Ecs {
         public void Run () {
 #if DEBUG
             if (!_inited) {
-                throw new Exception ("Group not initialized.");
+                throw new Exception ("EcsSystems instance was not initialized.");
             }
 #endif
             for (var i = 0; i < _runSystemsCount; i++) {
