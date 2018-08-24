@@ -39,6 +39,7 @@ namespace Leopotam.Ecs {
                 // EcsWorld
                 if (f.FieldType.IsAssignableFrom (worldType) && !f.IsStatic) {
                     f.SetValue (system, world);
+                    continue;
                 }
                 // EcsFilter
 #if DEBUG

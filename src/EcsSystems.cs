@@ -13,6 +13,21 @@ namespace Leopotam.Ecs {
     public interface IEcsSystem { }
 
     /// <summary>
+    /// Allows custom pre-initialization / pre-deinitialization for ecs system.
+    /// </summary>
+    public interface IEcsPreInitSystem : IEcsSystem {
+        /// <summary>
+        /// Initializes system inside EcsWorld instance before IEcsInitSystem will be initialized.
+        /// </summary>
+        void PreInitialize ();
+
+        /// <summary>
+        /// Destroys all internal allocated data after IEcsInitSystem will be destroyed.
+        /// </summary>
+        void PreDestroy ();
+    }
+
+    /// <summary>
     /// Allows custom initialization / deinitialization for ecs system.
     /// </summary>
     public interface IEcsInitSystem : IEcsSystem {
@@ -67,6 +82,16 @@ namespace Leopotam.Ecs {
         /// Ecs world instance.
         /// </summary>
         readonly EcsWorld _world;
+
+        /// <summary>
+        /// Registered IEcsPreInitSystem systems.
+        /// </summary>
+        IEcsPreInitSystem[] _preInitSystems = new IEcsPreInitSystem[4];
+
+        /// <summary>
+        /// Count of registered IEcsPreInitSystem systems.
+        /// </summary>
+        int _preInitSystemsCount;
 
         /// <summary>
         /// Registered IEcsInitSystem systems.
@@ -128,6 +153,19 @@ namespace Leopotam.Ecs {
 #endif
 
         /// <summary>
+        /// Gets all pre-init systems.
+        /// </summary>
+        /// <param name="list">List to put results in it. If null - will be created.</param>
+        /// <returns>Amount of systems in list.</returns>
+        public int GetPreInitSystems (ref IEcsPreInitSystem[] list) {
+            if (list == null || list.Length < _preInitSystemsCount) {
+                list = new IEcsPreInitSystem[_preInitSystemsCount];
+            }
+            Array.Copy (_preInitSystems, 0, list, 0, _preInitSystemsCount);
+            return _preInitSystemsCount;
+        }
+
+        /// <summary>
         /// Gets all init systems.
         /// </summary>
         /// <param name="list">List to put results in it. If null - will be created.</param>
@@ -167,6 +205,14 @@ namespace Leopotam.Ecs {
             EcsInjections.Inject (system, _world);
 #endif
 
+            var preInitSystem = system as IEcsPreInitSystem;
+            if (preInitSystem != null) {
+                if (_preInitSystemsCount == _preInitSystems.Length) {
+                    Array.Resize (ref _preInitSystems, _preInitSystemsCount << 1);
+                }
+                _preInitSystems[_preInitSystemsCount++] = preInitSystem;
+            }
+
             var initSystem = system as IEcsInitSystem;
             if (initSystem != null) {
                 if (_initSystemsCount == _initSystems.Length) {
@@ -198,20 +244,15 @@ namespace Leopotam.Ecs {
             }
             _inited = true;
 #endif
+            for (var i = 0; i < _preInitSystemsCount; i++) {
+                _preInitSystems[i].PreInitialize ();
+                _world.ProcessDelayedUpdates ();
+
+            }
             for (var i = 0; i < _initSystemsCount; i++) {
                 _initSystems[i].Initialize ();
                 _world.ProcessDelayedUpdates ();
             }
-        }
-
-        /// <summary>
-        /// Destroys all registered external data, full cleanup for internal data.
-        /// </summary>
-#if DEBUG
-        [Obsolete ("Use Dispose() instead.")]
-#endif
-        public void Destroy () {
-            Dispose ();
         }
 
         /// <summary>
@@ -238,6 +279,12 @@ namespace Leopotam.Ecs {
                 _initSystems[i] = null;
             }
             _initSystemsCount = 0;
+
+            for (var i = _preInitSystemsCount - 1; i >= 0; i--) {
+                _preInitSystems[i].PreDestroy ();
+                _preInitSystems[i] = null;
+            }
+            _preInitSystemsCount = 0;
 
             for (var i = _runSystemsCount - 1; i >= 0; i--) {
                 _runSystems[i] = null;

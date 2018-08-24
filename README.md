@@ -35,15 +35,23 @@ _world.RemoveEntity (entityId);
 > **Important!** Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
+Сontainer for logic for processing filtered entities. User class should implements `IEcsPreInitSystem`, `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
 ```csharp
-class WeaponSystem : IEcsInitSystem {
+class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem {
+    void IEcsPreInitSystem.PreInitialize () {
+        // Will be called once during world initialization and before IEcsInitSystem.Initialize.
+    }
+
     void IEcsInitSystem.Initialize () {
         // Will be called once during world initialization.
     }
 
     void IEcsInitSystem.Destroy () {
         // Will be called once during world destruction.
+    }
+
+    void IEcsPreInitSystem.PreDestroy () {
+        // Will be called once during world destruction and after IEcsInitSystem.Destroy.
     }
 }
 ```
