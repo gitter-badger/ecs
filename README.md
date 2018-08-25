@@ -247,11 +247,14 @@ Another way - creating custom world class with inheritance from `EcsWorld` and f
 [Pacman game](https://github.com/SH42913/pacmanecs)
 
 # Extensions
-[Engine independent types](https://github.com/Leopotam/ecs-types)
+
+[Reactive filters / systems](https://github.com/Leopotam/ecs-reactive)
 
 [Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
 [Unity uGui event bindings](https://github.com/Leopotam/ecs-ui)
+
+[Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
 The software released under the terms of the MIT license. Enjoy.
@@ -317,13 +320,7 @@ Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** prepro
 
 ### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
 
-Reactive events support was removed for performance reason and for more clear execution flow of components processing by systems:
-* Less internal magic.
-* Less code size.
-* Small performance gain.
-* Less memory usage.
-
-If you really need them - better to stay on ["v20180422 release"](https://github.com/Leopotam/ecs/releases/tag/v20180422).
+Reactive filters / systems can be found at [separate repo](https://github.com/Leopotam/ecs-reactive).
 
 ### I need more than 4 components in filter, how i can do it?
 
@@ -388,8 +385,6 @@ public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
     }
 }
 ```
-
-> You can even add your own events inside `RaiseOnAddEvent` / `RaiseOnRemoveEvent` calls, but i do not recommend it and you will do it at your own peril.
 
 ### How it fast relative to Entitas?
 
