@@ -320,6 +320,39 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Gets exist one or adds new component to entity.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        public T EnsureComponent<T> (int entity) where T : class, new () {
+            var entityData = _entities[entity];
+            var pool = EcsComponentPool<T>.Instance;
+#if DEBUG
+            if (entityData.IsReserved) {
+                throw new Exception (string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity));
+            }
+#endif
+            for (var i = 0; i < entityData.ComponentsCount; i++) {
+                if (entityData.Components[i].Pool == pool) {
+                    return (T) entityData.Components[i].Pool.GetExistItemById (entityData.Components[i].ItemId);
+                }
+            }
+
+            var link = new ComponentLink (pool, pool.RequestNewId ());
+            if (entityData.ComponentsCount == entityData.Components.Length) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
+            }
+            entityData.Components[entityData.ComponentsCount++] = link;
+            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
+#if DEBUG
+            var component = pool.Items[link.ItemId];
+            for (var ii = 0; ii < _debugListeners.Count; ii++) {
+                _debugListeners[ii].OnComponentAdded (entity, component);
+            }
+#endif
+            return pool.Items[link.ItemId];
+        }
+
+        /// <summary>
         /// Adds component to entity. Will throw exception if component already exists.
         /// </summary>
         /// <param name="entity">Entity.</param>
