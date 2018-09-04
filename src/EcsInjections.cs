@@ -42,12 +42,8 @@ namespace Leopotam.Ecs {
                     continue;
                 }
                 // EcsFilter
-#if DEBUG
-                if (f.FieldType == filterType) {
-                    throw new Exception (
-                        string.Format ("Cant use EcsFilter type at \"{0}\" system for dependency injection, use generic version instead", system));
-                }
-#endif
+                Internals.EcsHelpers.Assert (f.FieldType != filterType,
+                    string.Format ("Cant use EcsFilter type at \"{0}\" system for dependency injection, use generic version instead", system));
                 if (f.FieldType.IsSubclassOf (filterType) && !f.IsStatic) {
                     f.SetValue (system, world.GetFilter (f.FieldType));
                 }

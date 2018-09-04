@@ -26,5 +26,14 @@ namespace Leopotam.Ecs.Internals {
         }
 
         public static int ComponentsCount;
+
+        [System.Diagnostics.Conditional ("DEBUG")]
+        public static void Assert (bool state, string error) {
+#if DEBUG
+            if (!state) {
+                throw new System.Exception (error);
+            }
+#endif
+        }
     }
 }

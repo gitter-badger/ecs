@@ -39,21 +39,15 @@ namespace Leopotam.Ecs {
         }
 
         public override void RaiseOnAddEvent (int entity) {
-#if DEBUG
-            if (EntitiesCount > 0) {
-                throw new Exception (string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
-            }
-#endif
+            Internals.EcsHelpers.Assert (EntitiesCount <= 0,
+                string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
             Data = World.GetComponent<Inc1> (entity);
             Entities[EntitiesCount++] = entity;
         }
 
         public override void RaiseOnRemoveEvent (int entity) {
-#if DEBUG
-            if (EntitiesCount != 1 || Entities[0] != entity) {
-                throw new Exception (string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
-            }
-#endif
+            Internals.EcsHelpers.Assert (EntitiesCount == 1 && Entities[0] == entity,
+                string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
             EntitiesCount--;
             Data = null;
         }
@@ -496,12 +490,10 @@ namespace Leopotam.Ecs {
         /// <param name="exc">Valid amount for excluded components.</param>
         [System.Diagnostics.Conditional ("DEBUG")]
         protected void ValidateMasks (int inc, int exc) {
-            if (IncludeMask.BitsCount != inc || ExcludeMask.BitsCount != exc) {
-                throw new Exception (string.Format ("Invalid filter type \"{0}\": duplicated component types.", GetType ()));
-            }
-            if (IncludeMask.IsIntersects (ExcludeMask)) {
-                throw new Exception (string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
-            }
+            Internals.EcsHelpers.Assert (IncludeMask.BitsCount == inc && ExcludeMask.BitsCount == exc,
+                string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
+            Internals.EcsHelpers.Assert (!IncludeMask.IsIntersects (ExcludeMask),
+                string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
         }
 #if DEBUG
         public override string ToString () {
