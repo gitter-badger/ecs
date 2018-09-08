@@ -440,7 +440,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Returns connected EcsWorld instance.
         /// </summary>
-        public EcsWorld GetEcsWorld () {
+        public EcsWorld GetWorld () {
             return World;
         }
 
