@@ -477,6 +477,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Removes all filtered entities from world.
         /// </summary>
+        [Obsolete ("Use custom extension method instead")]
         public void RemoveAllEntities () {
             for (var i = 0; i < EntitiesCount; i++) {
                 World.RemoveEntity (Entities[i]);
