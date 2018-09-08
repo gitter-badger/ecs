@@ -68,7 +68,7 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    public sealed class EcsSystems : IDisposable {
+    public sealed class EcsSystems : IDisposable, IEcsRunSystem, IEcsInitSystem {
 #if DEBUG
         /// <summary>
         /// List of all debug listeners.
@@ -297,6 +297,10 @@ namespace Leopotam.Ecs {
                 _runSystems[i].Run ();
                 _world.ProcessDelayedUpdates ();
             }
+        }
+
+        void IEcsInitSystem.Destroy () {
+            Dispose ();
         }
     }
 }

@@ -174,6 +174,21 @@ class Startup : MonoBehaviour {
 ```
 > Important: Do not forget to call `EcsSystems.Dispose` method when instance will not be used anymore.
 
+`EcsSystems` instance can be used as nested system (any types of `IEcsPreInitSystem`, `IEcsInitSystem` or `IEcsRunSystem` behaviours are supported):
+```csharp
+var nestedSystems = new EcsSystems (_world)
+    .Add (new NestedSystem ());
+// dont call nestedSystems.Initialize() here, initialization will be processed as part of rootSystems instance.
+
+var rootSystems = new EcsSystems (_world)
+    .Add (nestedSystems);
+rootSystems.Initialize();
+
+// update loop
+// dont call nestedSystems.Run() here, rootSystems will do it automatically.
+rootSystems.Run();
+```
+
 # Sharing data between systems
 If some component should be shared between systems `EcsFilterSingle<>` filter class can be used in this case:
 ```csharp
