@@ -176,9 +176,10 @@ class Startup : MonoBehaviour {
 
 `EcsSystems` instance can be used as nested system (any types of `IEcsPreInitSystem`, `IEcsInitSystem` or `IEcsRunSystem` behaviours are supported):
 ```csharp
+// initialization
 var nestedSystems = new EcsSystems (_world)
     .Add (new NestedSystem ());
-// dont call nestedSystems.Initialize() here, initialization will be processed as part of rootSystems instance.
+// dont call nestedSystems.Initialize() here, rootSystems will do it automatically.
 
 var rootSystems = new EcsSystems (_world)
     .Add (nestedSystems);
@@ -187,6 +188,10 @@ rootSystems.Initialize();
 // update loop
 // dont call nestedSystems.Run() here, rootSystems will do it automatically.
 rootSystems.Run();
+
+// destroying
+// dont call nestedSystems.Dispose() here, rootSystems will do it automatically.
+rootSystems.Dispose();
 ```
 
 # Sharing data between systems
