@@ -438,6 +438,13 @@ namespace Leopotam.Ecs {
         public readonly EcsComponentMask ExcludeMask = new EcsComponentMask ();
 
         /// <summary>
+        /// Returns connected EcsWorld instance.
+        /// </summary>
+        public EcsWorld GetEcsWorld () {
+            return World;
+        }
+
+        /// <summary>
         /// Instance of connected EcsWorld.
         /// Do not change it manually!
         /// </summary>
