@@ -307,13 +307,15 @@ namespace Leopotam.Ecs {
         /// Gets exist one or adds new component to entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        public T EnsureComponent<T> (int entity) where T : class, new () {
+        /// <param name="isNew">Is component was added in this call?</param>
+        public T EnsureComponent<T> (int entity, out bool isNew) where T : class, new () {
             EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
             var entityData = _entities[entity];
             EcsHelpers.Assert (!entityData.IsReserved, string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity));
             var pool = EcsComponentPool<T>.Instance;
             for (var i = 0; i < entityData.ComponentsCount; i++) {
                 if (entityData.Components[i].Pool == pool) {
+                    isNew = false;
                     return (T) entityData.Components[i].Pool.GetExistItemById (entityData.Components[i].ItemId);
                 }
             }
@@ -330,6 +332,7 @@ namespace Leopotam.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, component);
             }
 #endif
+            isNew = true;
             return pool.Items[link.ItemId];
         }
 
