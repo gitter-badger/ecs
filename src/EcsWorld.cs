@@ -374,7 +374,8 @@ namespace Leopotam.Ecs {
         /// Removes component from entity.
         /// </summary>
         /// <param name="entity">Entity.</param>
-        public void RemoveComponent<T> (int entity) where T : class, new () {
+        /// <param name="noerror">Suppress error if component not exists.</param>
+        public void RemoveComponent<T> (int entity, bool noError = false) where T : class, new () {
             EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
@@ -386,6 +387,9 @@ namespace Leopotam.Ecs {
                 if (link.Pool == pool) {
                     break;
                 }
+            }
+            if (noError && i == -1) {
+                return;
             }
             EcsHelpers.Assert (i != -1, string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
             AddDelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, pool, link.ItemId);
