@@ -6,7 +6,7 @@
 
 using System;
 
-namespace Leopotam.Ecs.Internals {
+namespace Leopotam.Ecs {
     /// <summary>
     /// Mask for components selection.
     /// </summary>
@@ -18,7 +18,27 @@ namespace Leopotam.Ecs.Internals {
         public int[] Bits = new int[8];
 
         public int BitsCount;
+
 #if DEBUG
+        internal bool IsEquals (EcsComponentMask mask) {
+            if (BitsCount != mask.BitsCount) {
+                return false;
+            }
+            for (var i = 0; i < BitsCount; i++) {
+                var j = mask.BitsCount - 1;
+                var bit = Bits[i];
+                for (; j >= 0; j--) {
+                    if (mask.Bits[j] == bit) {
+                        break;
+                    }
+                }
+                if (j == -1) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public override string ToString () {
             var str = "[";
             for (var i = 0; i < BitsCount; i++) {
@@ -56,13 +76,6 @@ namespace Leopotam.Ecs.Internals {
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        public bool IsEmpty () {
-            return BitsCount == 0;
-        }
-
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
         public bool GetBit (int bitId) {
             var i = BitsCount - 1;
             for (; i >= 0; i--) {
@@ -82,25 +95,6 @@ namespace Leopotam.Ecs.Internals {
                 Bits = new int[mask.Bits.Length];
             }
             Array.Copy (mask.Bits, 0, Bits, 0, BitsCount);
-        }
-
-        public bool IsEquals (EcsComponentMask mask) {
-            if (BitsCount != mask.BitsCount) {
-                return false;
-            }
-            for (var i = 0; i < BitsCount; i++) {
-                var j = mask.BitsCount - 1;
-                var bit = Bits[i];
-                for (; j >= 0; j--) {
-                    if (mask.Bits[j] == bit) {
-                        break;
-                    }
-                }
-                if (j == -1) {
-                    return false;
-                }
-            }
-            return true;
         }
 
 #if NET_4_6 || NET_STANDARD_2_0

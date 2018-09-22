@@ -13,6 +13,21 @@ namespace Leopotam.Ecs {
     public interface IEcsSystem { }
 
     /// <summary>
+    /// Allows custom pre-initialization / pre-deinitialization for ecs system.
+    /// </summary>
+    public interface IEcsPreInitSystem : IEcsSystem {
+        /// <summary>
+        /// Initializes system inside EcsWorld instance before IEcsInitSystem will be initialized.
+        /// </summary>
+        void PreInitialize ();
+
+        /// <summary>
+        /// Destroys all internal allocated data after IEcsInitSystem will be destroyed.
+        /// </summary>
+        void PreDestroy ();
+    }
+
+    /// <summary>
     /// Allows custom initialization / deinitialization for ecs system.
     /// </summary>
     public interface IEcsInitSystem : IEcsSystem {
@@ -53,7 +68,7 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    public sealed class EcsSystems : IDisposable {
+    public sealed class EcsSystems : IDisposable, IEcsRunSystem, IEcsInitSystem {
 #if DEBUG
         /// <summary>
         /// List of all debug listeners.
@@ -67,6 +82,16 @@ namespace Leopotam.Ecs {
         /// Ecs world instance.
         /// </summary>
         readonly EcsWorld _world;
+
+        /// <summary>
+        /// Registered IEcsPreInitSystem systems.
+        /// </summary>
+        IEcsPreInitSystem[] _preInitSystems = new IEcsPreInitSystem[4];
+
+        /// <summary>
+        /// Count of registered IEcsPreInitSystem systems.
+        /// </summary>
+        int _preInitSystemsCount;
 
         /// <summary>
         /// Registered IEcsInitSystem systems.
@@ -112,9 +137,8 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="observer">Event listener.</param>
         public void AddDebugListener (IEcsSystemsDebugListener observer) {
-            if (_debugListeners.Contains (observer)) {
-                throw new Exception ("Listener already exists");
-            }
+            Internals.EcsHelpers.Assert (observer != null, "observer is null");
+            Internals.EcsHelpers.Assert (!_debugListeners.Contains (observer), "Listener already exists");
             _debugListeners.Add (observer);
         }
 
@@ -123,9 +147,23 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="observer">Event listener.</param>
         public void RemoveDebugListener (IEcsSystemsDebugListener observer) {
+            Internals.EcsHelpers.Assert (observer != null, "observer is null");
             _debugListeners.Remove (observer);
         }
 #endif
+
+        /// <summary>
+        /// Gets all pre-init systems.
+        /// </summary>
+        /// <param name="list">List to put results in it. If null - will be created.</param>
+        /// <returns>Amount of systems in list.</returns>
+        public int GetPreInitSystems (ref IEcsPreInitSystem[] list) {
+            if (list == null || list.Length < _preInitSystemsCount) {
+                list = new IEcsPreInitSystem[_preInitSystemsCount];
+            }
+            Array.Copy (_preInitSystems, 0, list, 0, _preInitSystemsCount);
+            return _preInitSystemsCount;
+        }
 
         /// <summary>
         /// Gets all init systems.
@@ -158,14 +196,17 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="system">System instance.</param>
         public EcsSystems Add (IEcsSystem system) {
-#if DEBUG
-            if (system == null) {
-                throw new ArgumentNullException ();
-            }
-#endif
+            Internals.EcsHelpers.Assert (system != null, "system is null");
 #if !LEOECS_DISABLE_INJECT
-            Internals.EcsInjections.Inject (_world, system);
+            EcsInjections.Inject (system, _world);
 #endif
+            var preInitSystem = system as IEcsPreInitSystem;
+            if (preInitSystem != null) {
+                if (_preInitSystemsCount == _preInitSystems.Length) {
+                    Array.Resize (ref _preInitSystems, _preInitSystemsCount << 1);
+                }
+                _preInitSystems[_preInitSystemsCount++] = preInitSystem;
+            }
 
             var initSystem = system as IEcsInitSystem;
             if (initSystem != null) {
@@ -190,14 +231,17 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void Initialize () {
 #if DEBUG
-            if (_inited) {
-                throw new Exception ("EcsSystems instance already initialized.");
-            }
+            Internals.EcsHelpers.Assert (!_inited, "EcsSystems instance already initialized");
             for (var i = 0; i < _runSystemsCount; i++) {
                 DisabledInDebugSystems.Add (false);
             }
             _inited = true;
 #endif
+            for (var i = 0; i < _preInitSystemsCount; i++) {
+                _preInitSystems[i].PreInitialize ();
+                _world.ProcessDelayedUpdates ();
+
+            }
             for (var i = 0; i < _initSystemsCount; i++) {
                 _initSystems[i].Initialize ();
                 _world.ProcessDelayedUpdates ();
@@ -207,25 +251,11 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Destroys all registered external data, full cleanup for internal data.
         /// </summary>
-#if DEBUG
-        [Obsolete ("Use Dispose() instead.")]
-#endif
-        public void Destroy () {
-            Dispose ();
-        }
-
-        /// <summary>
-        /// Destroys all registered external data, full cleanup for internal data.
-        /// </summary>
         public void Dispose () {
 #if DEBUG
-            if (_isDisposed) {
-                throw new Exception ("EcsSystems instance already disposed");
-            }
+            Internals.EcsHelpers.Assert (!_isDisposed, "EcsSystems instance already disposed");
+            Internals.EcsHelpers.Assert (_inited, "EcsSystems instance was not initialized");
             _isDisposed = true;
-            if (!_inited) {
-                throw new Exception ("EcsSystems instance was not initialized.");
-            }
             for (var i = _debugListeners.Count - 1; i >= 0; i--) {
                 _debugListeners[i].OnSystemsDestroyed ();
             }
@@ -239,6 +269,12 @@ namespace Leopotam.Ecs {
             }
             _initSystemsCount = 0;
 
+            for (var i = _preInitSystemsCount - 1; i >= 0; i--) {
+                _preInitSystems[i].PreDestroy ();
+                _preInitSystems[i] = null;
+            }
+            _preInitSystemsCount = 0;
+
             for (var i = _runSystemsCount - 1; i >= 0; i--) {
                 _runSystems[i] = null;
             }
@@ -250,9 +286,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void Run () {
 #if DEBUG
-            if (!_inited) {
-                throw new Exception ("EcsSystems instance was not initialized.");
-            }
+            Internals.EcsHelpers.Assert (_inited, "EcsSystems instance was not initialized");
 #endif
             for (var i = 0; i < _runSystemsCount; i++) {
 #if DEBUG
@@ -263,6 +297,10 @@ namespace Leopotam.Ecs {
                 _runSystems[i].Run ();
                 _world.ProcessDelayedUpdates ();
             }
+        }
+
+        void IEcsInitSystem.Destroy () {
+            Dispose ();
         }
     }
 }

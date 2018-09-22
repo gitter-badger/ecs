@@ -35,15 +35,23 @@ _world.RemoveEntity (entityId);
 > **Important!** Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
+Сontainer for logic for processing filtered entities. User class should implements `IEcsPreInitSystem`, `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
 ```csharp
-class WeaponSystem : IEcsInitSystem {
+class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem {
+    void IEcsPreInitSystem.PreInitialize () {
+        // Will be called once during world initialization and before IEcsInitSystem.Initialize.
+    }
+
     void IEcsInitSystem.Initialize () {
         // Will be called once during world initialization.
     }
 
     void IEcsInitSystem.Destroy () {
         // Will be called once during world destruction.
+    }
+
+    void IEcsPreInitSystem.PreDestroy () {
+        // Will be called once during world destruction and after IEcsInitSystem.Destroy.
     }
 }
 ```
@@ -166,6 +174,26 @@ class Startup : MonoBehaviour {
 ```
 > Important: Do not forget to call `EcsSystems.Dispose` method when instance will not be used anymore.
 
+`EcsSystems` instance can be used as nested system (any types of `IEcsPreInitSystem`, `IEcsInitSystem` or `IEcsRunSystem` behaviours are supported):
+```csharp
+// initialization
+var nestedSystems = new EcsSystems (_world)
+    .Add (new NestedSystem ());
+// dont call nestedSystems.Initialize() here, rootSystems will do it automatically.
+
+var rootSystems = new EcsSystems (_world)
+    .Add (nestedSystems);
+rootSystems.Initialize();
+
+// update loop
+// dont call nestedSystems.Run() here, rootSystems will do it automatically.
+rootSystems.Run();
+
+// destroying
+// dont call nestedSystems.Dispose() here, rootSystems will do it automatically.
+rootSystems.Dispose();
+```
+
 # Sharing data between systems
 If some component should be shared between systems `EcsFilterSingle<>` filter class can be used in this case:
 ```csharp
@@ -239,11 +267,14 @@ Another way - creating custom world class with inheritance from `EcsWorld` and f
 [Pacman game](https://github.com/SH42913/pacmanecs)
 
 # Extensions
-[Engine independent types](https://github.com/Leopotam/ecs-types)
+
+[Reactive filters / systems](https://github.com/Leopotam/ecs-reactive)
 
 [Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
 [Unity uGui event bindings](https://github.com/Leopotam/ecs-ui)
+
+[Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
 The software released under the terms of the MIT license. Enjoy.
@@ -309,13 +340,7 @@ Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** prepro
 
 ### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
 
-Reactive events support was removed for performance reason and for more clear execution flow of components processing by systems:
-* Less internal magic.
-* Less code size.
-* Small performance gain.
-* Less memory usage.
-
-If you really need them - better to stay on ["v20180422 release"](https://github.com/Leopotam/ecs/releases/tag/v20180422).
+Reactive filters / systems can be found at [separate repo](https://github.com/Leopotam/ecs-reactive).
 
 ### I need more than 4 components in filter, how i can do it?
 
@@ -380,8 +405,6 @@ public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
     }
 }
 ```
-
-> You can even add your own events inside `RaiseOnAddEvent` / `RaiseOnRemoveEvent` calls, but i do not recommend it and you will do it at your own peril.
 
 ### How it fast relative to Entitas?
 
