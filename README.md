@@ -67,7 +67,7 @@ class HealthSystem : IEcsRunSystem {
 # Data injection
 > **Important!** Will not work when LEOECS_DISABLE_INJECT preprocessor constant defined.
 
-With `[EcsInject]` attribute over `IEcsSystem` class all compatible `EcsWorld` and `EcsFilter<>` fields of instance of this class will be auto-initialized (auto-injected):
+With `[EcsInject]` attribute over `IEcsSystem` class all compatible `EcsWorld` and `EcsFilter<T>` fields of instance of this class will be auto-initialized (auto-injected):
 ```csharp
 [EcsInject]
 class HealthSystem : IEcsSystem {
@@ -79,7 +79,7 @@ class HealthSystem : IEcsSystem {
 
 # Special classes
 
-## EcsFilter<>
+## EcsFilter<T>
 Container for keep filtered entities with specified component list:
 ```csharp
 [EcsInject]
@@ -195,7 +195,7 @@ rootSystems.Dispose();
 ```
 
 # Sharing data between systems
-If some component should be shared between systems `EcsFilterSingle<>` filter class can be used in this case:
+If some component should be shared between systems `EcsFilterSingle<T>` filter class can be used in this case:
 ```csharp
 class MySharedData {
     public string PlayerName;
@@ -257,7 +257,7 @@ class Startup : Monobehaviour {
 }
 ```
 
-> Important: `EcsFilterSingle<>.Create(EcsWorld)` method should be called before any system will be added to EcsSystems group connected to same `EcsWorld` instance.
+> Important: `EcsFilterSingle<T>.Create(EcsWorld)` method should be called before any system will be added to EcsSystems group connected to same `EcsWorld` instance.
 
 Another way - creating custom world class with inheritance from `EcsWorld` and filling shared fields manually.
 
@@ -287,7 +287,7 @@ There are no components limit, but for performance / memory usage reason better 
 
 ### I want to create alot of new entities with new components on start, how to speed up this process?
 
-In this case custom component creator can be used (for speed up 2x or more):
+In this case custom component creator with predefined capacity can be used (for speed up 2x or more):
 
 ```csharp
 class MyComponent { }
@@ -298,11 +298,28 @@ class Startup : Monobehaviour {
     void OnEnable() {
         var world = new MyWorld (_sharedData);
         
-        EcsWorld.RegisterComponentCreator<MyComponent> (() => new MyComponent());
+        EcsComponentPool<MyComponent>.Instance.SetCapacity (100000);
+        EcsComponentPool<MyComponent>.Instance.SetCreator (() => new MyComponent());
         
         _systems = new EcsSystems(world)
             .Add (MySystem());
         _systems.Initialize();
+    }
+}
+```
+
+### I want to shrink allocated caches for my components, how I can do it?
+
+In this case `EcsComponentPool<T>.Instance.Shrink` method can be used:
+
+```csharp
+class MyComponent1 { }
+class MyComponent2 { }
+
+class ShrinkComponents : Monobehaviour {
+    void OnEnable() {
+        EcsComponentPool<MyComponent1>.Instance.Shrink ();
+        EcsComponentPool<MyComponent2>.Instance.Shrink ();
     }
 }
 ```
@@ -333,10 +350,10 @@ void FixedUpdate() {
 
 Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** preprocessor define:
 * No `EcsInject` attribute.
-* No automatic injection for `EcsWorld` and `EcsFilter<>` fields.
+* No automatic injection for `EcsWorld` and `EcsFilter<T>` fields.
 * Less code size.
 
-`EcsWorld` should be injected somehow (for example, through constructor of system), `EcsFilter<>` data can be requested through `EcsWorld.GetFilter<>` method.
+`EcsWorld` should be injected somehow (for example, through constructor of system), `EcsFilter<T>` data can be requested through `EcsWorld.GetFilter<T>` method.
 
 ### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
 

@@ -164,6 +164,7 @@ namespace Leopotam.Ecs {
         /// Registers custom activator for creating instances of specified type.
         /// </summary>
         /// <param name="creator">Custom callback for instance creation.</param>
+        [Obsolete ("Use EcsComponentPool<T>.Instance.SetCreator() instead")]
         public static void RegisterComponentCreator<T> (Func<T> creator) where T : class, new () {
             EcsComponentPool<T>.Instance.SetCreator (creator);
         }

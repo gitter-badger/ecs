@@ -119,8 +119,38 @@ namespace Leopotam.Ecs {
             return _typeIndex;
         }
 
+        /// <summary>
+        /// Registers custom activator for creating instances of specified type.
+        /// </summary>
+        /// <param name="creator">Custom callback for instance creation.</param>
         public void SetCreator (Func<T> creator) {
             _creator = creator;
+        }
+
+        /// <summary>
+        /// Sets new capacity (if more than current amount).
+        /// </summary>
+        /// <param name="capacity">New value.</param>
+        public void SetCapacity (int capacity) {
+            if (capacity < Items.Length) {
+                return;
+            }
+            Array.Resize (ref Items, capacity);
+        }
+
+        /// <summary>
+        /// Shrinks empty space after last allocated item.
+        /// </summary>
+        public void Shrink () {
+            int capacity;
+            capacity = _itemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (_itemsCount);
+            if (Items.Length != capacity) {
+                Array.Resize (ref Items, capacity);
+            }
+            capacity = _reservedItemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (_reservedItemsCount);
+            if (_reservedItems.Length != capacity) {
+                Array.Resize (ref _reservedItems, capacity);
+            }
         }
     }
 }
