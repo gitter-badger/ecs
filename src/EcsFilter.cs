@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 
 namespace Leopotam.Ecs {
     /// <summary>
@@ -39,7 +40,7 @@ namespace Leopotam.Ecs {
         }
 
         public override void RaiseOnAddEvent (int entity) {
-            Internals.EcsHelpers.Assert (EntitiesCount <= 0,
+            Internals.EcsHelpers.Assert (EntitiesCount == 0,
                 string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
             Data = World.GetComponent<Inc1> (entity);
             Entities[EntitiesCount++] = entity;
@@ -458,14 +459,14 @@ namespace Leopotam.Ecs {
         /// Will be raised by EcsWorld for new compatible with this filter entity.
         /// Do not call it manually!
         /// </summary>
-        /// <param name="entity"></param>
+        /// <param name="entity">Entity id.</param>
         public abstract void RaiseOnAddEvent (int entity);
 
         /// <summary>
         /// Will be raised by EcsWorld for old already non-compatible with this filter entity.
         /// Do not call it manually!
         /// </summary>
-        /// <param name="entity"></param>
+        /// <param name="entity">Entity id.</param>
         public abstract void RaiseOnRemoveEvent (int entity);
 
         /// <summary>
@@ -476,18 +477,56 @@ namespace Leopotam.Ecs {
         /// </summary>
         public int[] Entities = new int[MinSize];
 
+#if NET_4_6 || NET_STANDARD_2_0
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public Enumerator GetEnumerator () {
+            return new Enumerator (EntitiesCount);
+        }
+
         /// <summary>
         /// Amount of filtered entities.
         /// </summary>
         public int EntitiesCount;
 
-        /// <summary>
-        /// Removes all filtered entities from world.
-        /// </summary>
-        [Obsolete ("Use custom extension method instead")]
-        public void RemoveAllEntities () {
-            for (var i = 0; i < EntitiesCount; i++) {
-                World.RemoveEntity (Entities[i]);
+        public struct Enumerator : IEnumerator<int> {
+            readonly int _count;
+            int _idx;
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            internal Enumerator (int entitiesCount) {
+                _count = entitiesCount;
+                _idx = -1;
+            }
+
+            public int Current {
+#if NET_4_6 || NET_STANDARD_2_0
+                [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+                get { return _idx; }
+            }
+
+            object System.Collections.IEnumerator.Current { get { return null; } }
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            public void Dispose () { }
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            public bool MoveNext () {
+                return ++_idx < _count;
+            }
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            public void Reset () {
+                _idx = -1;
             }
         }
 
