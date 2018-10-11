@@ -96,8 +96,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     void IEcsInitSystem.Destroy () { }
 
     void IEcsRunSystem.Run () {
-        // Important: foreach-loop cant be used for filtered entities!
-        for (var i = 0; i < _filter.EntitiesCount; i++) {
+        foreach (var i in _filter) {
             // Components1 array will be automatically filled with instances of type "WeaponComponent".
             var weapon = _filter.Components1[i];
             weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
@@ -108,7 +107,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 
 All compatible entities will be stored at `filter.Entities` array, amount of them - at `filter.EntitiesCount`.
 
-> Important: `filter.Entities` cant be iterated with foreach-loop, for-loop should be used instead with filter.EntitiesCount value as upper-bound.
+> Important: `filter.Entities`, `filter.Components1`, `filter.Components2`, etc - can't be iterated with foreach-loop directly, use foreach-loop over `filter`, or for-loop with filter.EntitiesCount value as upper-bound.
 
 All components from filter `Include` constraint will be stored at `filter.Components1`, `filter.Components2`, etc - in same order as they were used in filter type declaration.
 
@@ -124,7 +123,7 @@ class TestSystem : IEcsSystem {
     EcsFilter<Component1, Component2> _filter;
 
     public Test() {
-        for (var i = 0; i < _filter.EntitiesCount; i++) {
+        foreach (var i in _filter) {
             // its valid code.
             var component1 = _filter.Components1[i];
 
@@ -354,6 +353,17 @@ Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** prepro
 * Less code size.
 
 `EcsWorld` should be injected somehow (for example, through constructor of system), `EcsFilter<T>` data can be requested through `EcsWorld.GetFilter<T>` method.
+
+### I do not like foreach-loops, I know that for-loops are faster. How I can use it?
+
+Current implementation of foreach-loop fast enough (custom enumerator, no memory allocation), performance differences can be found on 10k items and more. Anyway, for-loop can be used instead foreach-loop as next in-place replacement without issues:
+```csharp
+foreach (var i in _filter)
+```
+can be replaced with
+```csharp
+for (int i = 0, iMax = _filter.EntitiesCount; i < iMax; i++)
+```
 
 ### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
 
