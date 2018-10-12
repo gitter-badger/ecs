@@ -537,11 +537,14 @@ namespace Leopotam.Ecs {
         /// <param name="exc">Valid amount for excluded components.</param>
         [System.Diagnostics.Conditional ("DEBUG")]
         protected void ValidateMasks (int inc, int exc) {
+#if DEBUG
             Internals.EcsHelpers.Assert (IncludeMask.BitsCount == inc && ExcludeMask.BitsCount == exc,
                 string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
             Internals.EcsHelpers.Assert (!IncludeMask.IsIntersects (ExcludeMask),
                 string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
+#endif
         }
+
 #if DEBUG
         public override string ToString () {
             return string.Format ("Filter(+{0} -{1})", IncludeMask, ExcludeMask);
