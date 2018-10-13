@@ -38,6 +38,18 @@ namespace Leopotam.Ecs {
         void OnWorldDestroyed (EcsWorld world);
     }
 #endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+    /// <summary>
+    /// Interface for world events processing.
+    /// </summary>
+    public interface IEcsWorldEventListener {
+        void OnEntityCreated (int entity);
+        void OnEntityRemoved (int entity);
+        void OnComponentAdded (int entity, object component);
+        void OnComponentRemoved (int entity, object component);
+        void OnWorldDestroyed (EcsWorld world);
+    }
+#endif
 
     /// <summary>
     /// Basic ecs world implementation.
@@ -111,6 +123,11 @@ namespace Leopotam.Ecs {
                 _debugListeners[i].OnWorldDestroyed (this);
             }
 #endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            for (var i = _eventListeners.Count - 1; i >= 0; i--) {
+                _eventListeners[i].OnWorldDestroyed (this);
+            }
+#endif
             if (this == Active) {
                 Active = null;
             }
@@ -160,6 +177,32 @@ namespace Leopotam.Ecs {
         }
 #endif
 
+#if LEOECS_ENABLE_WORLD_EVENTS
+        /// <summary>
+        /// List of all event listeners.
+        /// </summary>
+        readonly System.Collections.Generic.List<IEcsWorldEventListener> _eventListeners = new System.Collections.Generic.List<IEcsWorldEventListener> (4);
+
+        /// <summary>
+        /// Adds external event listener.
+        /// </summary>
+        /// <param name="listener">Event listener.</param>
+        public void AddEventListener (IEcsWorldEventListener listener) {
+            EcsHelpers.Assert (listener != null, "observer is null");
+            EcsHelpers.Assert (!_eventListeners.Contains (listener), "Listener already exists");
+            _eventListeners.Add (listener);
+        }
+
+        /// <summary>
+        /// Removes external event listener.
+        /// </summary>
+        /// <param name="listener">Event listener.</param>
+        public void RemoveEventListener (IEcsWorldEventListener listener) {
+            EcsHelpers.Assert (listener != null, "observer is null");
+            _eventListeners.Remove (listener);
+        }
+#endif
+
         /// <summary>
         /// Registers custom activator for creating instances of specified type.
         /// </summary>
@@ -203,6 +246,11 @@ namespace Leopotam.Ecs {
                 _debugListeners[ii].OnComponentAdded (entity, component);
             }
 #endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                _eventListeners[ii].OnComponentAdded (entity, component);
+            }
+#endif
             return entity;
         }
 
@@ -236,9 +284,13 @@ namespace Leopotam.Ecs {
 #if DEBUG
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
                 _debugListeners[ii].OnComponentAdded (entity, c1);
-            }
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
                 _debugListeners[ii].OnComponentAdded (entity, c2);
+            }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                _eventListeners[ii].OnComponentAdded (entity, c1);
+                _eventListeners[ii].OnComponentAdded (entity, c2);
             }
 #endif
             return entity;
@@ -282,12 +334,15 @@ namespace Leopotam.Ecs {
 #if DEBUG
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
                 _debugListeners[ii].OnComponentAdded (entity, c1);
-            }
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
                 _debugListeners[ii].OnComponentAdded (entity, c2);
-            }
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
                 _debugListeners[ii].OnComponentAdded (entity, c3);
+            }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                _eventListeners[ii].OnComponentAdded (entity, c1);
+                _eventListeners[ii].OnComponentAdded (entity, c2);
+                _eventListeners[ii].OnComponentAdded (entity, c3);
             }
 #endif
             return entity;
@@ -328,9 +383,15 @@ namespace Leopotam.Ecs {
             entityData.Components[entityData.ComponentsCount++] = link;
             AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
 #if DEBUG
-            var component = pool.Items[link.ItemId];
+            var dbgCmpt = pool.Items[link.ItemId];
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                _debugListeners[ii].OnComponentAdded (entity, component);
+                _debugListeners[ii].OnComponentAdded (entity, dbgCmpt);
+            }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            var evtCmpt = pool.Items[link.ItemId];
+            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                _eventListeners[ii].OnComponentAdded (entity, evtCmpt);
             }
 #endif
             isNew = true;
@@ -363,9 +424,15 @@ namespace Leopotam.Ecs {
 
             AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
 #if DEBUG
-            var component = pool.Items[link.ItemId];
+            var dbgCmpt = pool.Items[link.ItemId];
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                _debugListeners[ii].OnComponentAdded (entity, component);
+                _debugListeners[ii].OnComponentAdded (entity, dbgCmpt);
+            }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            var evtCmpt = pool.Items[link.ItemId];
+            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                _eventListeners[ii].OnComponentAdded (entity, evtCmpt);
             }
 #endif
             return pool.Items[link.ItemId];
@@ -476,9 +543,15 @@ namespace Leopotam.Ecs {
                                 var componentId = link.Pool.GetComponentTypeIndex ();
                                 entityData.Mask.SetBit (componentId, false);
 #if DEBUG
-                                var componentToRemove = link.Pool.GetExistItemById (link.ItemId);
+                                var dbgCmpt1 = link.Pool.GetExistItemById (link.ItemId);
                                 for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                                    _debugListeners[ii].OnComponentRemoved (op.Entity, componentToRemove);
+                                    _debugListeners[ii].OnComponentRemoved (op.Entity, dbgCmpt1);
+                                }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+                                var evtCmpt1 = link.Pool.GetExistItemById (link.ItemId);
+                                for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                                    _eventListeners[ii].OnComponentRemoved (op.Entity, evtCmpt1);
                                 }
 #endif
                                 UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
@@ -503,9 +576,15 @@ namespace Leopotam.Ecs {
                             var bitRemove = op.Pool.GetComponentTypeIndex ();
                             EcsHelpers.Assert (entityData.Mask.GetBit (bitRemove), string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity));
 #if DEBUG
-                            var componentInstance = op.Pool.GetExistItemById (op.ComponentId);
+                            var dbgCmpt2 = op.Pool.GetExistItemById (op.ComponentId);
                             for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                                _debugListeners[ii].OnComponentRemoved (op.Entity, componentInstance);
+                                _debugListeners[ii].OnComponentRemoved (op.Entity, dbgCmpt2);
+                            }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+                            var evtCmpt2 = op.Pool.GetExistItemById (op.ComponentId);
+                            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                                _eventListeners[ii].OnComponentRemoved (op.Entity, evtCmpt2);
                             }
 #endif
                             entityData.Mask.SetBit (bitRemove, false);
@@ -600,6 +679,11 @@ namespace Leopotam.Ecs {
                 _debugListeners[ii].OnEntityCreated (entity);
             }
 #endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                _eventListeners[ii].OnEntityCreated (entity);
+            }
+#endif
             return entity;
         }
 
@@ -630,6 +714,11 @@ namespace Leopotam.Ecs {
 #if DEBUG
             for (var ii = 0; ii < _debugListeners.Count; ii++) {
                 _debugListeners[ii].OnEntityRemoved (entity);
+            }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+            for (var ii = 0; ii < _eventListeners.Count; ii++) {
+                _eventListeners[ii].OnEntityRemoved (entity);
             }
 #endif
         }

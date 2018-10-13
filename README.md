@@ -345,6 +345,26 @@ void FixedUpdate() {
 }
 ```
 
+### I want to add reaction on add / remove entity / components in `EcsWorld`. How I can do it?
+
+It will add performance penalty and should be avoided. Anyway, **LEOECS_ENABLE_WORLD_EVENTS** preprocessor define can be used for this:
+```csharp
+class MyListener : IEcsWorldEventListener {
+    public void OnEntityCreated (int entity) { }
+    public void OnEntityRemoved (int entity) { }
+    public void OnComponentAdded (int entity, object component) { }
+    public void OnComponentRemoved (int entity, object component) { }
+    public void OnWorldDestroyed (EcsWorld world) { }
+}
+
+// at init code.
+var listener = new MyListener();
+_world.AddEventListener(listener);
+
+// at destroy code.
+_world.RemoveEventListener(listener);
+```
+
 ### I do not need dependency injection through `Reflection` (I heard, it's very slooooow! / I want to use my own way to inject). How I can do it?
 
 Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** preprocessor define:
