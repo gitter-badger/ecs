@@ -207,71 +207,90 @@ rootSystems.Dispose();
 ```
 
 # Sharing data between systems
-If some component should be shared between systems `EcsFilterSingle<T>` filter class can be used in this case:
+If some data should be shared between systems - there are 3 ways to do it.
+## Custom `EcsWorld` class
+Useful for global singleton-like access to independent systems:
 ```csharp
-class MySharedData {
-    public string PlayerName;
-    public int AchivementsCount;
-}
+class MyEcsWorld : EcsWorld {
+    readonly public MyData Data;
 
+    public MyEcsWorld(MyData data) {
+        Data = data;
+    }
+}
+// ...
+var world = new MyEcsWorld ();
+var systems = new EcsSystems (world)
+    .Add (new System1 ())
+    .Add (new System2 ())
+systems.Initialize();
+```
+## Component with `EcsFilter`
+Custom component can be used for this and sharing with `EcsFilter`:
+```csharp
+class MyData {
+    // shared data.
+}
 [EcsInject]
-class ChangePlayerName : IEcsInitSystem {
-    EcsFilterSingle<MySharedData> _shared = null;
+class CreateSharedData : IEcsInitSystem {
+    // just to be sure that filter already created before component initialization.
+    EcsFilter<MyData> _shared = null;
+    EcsWorld _world = null;
 
     void IEcsInitSystem.Initialize () {
-        _shared.Data.PlayerName = "Jack";
+        var data = _world.CreateEntityWith<MyData>();
+        // fill data here.
     }
 
     void IEcsInitSystem.Destroy () { }
 }
 
 [EcsInject]
-class SpawnPlayerModel : IEcsInitSystem {
-    EcsFilterSingle<MySharedData> _shared = null;
+class ReadSharedData : IEcsRunSystem {
+    EcsFilter<MyData> _shared = null;
 
-    void IEcsInitSystem.Initialize () {
-        Debug.LogFormat("Player with name {0} should be spawn here", _shared.Data.PlayerName);
-    }
-
-    void IEcsInitSystem.Destroy () { }
-}
-
-class Startup : Monobehaviour {
-    EcsWorld _world;
-
-    EcsSystems _systems;
-
-    void OnEnable() {
-        _world = new MyWorld (_sharedData);
-        
-        // This method should be called before any system will be added to EcsSystems group.
-        var data = EcsFilterSingle<MySharedData>.Create(_world);
-        data.PlayerName = "Unknown";
-        data.AchivementsCount = 123;
-
-        _systems = new EcsSystems(_world)
-            .Add (ChangePlayerName())
-            .Add (SpawnPlayerModel());
-        // All EcsFilterSingle<MySharedData> fields already injected here and systems can be initialized correctly.
-        _systems.Initialize();
-    }
-
-    void OnDisable() {
-        // var data = _world.GetFilter<EcsFilterSingle<MySharedData>>().Data;
-        // Do not forget to cleanup all reference links inside shared components to another data here.
-        // ...
-
-        _systems.Dispose();
-        _systems = null;
-        _world.Dispose();
-        _world = null;
+    void IEcsRunSystem.Run () {
+        var data = _shared.Components1[0];
+        // read data here.
     }
 }
 ```
+## Dependency Injection
+> **Important!** Will not work when LEOECS_DISABLE_INJECT preprocessor constant defined.
 
-> Important: `EcsFilterSingle<T>.Create(EcsWorld)` method should be called before any system will be added to EcsSystems group connected to same `EcsWorld` instance.
+External data can be shared for all systems at `EcsSystems`:
+```csharp
+class MyData {
+    // shared data.
+}
+[EcsInject]
+class ReadSharedData1 : IEcsRunSystem {
+    // will be automatically injected.
+    MyData _shared = null;
 
-Another way - creating custom world class with inheritance from `EcsWorld` and filling shared fields manually.
+    void IEcsRunSystem.Run () {
+        // read _shared fields here.
+    }
+}
+[EcsInject]
+class ReadSharedData2 : IEcsRunSystem {
+    // will be automatically injected.
+    MyData _shared = null;
+
+    void IEcsRunSystem.Run () {
+        // read _shared fields here.
+    }
+}
+//...
+var shared = new MyData();
+// fill it here.
+
+var systems = new EcsSystems (world)
+    .Add (new ReadSharedData1 ())
+    .Add (new ReadSharedData2 ())
+    .Inject (shared)
+systems.Initialize ();
+```
 
 # Examples
 [Snake game](https://github.com/Leopotam/ecs-snake)

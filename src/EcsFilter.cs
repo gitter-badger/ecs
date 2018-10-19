@@ -17,6 +17,7 @@ namespace Leopotam.Ecs {
     /// <summary>
     /// Container for single component for sharing between systems.
     /// </summary>
+    [Obsolete ("Use EcsSystems.Inject instead, custom EcsFilter implementation or custom EcsWorld implementation.")]
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
