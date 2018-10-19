@@ -76,6 +76,19 @@ class HealthSystem : IEcsSystem {
     EcsFilter<WeaponComponent> _weaponFilter = null;
 }
 ```
+Instance of any custom type can be injected to all systems through `EcsSystems.Inject` method:
+```csharp
+var systems = new EcsSystems (world)
+    .Add (new TestSystem1 ())
+    .Add (new TestSystem2 ())
+    .Add (new TestSystem3 ())
+    .Inject (a)
+    .Inject (b)
+    .Inject (c)
+    .Inject (d);
+systems.Initialize ();
+```
+Each system will be scanned for compatible fields (can contains all of them or no one) with proper initialization.
 
 # Special classes
 
