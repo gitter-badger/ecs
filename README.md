@@ -218,11 +218,13 @@ class MyEcsWorld : EcsWorld {
         Data = data;
     }
 }
+var shared = new MyData();
+// fill it here.
 // ...
-var world = new MyEcsWorld ();
+var world = new MyEcsWorld (shared);
 var systems = new EcsSystems (world)
     .Add (new System1 ())
-    .Add (new System2 ())
+    .Add (new System2 ());
 systems.Initialize();
 ```
 ## Component with `EcsFilter`
@@ -288,7 +290,7 @@ var shared = new MyData();
 var systems = new EcsSystems (world)
     .Add (new ReadSharedData1 ())
     .Add (new ReadSharedData2 ())
-    .Inject (shared)
+    .Inject (shared);
 systems.Initialize ();
 ```
 
