@@ -160,20 +160,20 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Adds external event listener.
         /// </summary>
-        /// <param name="observer">Event listener.</param>
-        public void AddDebugListener (IEcsWorldDebugListener observer) {
-            EcsHelpers.Assert (observer != null, "observer is null");
-            EcsHelpers.Assert (!_debugListeners.Contains (observer), "Listener already exists");
-            _debugListeners.Add (observer);
+        /// <param name="listener">Event listener.</param>
+        public void AddDebugListener (IEcsWorldDebugListener listener) {
+            EcsHelpers.Assert (listener != null, "Listener is null");
+            EcsHelpers.Assert (!_debugListeners.Contains (listener), "Listener already exists");
+            _debugListeners.Add (listener);
         }
 
         /// <summary>
         /// Removes external event listener.
         /// </summary>
-        /// <param name="observer">Event listener.</param>
-        public void RemoveDebugListener (IEcsWorldDebugListener observer) {
-            EcsHelpers.Assert (observer != null, "observer is null");
-            _debugListeners.Remove (observer);
+        /// <param name="listener">Event listener.</param>
+        public void RemoveDebugListener (IEcsWorldDebugListener listener) {
+            EcsHelpers.Assert (listener != null, "Listener is null");
+            _debugListeners.Remove (listener);
         }
 #endif
 
@@ -188,7 +188,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="listener">Event listener.</param>
         public void AddEventListener (IEcsWorldEventListener listener) {
-            EcsHelpers.Assert (listener != null, "observer is null");
+            EcsHelpers.Assert (listener != null, "Listener is null");
             EcsHelpers.Assert (!_eventListeners.Contains (listener), "Listener already exists");
             _eventListeners.Add (listener);
         }
@@ -198,7 +198,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="listener">Event listener.</param>
         public void RemoveEventListener (IEcsWorldEventListener listener) {
-            EcsHelpers.Assert (listener != null, "observer is null");
+            EcsHelpers.Assert (listener != null, "Listener is null");
             _eventListeners.Remove (listener);
         }
 #endif
@@ -262,7 +262,7 @@ namespace Leopotam.Ecs {
         /// <param name="c2">Added component of type T2.</param>
         /// <returns>New entity Id.</returns>
         public int CreateEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class, new () where T2 : class, new () {
-            EcsHelpers.Assert (typeof (T1) != typeof (T2), string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T2).Name));
+            EcsHelpers.Assert (typeof (T1) != typeof (T2), () => string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T2).Name));
             var entity = CreateEntityInternal ();
             var pool1 = EcsComponentPool<T1>.Instance;
             var pool2 = EcsComponentPool<T2>.Instance;
@@ -305,8 +305,8 @@ namespace Leopotam.Ecs {
         /// <param name="c3">Added component of type T3.</param>
         /// <returns>New entity Id.</returns>
         public int CreateEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class, new () where T2 : class, new () where T3 : class, new () {
-            EcsHelpers.Assert (typeof (T1) != typeof (T2), string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T1).Name));
-            EcsHelpers.Assert (typeof (T1) != typeof (T3) && typeof (T2) != typeof (T3), string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T3).Name));
+            EcsHelpers.Assert (typeof (T1) != typeof (T2), () => string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T1).Name));
+            EcsHelpers.Assert (typeof (T1) != typeof (T3) && typeof (T2) != typeof (T3), () => string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T3).Name));
             var entity = CreateEntityInternal ();
             var pool1 = EcsComponentPool<T1>.Instance;
             var pool2 = EcsComponentPool<T2>.Instance;
@@ -353,7 +353,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         public void RemoveEntity (int entity) {
-            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
+            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, () => string.Format ("Invalid entity: {0}", entity));
             if (!_entities[entity].IsReserved) {
                 AddDelayedUpdate (DelayedUpdate.Op.RemoveEntity, entity, null, -1);
             }
@@ -365,9 +365,9 @@ namespace Leopotam.Ecs {
         /// <param name="entity">Entity.</param>
         /// <param name="isNew">Is component was added in this call?</param>
         public T EnsureComponent<T> (int entity, out bool isNew) where T : class, new () {
-            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
+            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, () => string.Format ("Invalid entity: {0}", entity));
             var entityData = _entities[entity];
-            EcsHelpers.Assert (!entityData.IsReserved, string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity));
+            EcsHelpers.Assert (!entityData.IsReserved, () => string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity));
             var pool = EcsComponentPool<T>.Instance;
             for (var i = 0; i < entityData.ComponentsCount; i++) {
                 if (entityData.Components[i].Pool == pool) {
@@ -403,9 +403,9 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         public T AddComponent<T> (int entity) where T : class, new () {
-            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
+            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, () => string.Format ("Invalid entity: {0}", entity));
             var entityData = _entities[entity];
-            EcsHelpers.Assert (!entityData.IsReserved, string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity));
+            EcsHelpers.Assert (!entityData.IsReserved, () => string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity));
             var pool = EcsComponentPool<T>.Instance;
 #if DEBUG
             var i = entityData.ComponentsCount - 1;
@@ -414,7 +414,7 @@ namespace Leopotam.Ecs {
                     break;
                 }
             }
-            EcsHelpers.Assert (i == -1, string.Format ("\"{0}\" component already exists on entity {1}", typeof (T).Name, entity));
+            EcsHelpers.Assert (i == -1, () => string.Format ("\"{0}\" component already exists on entity {1}", typeof (T).Name, entity));
 #endif
             var link = new ComponentLink (pool, pool.RequestNewId ());
             if (entityData.ComponentsCount == entityData.Components.Length) {
@@ -444,7 +444,7 @@ namespace Leopotam.Ecs {
         /// <param name="entity">Entity.</param>
         /// <param name="noerror">Suppress error if component not exists.</param>
         public void RemoveComponent<T> (int entity, bool noError = false) where T : class, new () {
-            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
+            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, () => string.Format ("Invalid entity: {0}", entity));
             var entityData = _entities[entity];
             var pool = EcsComponentPool<T>.Instance;
             ComponentLink link;
@@ -459,7 +459,7 @@ namespace Leopotam.Ecs {
             if (noError && i == -1) {
                 return;
             }
-            EcsHelpers.Assert (i != -1, string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
+            EcsHelpers.Assert (i != -1, () => string.Format ("\"{0}\" component not exists on entity {1}", typeof (T).Name, entity));
             AddDelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, pool, link.ItemId);
             entityData.ComponentsCount--;
             Array.Copy (entityData.Components, i + 1, entityData.Components, i, entityData.ComponentsCount - i);
@@ -473,9 +473,9 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public T GetComponent<T> (int entity) where T : class, new () {
-            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
+            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, () => string.Format ("Invalid entity: {0}", entity));
             var entityData = _entities[entity];
-            EcsHelpers.Assert (!entityData.IsReserved, string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity));
+            EcsHelpers.Assert (!entityData.IsReserved, () => string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity));
             var pool = EcsComponentPool<T>.Instance;
             for (var i = 0; i < entityData.ComponentsCount; i++) {
                 if (entityData.Components[i].Pool == pool) {
@@ -492,7 +492,7 @@ namespace Leopotam.Ecs {
         /// <param name="list">List to put results in it. if null - will be created.</param>
         /// <returns>Amount of components in list.</returns>
         public int GetComponents (int entity, ref object[] list) {
-            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, string.Format ("Invalid entity: {0}", entity));
+            EcsHelpers.Assert (entity >= 0 && entity < _entitiesCount, () => string.Format ("Invalid entity: {0}", entity));
             var entityData = _entities[entity];
             var count = entityData.ComponentsCount;
             if (list == null || list.Length < count) {
@@ -537,7 +537,7 @@ namespace Leopotam.Ecs {
                     _delayedOpMask.CopyFrom (entityData.Mask);
                     switch (op.Type) {
                         case DelayedUpdate.Op.RemoveEntity:
-                            EcsHelpers.Assert (!entityData.IsReserved, string.Format ("Entity {0} already removed", op.Entity));
+                            EcsHelpers.Assert (!entityData.IsReserved, () => string.Format ("Entity {0} already removed", op.Entity));
                             while (entityData.ComponentsCount > 0) {
                                 var link = entityData.Components[entityData.ComponentsCount - 1];
                                 var componentId = link.Pool.GetComponentTypeIndex ();
@@ -568,13 +568,13 @@ namespace Leopotam.Ecs {
                             break;
                         case DelayedUpdate.Op.AddComponent:
                             var bit = op.Pool.GetComponentTypeIndex ();
-                            EcsHelpers.Assert (!entityData.Mask.GetBit (bit), string.Format ("Cant add component on entity {0}, already marked as added in mask", op.Entity));
+                            EcsHelpers.Assert (!entityData.Mask.GetBit (bit), () => string.Format ("Cant add component on entity {0}, already marked as added in mask", op.Entity));
                             entityData.Mask.SetBit (bit, true);
                             UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
                             break;
                         case DelayedUpdate.Op.RemoveComponent:
                             var bitRemove = op.Pool.GetComponentTypeIndex ();
-                            EcsHelpers.Assert (entityData.Mask.GetBit (bitRemove), string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity));
+                            EcsHelpers.Assert (entityData.Mask.GetBit (bitRemove), () => string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity));
 #if DEBUG
                             var dbgCmpt2 = op.Pool.GetExistItemById (op.ComponentId);
                             for (var ii = 0; ii < _debugListeners.Count; ii++) {
@@ -612,8 +612,8 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="filterType">Type of filter.</param>
         public EcsFilter GetFilter (Type filterType) {
-            EcsHelpers.Assert (filterType != null, "filterType is null");
-            EcsHelpers.Assert (filterType.IsSubclassOf (typeof (EcsFilter)), string.Format ("Invalid filter-type: {0}", filterType));
+            EcsHelpers.Assert (filterType != null, "FilterType is null");
+            EcsHelpers.Assert (filterType.IsSubclassOf (typeof (EcsFilter)), () => string.Format ("Invalid filter-type: {0}", filterType));
             var i = _filtersCount - 1;
             for (; i >= 0; i--) {
                 if (this._filters[i].GetType () == filterType) {
@@ -628,7 +628,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                 for (var j = 0; j < _filtersCount; j++) {
                     EcsHelpers.Assert (!_filters[j].IncludeMask.IsEquals (filter.IncludeMask) || !_filters[j].ExcludeMask.IsEquals (filter.ExcludeMask),
-                        string.Format ("Duplicate filter type \"{0}\": filter type \"{1}\" already has same types in different order.", filterType, _filters[j].GetType ()));
+                        () => string.Format ("Duplicate filter type \"{0}\": filter type \"{1}\" already has same types in different order.", filterType, _filters[j].GetType ()));
                 }
 #endif
                 if (_filtersCount == _filters.Length) {
@@ -745,7 +745,7 @@ namespace Leopotam.Ecs {
                                 break;
                             }
                         }
-                        EcsHelpers.Assert (ii != -1, string.Format ("Something wrong - entity {0} should be in filter {1}, but not exits.", entity, filter));
+                        EcsHelpers.Assert (ii != -1, () => string.Format ("Something wrong - entity {0} should be in filter {1}, but not exits.", entity, filter));
 #endif
                         filter.RaiseOnRemoveEvent (entity);
                     }

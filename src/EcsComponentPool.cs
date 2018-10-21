@@ -94,7 +94,7 @@ namespace Leopotam.Ecs {
             var obj = Items[id];
             for (var i = 0; i < _nullableFields.Count; i++) {
                 Internals.EcsHelpers.Assert (_nullableFields[i].GetValue (obj) == null,
-                    string.Format (
+                    () => string.Format (
                         "Memory leak for \"{0}\" component: \"{1}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute",
                         typeof (T).Name, _nullableFields[i].Name));
             }

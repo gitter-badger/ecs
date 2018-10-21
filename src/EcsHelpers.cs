@@ -35,5 +35,12 @@ namespace Leopotam.Ecs.Internals {
             }
 #endif
         }
+
+        [System.Diagnostics.Conditional ("DEBUG")]
+        public static void Assert (bool state, System.Func<string> error) {
+#if DEBUG
+            Assert (state, error ());
+#endif
+        }
     }
 }

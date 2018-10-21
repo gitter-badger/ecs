@@ -42,14 +42,14 @@ namespace Leopotam.Ecs {
 
         public override void RaiseOnAddEvent (int entity) {
             Internals.EcsHelpers.Assert (EntitiesCount == 0,
-                string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
+                () => string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
             Data = World.GetComponent<Inc1> (entity);
             Entities[EntitiesCount++] = entity;
         }
 
         public override void RaiseOnRemoveEvent (int entity) {
             Internals.EcsHelpers.Assert (EntitiesCount == 1 && Entities[0] == entity,
-                string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
+                () => string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
             EntitiesCount--;
             Data = null;
         }
@@ -540,9 +540,9 @@ namespace Leopotam.Ecs {
         protected void ValidateMasks (int inc, int exc) {
 #if DEBUG
             Internals.EcsHelpers.Assert (IncludeMask.BitsCount == inc && ExcludeMask.BitsCount == exc,
-                string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
+                () => string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
             Internals.EcsHelpers.Assert (!IncludeMask.IsIntersects (ExcludeMask),
-                string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
+                () => string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
 #endif
         }
 
