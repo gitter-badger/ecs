@@ -75,7 +75,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         readonly System.Collections.Generic.List<IEcsSystemsDebugListener> _debugListeners = new System.Collections.Generic.List<IEcsSystemsDebugListener> (4);
 
-        readonly public System.Collections.Generic.List<bool> DisabledInDebugSystems = new System.Collections.Generic.List<bool> (4);
+        readonly public System.Collections.Generic.List<bool> DisabledInDebugSystems = new System.Collections.Generic.List<bool> (32);
 #endif
 
         /// <summary>
@@ -119,6 +119,9 @@ namespace Leopotam.Ecs {
         /// </summary>
         bool _inited;
 
+        /// <summary>
+        /// Is Dispose method was called?
+        /// </summary>
         bool _isDisposed;
 #endif
 
@@ -198,7 +201,10 @@ namespace Leopotam.Ecs {
         public EcsSystems Add (IEcsSystem system) {
             Internals.EcsHelpers.Assert (system != null, "system is null");
 #if !LEOECS_DISABLE_INJECT
-            EcsInjections.Inject (system, _world);
+            if (_injectSystemsCount == _injectSystems.Length) {
+                Array.Resize (ref _injectSystems, _injectSystemsCount << 1);
+            }
+            _injectSystems[_injectSystemsCount++] = system;
 #endif
             var preInitSystem = system as IEcsPreInitSystem;
             if (preInitSystem != null) {
@@ -226,6 +232,32 @@ namespace Leopotam.Ecs {
             return this;
         }
 
+#if !LEOECS_DISABLE_INJECT
+        /// <summary>
+        /// Systems to builtin inject behaviour.
+        /// </summary>
+        IEcsSystem[] _injectSystems = new IEcsSystem[16];
+
+        int _injectSystemsCount;
+
+        /// <summary>
+        /// Store for injectable instances.
+        /// </summary>
+        /// <typeparam name="Type"></typeparam>
+        /// <typeparam name="object"></typeparam>
+        /// <returns></returns>
+        System.Collections.Generic.Dictionary<Type, object> _injections = new System.Collections.Generic.Dictionary<Type, object> (32);
+
+        /// <summary>
+        /// Injects instance of object type to all compatible fields of added systems.
+        /// </summary>
+        /// <param name="obj">Instance.</param>
+        public EcsSystems Inject<T> (T obj) {
+            _injections[typeof (T)] = obj;
+            return this;
+        }
+#endif
+
         /// <summary>
         /// Closes registration for new systems, initialize all registered.
         /// </summary>
@@ -237,11 +269,16 @@ namespace Leopotam.Ecs {
             }
             _inited = true;
 #endif
+#if !LEOECS_DISABLE_INJECT
+            for (var i = 0; i < _injectSystemsCount; i++) {
+                EcsInjections.Inject (_injectSystems[i], _world, _injections);
+            }
+#endif
             for (var i = 0; i < _preInitSystemsCount; i++) {
                 _preInitSystems[i].PreInitialize ();
                 _world.ProcessDelayedUpdates ();
-
             }
+
             for (var i = 0; i < _initSystemsCount; i++) {
                 _initSystems[i].Initialize ();
                 _world.ProcessDelayedUpdates ();
@@ -279,6 +316,14 @@ namespace Leopotam.Ecs {
                 _runSystems[i] = null;
             }
             _runSystemsCount = 0;
+
+#if !LEOECS_DISABLE_INJECT
+            for (var i = _injectSystemsCount - 1; i >= 0; i--) {
+                _injectSystems[i] = null;
+            }
+            _injectSystemsCount = 0;
+            _injections.Clear ();
+#endif
         }
 
         /// <summary>

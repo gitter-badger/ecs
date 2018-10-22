@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 
 namespace Leopotam.Ecs {
     /// <summary>
@@ -16,6 +17,7 @@ namespace Leopotam.Ecs {
     /// <summary>
     /// Container for single component for sharing between systems.
     /// </summary>
+    [Obsolete ("Use EcsSystems.Inject instead, custom EcsFilter implementation or custom EcsWorld implementation.")]
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
@@ -39,15 +41,15 @@ namespace Leopotam.Ecs {
         }
 
         public override void RaiseOnAddEvent (int entity) {
-            Internals.EcsHelpers.Assert (EntitiesCount <= 0,
-                string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
+            Internals.EcsHelpers.Assert (EntitiesCount == 0,
+                () => string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
             Data = World.GetComponent<Inc1> (entity);
             Entities[EntitiesCount++] = entity;
         }
 
         public override void RaiseOnRemoveEvent (int entity) {
             Internals.EcsHelpers.Assert (EntitiesCount == 1 && Entities[0] == entity,
-                string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
+                () => string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
             EntitiesCount--;
             Data = null;
         }
@@ -458,14 +460,14 @@ namespace Leopotam.Ecs {
         /// Will be raised by EcsWorld for new compatible with this filter entity.
         /// Do not call it manually!
         /// </summary>
-        /// <param name="entity"></param>
+        /// <param name="entity">Entity id.</param>
         public abstract void RaiseOnAddEvent (int entity);
 
         /// <summary>
         /// Will be raised by EcsWorld for old already non-compatible with this filter entity.
         /// Do not call it manually!
         /// </summary>
-        /// <param name="entity"></param>
+        /// <param name="entity">Entity id.</param>
         public abstract void RaiseOnRemoveEvent (int entity);
 
         /// <summary>
@@ -476,18 +478,56 @@ namespace Leopotam.Ecs {
         /// </summary>
         public int[] Entities = new int[MinSize];
 
+#if NET_4_6 || NET_STANDARD_2_0
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public Enumerator GetEnumerator () {
+            return new Enumerator (EntitiesCount);
+        }
+
         /// <summary>
         /// Amount of filtered entities.
         /// </summary>
         public int EntitiesCount;
 
-        /// <summary>
-        /// Removes all filtered entities from world.
-        /// </summary>
-        [Obsolete ("Use custom extension method instead")]
-        public void RemoveAllEntities () {
-            for (var i = 0; i < EntitiesCount; i++) {
-                World.RemoveEntity (Entities[i]);
+        public struct Enumerator : IEnumerator<int> {
+            readonly int _count;
+            int _idx;
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            internal Enumerator (int entitiesCount) {
+                _count = entitiesCount;
+                _idx = -1;
+            }
+
+            public int Current {
+#if NET_4_6 || NET_STANDARD_2_0
+                [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+                get { return _idx; }
+            }
+
+            object System.Collections.IEnumerator.Current { get { return null; } }
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            public void Dispose () { }
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            public bool MoveNext () {
+                return ++_idx < _count;
+            }
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            public void Reset () {
+                _idx = -1;
             }
         }
 
@@ -498,11 +538,14 @@ namespace Leopotam.Ecs {
         /// <param name="exc">Valid amount for excluded components.</param>
         [System.Diagnostics.Conditional ("DEBUG")]
         protected void ValidateMasks (int inc, int exc) {
+#if DEBUG
             Internals.EcsHelpers.Assert (IncludeMask.BitsCount == inc && ExcludeMask.BitsCount == exc,
-                string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
+                () => string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
             Internals.EcsHelpers.Assert (!IncludeMask.IsIntersects (ExcludeMask),
-                string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
+                () => string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
+#endif
         }
+
 #if DEBUG
         public override string ToString () {
             return string.Format ("Filter(+{0} -{1})", IncludeMask, ExcludeMask);

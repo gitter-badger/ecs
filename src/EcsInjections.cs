@@ -27,7 +27,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="system">System to scan for injection.</param>
         /// <param name="world">EcsWorld instance to inject.</param>
-        public static void Inject (IEcsSystem system, EcsWorld world) {
+        public static void Inject (IEcsSystem system, EcsWorld world, System.Collections.Generic.Dictionary<Type, object> injections) {
             var systemType = system.GetType ();
             if (!Attribute.IsDefined (systemType, typeof (EcsInjectAttribute))) {
                 return;
@@ -43,9 +43,17 @@ namespace Leopotam.Ecs {
                 }
                 // EcsFilter
                 Internals.EcsHelpers.Assert (f.FieldType != filterType,
-                    string.Format ("Cant use EcsFilter type at \"{0}\" system for dependency injection, use generic version instead", system));
+                    () => string.Format ("Cant use EcsFilter type at \"{0}\" system for dependency injection, use generic version instead", system));
                 if (f.FieldType.IsSubclassOf (filterType) && !f.IsStatic) {
                     f.SetValue (system, world.GetFilter (f.FieldType));
+                    continue;
+                }
+                // Other injections.
+                foreach (var pair in injections) {
+                    if (f.FieldType.IsAssignableFrom (pair.Key) && !f.IsStatic) {
+                        f.SetValue (system, pair.Value);
+                        break;
+                    }
                 }
             }
         }
