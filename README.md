@@ -303,6 +303,8 @@ systems.Initialize ();
 
 [Reactive filters / systems](https://github.com/Leopotam/ecs-reactive)
 
+[Multithreading support](https://github.com/Leopotam/ecs-threads)
+
 [Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
 [Unity uGui event bindings](https://github.com/Leopotam/ecs-ui)
