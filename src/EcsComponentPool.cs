@@ -93,10 +93,11 @@ namespace Leopotam.Ecs {
             // check all marshal-by-reference types for nulls.
             var obj = Items[id];
             for (var i = 0; i < _nullableFields.Count; i++) {
-                Internals.EcsHelpers.Assert (_nullableFields[i].GetValue (obj) == null,
-                    () => string.Format (
+                if (_nullableFields[i].GetValue (obj) != null) {
+                    throw new Exception (string.Format (
                         "Memory leak for \"{0}\" component: \"{1}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute",
                         typeof (T).Name, _nullableFields[i].Name));
+                }
             }
 #endif
             if (_reservedItemsCount == _reservedItems.Length) {
