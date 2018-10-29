@@ -188,8 +188,10 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="listener">Event listener.</param>
         public void AddEventListener (IEcsWorldEventListener listener) {
-            EcsHelpers.Assert (listener != null, "Listener is null");
-            EcsHelpers.Assert (!_eventListeners.Contains (listener), "Listener already exists");
+#if DEBUG
+            if (listener == null) { throw new Exception ("Listener is null"); }
+            if (_eventListeners.Contains (listener)) { throw new Exception ("Listener already exists"); }
+#endif
             _eventListeners.Add (listener);
         }
 
@@ -198,7 +200,9 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="listener">Event listener.</param>
         public void RemoveEventListener (IEcsWorldEventListener listener) {
-            EcsHelpers.Assert (listener != null, "Listener is null");
+#if DEBUG
+            if (listener == null) { throw new Exception ("Listener is null"); }
+#endif
             _eventListeners.Remove (listener);
         }
 #endif
