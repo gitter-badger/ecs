@@ -311,12 +311,14 @@ namespace Leopotam.Ecs {
                 _initSystems[i] = null;
             }
             _initSystemsCount = 0;
+            _world.ProcessDelayedUpdates ();
 
             for (var i = _preInitSystemsCount - 1; i >= 0; i--) {
                 _preInitSystems[i].PreDestroy ();
                 _preInitSystems[i] = null;
             }
             _preInitSystemsCount = 0;
+            _world.ProcessDelayedUpdates ();
 
             for (var i = _runSystemsCount - 1; i >= 0; i--) {
                 _runSystems[i] = null;
