@@ -7,10 +7,14 @@
 using System;
 
 namespace Leopotam.Ecs {
-    interface IEcsComponentPool {
-        object GetExistItemById (int idx);
-        void RecycleById (int id);
-        int GetComponentTypeIndex ();
+    /// <summary>
+    /// Marks component class to be not autofilled as ComponentX in filter.
+    /// </summary>
+    [AttributeUsage (AttributeTargets.Class)]
+    public sealed class EcsIgnoreInFilterAttribute : Attribute { }
+
+    public interface IEcsAutoResetComponent {
+        void Reset ();
     }
 
     /// <summary>
@@ -20,6 +24,12 @@ namespace Leopotam.Ecs {
     [System.Diagnostics.Conditional ("DEBUG")]
     [AttributeUsage (AttributeTargets.Field)]
     public sealed class EcsIgnoreNullCheckAttribute : Attribute { }
+
+    interface IEcsComponentPool {
+        object GetExistItemById (int idx);
+        void RecycleById (int id);
+        int GetComponentTypeIndex ();
+    }
 
     /// <summary>
     /// Components pool container.
@@ -36,6 +46,8 @@ namespace Leopotam.Ecs {
         public T[] Items = new T[MinSize];
 
         public readonly bool IsIgnoreInFilter = Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
+
+        public readonly bool IsAutoReset = typeof (IEcsAutoResetComponent).IsAssignableFrom (typeof (T));
 
         int _typeIndex;
 
@@ -89,8 +101,11 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void RecycleById (int id) {
+            if (IsAutoReset) {
+                ((IEcsAutoResetComponent) Items[id]).Reset ();
+            }
 #if DEBUG
-            // check all marshal-by-reference types for nulls.
+            // check all marshal-by-reference typed fields for nulls.
             var obj = Items[id];
             for (var i = 0; i < _nullableFields.Count; i++) {
                 if (_nullableFields[i].GetValue (obj) != null) {

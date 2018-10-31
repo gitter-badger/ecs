@@ -24,6 +24,19 @@ class WeaponComponent {
 >
 > By default all `marshal-by-reference` typed fields of component (classes in common case) will be checked for null on removing attempt in `DEBUG`-mode. If you know that you have object instance that should be not null (preinited collections for example) - `[EcsIgnoreNullCheck]` attribute can be used for disabling these checks.
 
+If you want to simplify your code and keep reset-code in one place, you can use `IEcsAutoResetComponent` interface for components:
+```csharp
+class MyComponent : IEcsAutoResetComponent {
+    public object LinkToAnotherComponent;
+
+    void IEcsAutoResetComponent.Reset() {
+        // Cleanup all marshal-by-reference fields here.
+        LinkToAnotherComponent = null;
+    }
+}
+```
+This method will be automatically called after component removing from entity and before recycling to component pool.
+
 ## Entity
 Сontainer for components. Implemented with int id-s for more simplified api:
 ```csharp

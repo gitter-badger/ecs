@@ -9,11 +9,6 @@ using System.Collections.Generic;
 
 namespace Leopotam.Ecs {
     /// <summary>
-    /// Marks component class to be not autofilled as ComponentX in filter.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Class)]
-    public sealed class EcsIgnoreInFilterAttribute : Attribute { }
-    /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
 #if ENABLE_IL2CPP
