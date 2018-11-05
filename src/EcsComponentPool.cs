@@ -13,6 +13,9 @@ namespace Leopotam.Ecs {
     [AttributeUsage (AttributeTargets.Class)]
     public sealed class EcsIgnoreInFilterAttribute : Attribute { }
 
+    /// <summary>
+    /// Marks component class as resettable with custom logic.
+    /// </summary>
     public interface IEcsAutoResetComponent {
         void Reset ();
     }
