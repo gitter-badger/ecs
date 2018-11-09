@@ -94,6 +94,13 @@ namespace Leopotam.Ecs {
         int _filtersCount;
 
         /// <summary>
+        /// List of requested one-frame component filters.
+        /// </summary>
+        EcsFilter[] _oneFrameFilters = new EcsFilter[32];
+
+        int _oneFrameFiltersCount;
+
+        /// <summary>
         /// Temporary buffer for filter updates.
         /// </summary>
         readonly EcsComponentMask _delayedOpMask = new EcsComponentMask ();
@@ -145,6 +152,8 @@ namespace Leopotam.Ecs {
             _entitiesCount = 0;
             _filters = null;
             _filtersCount = 0;
+            _oneFrameFilters = null;
+            _oneFrameFiltersCount = 0;
             _reservedEntities = null;
             _reservedEntitiesCount = 0;
             _delayedUpdates = null;
@@ -208,8 +217,18 @@ namespace Leopotam.Ecs {
 #endif
 
         /// <summary>
+        /// Creates empty entity.
+        /// Important: If no components will be added - this entity will be automatically collected as garbage.
+        /// </summary>
+        public int CreateEntity () {
+            var entity = CreateEntityInternal ();
+            AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null, -1);
+            return entity;
+        }
+
+        /// <summary>
         /// Creates new entity and adds component to it.
-        /// Faster than CreateEntity() + AddComponent() sequence.
+        /// Slightly faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         public T CreateEntityWith<T> () where T : class, new () {
             T component;
@@ -219,39 +238,19 @@ namespace Leopotam.Ecs {
 
         /// <summary>
         /// Creates new entity and adds component to it.
-        /// Faster than CreateEntity() + AddComponent() sequence.
+        /// Slightly faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         /// <param name="component">Added component of type T.</param>
         /// <returns>New entity Id.</returns>
         public int CreateEntityWith<T> (out T component) where T : class, new () {
             var entity = CreateEntityInternal ();
-            var pool = EcsComponentPool<T>.Instance;
-            var entityData = _entities[entity];
-            if (entityData.ComponentsCount == entityData.Components.Length) {
-                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
-            }
-            ComponentLink link;
-            link.Pool = pool;
-            link.ItemId = pool.RequestNewId ();
-            component = pool.Items[link.ItemId];
-            entityData.Components[entityData.ComponentsCount++] = link;
-            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool, link.ItemId);
-#if DEBUG
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                _debugListeners[ii].OnComponentAdded (entity, component);
-            }
-#endif
-#if LEOECS_ENABLE_WORLD_EVENTS
-            for (var ii = 0; ii < _eventListeners.Count; ii++) {
-                _eventListeners[ii].OnComponentAdded (entity, component);
-            }
-#endif
+            component = AddComponent<T> (entity);
             return entity;
         }
 
         /// <summary>
         /// Creates new entity and adds component to it.
-        /// Faster than CreateEntity() and multiple AddComponent() calls sequence.
+        /// Slightly faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         /// <param name="c1">Added component of type T1.</param>
         /// <param name="c2">Added component of type T2.</param>
@@ -261,41 +260,14 @@ namespace Leopotam.Ecs {
             if (typeof (T1) == typeof (T2)) { throw new Exception (string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T2).Name)); }
 #endif
             var entity = CreateEntityInternal ();
-            var pool1 = EcsComponentPool<T1>.Instance;
-            var pool2 = EcsComponentPool<T2>.Instance;
-            var entityData = _entities[entity];
-            while ((entityData.ComponentsCount + 2) > entityData.Components.Length) {
-                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
-            }
-            ComponentLink link;
-            link.Pool = pool1;
-            link.ItemId = pool1.RequestNewId ();
-            c1 = pool1.Items[link.ItemId];
-            entityData.Components[entityData.ComponentsCount++] = link;
-            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool1, link.ItemId);
-            link.Pool = pool2;
-            link.ItemId = pool2.RequestNewId ();
-            c2 = pool2.Items[link.ItemId];
-            entityData.Components[entityData.ComponentsCount++] = link;
-            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool2, link.ItemId);
-#if DEBUG
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                _debugListeners[ii].OnComponentAdded (entity, c1);
-                _debugListeners[ii].OnComponentAdded (entity, c2);
-            }
-#endif
-#if LEOECS_ENABLE_WORLD_EVENTS
-            for (var ii = 0; ii < _eventListeners.Count; ii++) {
-                _eventListeners[ii].OnComponentAdded (entity, c1);
-                _eventListeners[ii].OnComponentAdded (entity, c2);
-            }
-#endif
+            c1 = AddComponent<T1> (entity);
+            c2 = AddComponent<T2> (entity);
             return entity;
         }
 
         /// <summary>
         /// Creates new entity and adds component to it.
-        /// Faster than CreateEntity() and multiple AddComponent() calls sequence.
+        /// Slightly faster than CreateEntity() + AddComponent() sequence.
         /// </summary>
         /// <param name="c1">Added component of type T1.</param>
         /// <param name="c2">Added component of type T2.</param>
@@ -307,43 +279,9 @@ namespace Leopotam.Ecs {
             if (typeof (T1) == typeof (T3) || typeof (T2) == typeof (T3)) { throw new Exception (string.Format ("Cant create entity with multiple components of same type \"{0}\"", typeof (T3).Name)); }
 #endif
             var entity = CreateEntityInternal ();
-            var pool1 = EcsComponentPool<T1>.Instance;
-            var pool2 = EcsComponentPool<T2>.Instance;
-            var pool3 = EcsComponentPool<T3>.Instance;
-            var entityData = _entities[entity];
-            while ((entityData.ComponentsCount + 3) > entityData.Components.Length) {
-                Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
-            }
-            ComponentLink link;
-            link.Pool = pool1;
-            link.ItemId = pool1.RequestNewId ();
-            c1 = pool1.Items[link.ItemId];
-            entityData.Components[entityData.ComponentsCount++] = link;
-            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool1, link.ItemId);
-            link.Pool = pool2;
-            link.ItemId = pool2.RequestNewId ();
-            c2 = pool2.Items[link.ItemId];
-            entityData.Components[entityData.ComponentsCount++] = link;
-            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool2, link.ItemId);
-            link.Pool = pool3;
-            link.ItemId = pool3.RequestNewId ();
-            c3 = pool3.Items[link.ItemId];
-            entityData.Components[entityData.ComponentsCount++] = link;
-            AddDelayedUpdate (DelayedUpdate.Op.AddComponent, entity, pool3, link.ItemId);
-#if DEBUG
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                _debugListeners[ii].OnComponentAdded (entity, c1);
-                _debugListeners[ii].OnComponentAdded (entity, c2);
-                _debugListeners[ii].OnComponentAdded (entity, c3);
-            }
-#endif
-#if LEOECS_ENABLE_WORLD_EVENTS
-            for (var ii = 0; ii < _eventListeners.Count; ii++) {
-                _eventListeners[ii].OnComponentAdded (entity, c1);
-                _eventListeners[ii].OnComponentAdded (entity, c2);
-                _eventListeners[ii].OnComponentAdded (entity, c3);
-            }
-#endif
+            c1 = AddComponent<T1> (entity);
+            c2 = AddComponent<T2> (entity);
+            c3 = AddComponent<T3> (entity);
             return entity;
         }
 
@@ -537,87 +475,108 @@ namespace Leopotam.Ecs {
                 ActiveEntities = _entitiesCount - _reservedEntitiesCount,
                 ReservedEntities = _reservedEntitiesCount,
                 Filters = _filtersCount,
-                Components = EcsHelpers.ComponentsCount
+                Components = EcsHelpers.ComponentsCount,
+                OneFrameComponents = _oneFrameFiltersCount
             };
             return stats;
         }
 
+#if DEBUG
+        int _delayedUpdateIteration = 0;
+#endif
         /// <summary>
         /// Manually processes delayed updates. Use carefully!
         /// </summary>
         public void ProcessDelayedUpdates () {
-            if (_delayedUpdatesCount > 0) {
-                for (var i = 0; i < _delayedUpdatesCount; i++) {
-                    var op = _delayedUpdates[i];
-                    var entityData = _entities[op.Entity];
-                    _delayedOpMask.CopyFrom (entityData.Mask);
-                    switch (op.Type) {
-                        case DelayedUpdate.Op.RemoveEntity:
-#if DEBUG
-                            if (entityData.IsReserved) { throw new Exception (string.Format ("Entity {0} already removed", op.Entity)); }
-#endif
-                            while (entityData.ComponentsCount > 0) {
-                                var link = entityData.Components[entityData.ComponentsCount - 1];
-                                var componentId = link.Pool.GetComponentTypeIndex ();
-                                entityData.Mask.SetBit (componentId, false);
-#if DEBUG
-                                var dbgCmpt1 = link.Pool.GetExistItemById (link.ItemId);
-                                for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                                    _debugListeners[ii].OnComponentRemoved (op.Entity, dbgCmpt1);
-                                }
-#endif
-#if LEOECS_ENABLE_WORLD_EVENTS
-                                var evtCmpt1 = link.Pool.GetExistItemById (link.ItemId);
-                                for (var ii = 0; ii < _eventListeners.Count; ii++) {
-                                    _eventListeners[ii].OnComponentRemoved (op.Entity, evtCmpt1);
-                                }
-#endif
-                                UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
-                                link.Pool.RecycleById (link.ItemId);
-                                _delayedOpMask.SetBit (componentId, false);
-                                entityData.ComponentsCount--;
-                            }
-                            ReserveEntity (op.Entity, entityData);
-                            break;
-                        case DelayedUpdate.Op.SafeRemoveEntity:
-                            if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
-                                ReserveEntity (op.Entity, entityData);
-                            }
-                            break;
-                        case DelayedUpdate.Op.AddComponent:
-                            var bit = op.Pool.GetComponentTypeIndex ();
-#if DEBUG
-                            if (entityData.Mask.GetBit (bit)) { throw new Exception (string.Format ("Cant add component on entity {0}, already marked as added in mask", op.Entity)); }
-#endif
-                            entityData.Mask.SetBit (bit, true);
-                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
-                            break;
-                        case DelayedUpdate.Op.RemoveComponent:
-                            var bitRemove = op.Pool.GetComponentTypeIndex ();
-#if DEBUG
-                            if (!entityData.Mask.GetBit (bitRemove)) { throw new Exception (string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity)); }
-                            var dbgCmpt2 = op.Pool.GetExistItemById (op.ComponentId);
-                            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                                _debugListeners[ii].OnComponentRemoved (op.Entity, dbgCmpt2);
-                            }
-#endif
-#if LEOECS_ENABLE_WORLD_EVENTS
-                            var evtCmpt2 = op.Pool.GetExistItemById (op.ComponentId);
-                            for (var ii = 0; ii < _eventListeners.Count; ii++) {
-                                _eventListeners[ii].OnComponentRemoved (op.Entity, evtCmpt2);
-                            }
-#endif
-                            entityData.Mask.SetBit (bitRemove, false);
-                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
-                            op.Pool.RecycleById (op.ComponentId);
-                            if (entityData.ComponentsCount == 0) {
-                                AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1);
-                            }
-                            break;
-                    }
-                }
-                _delayedUpdatesCount = 0;
+            if (_delayedUpdatesCount == 0) {
+                return;
             }
+#if DEBUG
+            _delayedUpdateIteration++;
+            if (_delayedUpdateIteration > 5) {
+                throw new Exception ("Too deep delayed updates call stack");
+            }
+#endif
+            var iMax = _delayedUpdatesCount;
+            for (var i = 0; i < iMax; i++) {
+                var op = _delayedUpdates[i];
+                var entityData = _entities[op.Entity];
+                _delayedOpMask.CopyFrom (entityData.Mask);
+                switch (op.Type) {
+                    case DelayedUpdate.Op.RemoveEntity:
+#if DEBUG
+                        if (entityData.IsReserved) { throw new Exception (string.Format ("Entity {0} already removed", op.Entity)); }
+#endif
+                        while (entityData.ComponentsCount > 0) {
+                            var link = entityData.Components[entityData.ComponentsCount - 1];
+                            var componentId = link.Pool.GetComponentTypeIndex ();
+                            entityData.Mask.SetBit (componentId, false);
+#if DEBUG
+                            var dbgCmpt1 = link.Pool.GetExistItemById (link.ItemId);
+                            for (int ii = 0, iiMax = _debugListeners.Count; ii < iiMax; ii++) {
+                                _debugListeners[ii].OnComponentRemoved (op.Entity, dbgCmpt1);
+                            }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+                            var evtCmpt1 = link.Pool.GetExistItemById (link.ItemId);
+                            for (int ii = 0, iiMax = _eventListeners.Count; ii < iiMax; ii++) {
+                                _eventListeners[ii].OnComponentRemoved (op.Entity, evtCmpt1);
+                            }
+#endif
+                            UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                            link.Pool.RecycleById (link.ItemId);
+                            _delayedOpMask.SetBit (componentId, false);
+                            entityData.ComponentsCount--;
+                        }
+                        ReserveEntity (op.Entity, entityData);
+                        break;
+                    case DelayedUpdate.Op.SafeRemoveEntity:
+                        if (!entityData.IsReserved && entityData.ComponentsCount == 0) {
+                            ReserveEntity (op.Entity, entityData);
+                        }
+                        break;
+                    case DelayedUpdate.Op.AddComponent:
+                        var bit = op.Pool.GetComponentTypeIndex ();
+#if DEBUG
+                        if (entityData.Mask.GetBit (bit)) { throw new Exception (string.Format ("Cant add component on entity {0}, already marked as added in mask", op.Entity)); }
+#endif
+                        entityData.Mask.SetBit (bit, true);
+                        UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                        break;
+                    case DelayedUpdate.Op.RemoveComponent:
+                        var bitRemove = op.Pool.GetComponentTypeIndex ();
+#if DEBUG
+                        if (!entityData.Mask.GetBit (bitRemove)) { throw new Exception (string.Format ("Cant remove component on entity {0}, marked as not exits in mask", op.Entity)); }
+                        var dbgCmpt2 = op.Pool.GetExistItemById (op.ComponentId);
+                        for (int ii = 0, iiMax = _debugListeners.Count; ii < iiMax; ii++) {
+                            _debugListeners[ii].OnComponentRemoved (op.Entity, dbgCmpt2);
+                        }
+#endif
+#if LEOECS_ENABLE_WORLD_EVENTS
+                        var evtCmpt2 = op.Pool.GetExistItemById (op.ComponentId);
+                        for (int ii = 0, iiMax = _eventListeners.Count; ii < iiMax; ii++) {
+                            _eventListeners[ii].OnComponentRemoved (op.Entity, evtCmpt2);
+                        }
+#endif
+                        entityData.Mask.SetBit (bitRemove, false);
+                        UpdateFilters (op.Entity, _delayedOpMask, entityData.Mask);
+                        op.Pool.RecycleById (op.ComponentId);
+                        if (entityData.ComponentsCount == 0) {
+                            AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, op.Entity, null, -1);
+                        }
+                        break;
+                }
+            }
+            if (_delayedUpdatesCount == iMax) {
+                _delayedUpdatesCount = 0;
+            } else {
+                Array.Copy (_delayedUpdates, iMax, _delayedUpdates, 0, _delayedUpdatesCount - iMax);
+                _delayedUpdatesCount -= iMax;
+                ProcessDelayedUpdates ();
+            }
+#if DEBUG
+            _delayedUpdateIteration--;
+#endif
         }
 
         /// <summary>
@@ -636,31 +595,34 @@ namespace Leopotam.Ecs {
             if (filterType == null) { throw new Exception ("FilterType is null"); }
             if (!filterType.IsSubclassOf (typeof (EcsFilter))) { throw new Exception (string.Format ("Invalid filter-type: {0}", filterType)); }
 #endif
-            var i = _filtersCount - 1;
-            for (; i >= 0; i--) {
-                if (this._filters[i].GetType () == filterType) {
-                    break;
+            for (int i = 0, iMax = _filtersCount; i < iMax; i++) {
+                if (_filters[i].GetType () == filterType) {
+                    return _filters[i];
                 }
             }
-            if (i == -1) {
-                i = _filtersCount;
-
-                var filter = Activator.CreateInstance (filterType, true) as EcsFilter;
-                filter.SetWorld (this);
+            var filter = (EcsFilter) Activator.CreateInstance (filterType, true);
+            filter.SetWorld (this);
 #if DEBUG
-                for (var j = 0; j < _filtersCount; j++) {
-                    if (_filters[j].IncludeMask.IsEquals (filter.IncludeMask) && _filters[j].ExcludeMask.IsEquals (filter.ExcludeMask)) {
-                        throw new Exception (string.Format ("Duplicate filter type \"{0}\": filter type \"{1}\" already has same types in different order.", filterType, _filters[j].GetType ()));
-                    }
+            for (int j = 0, jMax = _filtersCount; j < jMax; j++) {
+                if (_filters[j].IncludeMask.IsEquals (filter.IncludeMask) && _filters[j].ExcludeMask.IsEquals (filter.ExcludeMask)) {
+                    throw new Exception (string.Format ("Duplicate filter type \"{0}\": filter type \"{1}\" already has same types in different order.", filterType, _filters[j].GetType ()));
                 }
-#endif
-                if (_filtersCount == _filters.Length) {
-                    Array.Resize (ref _filters, _filtersCount << 1);
-                }
-
-                _filters[_filtersCount++] = filter;
             }
-            return _filters[i];
+#endif
+            if (_filtersCount == _filters.Length) {
+                Array.Resize (ref _filters, _filtersCount << 1);
+            }
+            _filters[_filtersCount++] = filter;
+
+            // one-frame component filters.
+            if (filter.IncludeMask.BitsCount == 1 && filter.GetComponentPool (0).IsOneFrameComponent ()) {
+                if (_oneFrameFilters.Length == _oneFrameFiltersCount) {
+                    Array.Resize (ref _oneFrameFilters, _oneFrameFiltersCount << 1);
+                }
+                _oneFrameFilters[_oneFrameFiltersCount++] = filter;
+            }
+
+            return filter;
         }
 
         /// <summary>
@@ -669,13 +631,45 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void RemoveFilter<T> () where T : EcsFilter {
             var filterType = typeof (T);
-            for (var i = 0; i < _filtersCount; i++) {
+            for (int i = 0, iMax = _filtersCount; i < iMax; i++) {
                 if (_filters[i].GetType () == filterType) {
                     _filtersCount--;
                     Array.Copy (_filters, i + 1, _filters, i, _filtersCount - i);
                     break;
                 }
             }
+            for (int i = 0, iMax = _oneFrameFiltersCount; i < iMax; i++) {
+                if (_oneFrameFilters[i].GetType () == filterType) {
+                    _oneFrameFiltersCount--;
+                    Array.Copy (_oneFrameFilters, i + 1, _oneFrameFilters, i, _oneFrameFiltersCount - i);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes all components marked with EcsOneFrameAttribute.
+        /// </summary>
+        public void RemoveOneFrameComponents () {
+            for (int f = 0, fMax = _oneFrameFiltersCount; f < fMax; f++) {
+                var filter = _oneFrameFilters[f];
+                if (filter.EntitiesCount > 0) {
+                    var pool = filter.GetComponentPool (0);
+                    for (int e = 0, eMax = filter.EntitiesCount; e < eMax; e++) {
+                        var entityData = _entities[filter.Entities[e]];
+                        for (int c = 0, cMax = entityData.ComponentsCount; c < cMax; c++) {
+                            if (entityData.Components[c].Pool == pool) {
+                                AddDelayedUpdate (DelayedUpdate.Op.RemoveComponent, filter.Entities[e], pool, entityData.Components[c].ItemId);
+                                entityData.ComponentsCount--;
+                                Array.Copy (entityData.Components, c + 1, entityData.Components, c, entityData.ComponentsCount - c);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            ProcessDelayedUpdates ();
+            ProcessDelayedUpdates ();
         }
 
         /// <summary>
@@ -842,5 +836,10 @@ namespace Leopotam.Ecs {
         /// Amount of registered component types.
         /// </summary>
         public int Components;
+
+        /// <summary>
+        /// Amount of one-frame registered components.
+        /// </summary>
+        public int OneFrameComponents;
     }
 }

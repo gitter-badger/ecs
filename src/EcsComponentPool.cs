@@ -14,6 +14,12 @@ namespace Leopotam.Ecs {
     public sealed class EcsIgnoreInFilterAttribute : Attribute { }
 
     /// <summary>
+    /// Marks component class to be auto removed from world.
+    /// </summary>
+    [AttributeUsage (AttributeTargets.Class)]
+    public sealed class EcsOneFrameAttribute : Attribute { }
+
+    /// <summary>
     /// Marks component class as resettable with custom logic.
     /// </summary>
     public interface IEcsAutoResetComponent {
@@ -28,10 +34,11 @@ namespace Leopotam.Ecs {
     [AttributeUsage (AttributeTargets.Field)]
     public sealed class EcsIgnoreNullCheckAttribute : Attribute { }
 
-    interface IEcsComponentPool {
+    public interface IEcsComponentPool {
         object GetExistItemById (int idx);
         void RecycleById (int id);
         int GetComponentTypeIndex ();
+        bool IsOneFrameComponent ();
     }
 
     /// <summary>
@@ -49,6 +56,8 @@ namespace Leopotam.Ecs {
         public T[] Items = new T[MinSize];
 
         public readonly bool IsIgnoreInFilter = Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
+
+        public readonly bool IsOneFrame = Attribute.IsDefined (typeof (T), typeof (EcsOneFrameAttribute));
 
         public readonly bool IsAutoReset = typeof (IEcsAutoResetComponent).IsAssignableFrom (typeof (T));
 
@@ -127,7 +136,7 @@ namespace Leopotam.Ecs {
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        object IEcsComponentPool.GetExistItemById (int idx) {
+        public object GetExistItemById (int idx) {
             return Items[idx];
         }
 
@@ -136,6 +145,13 @@ namespace Leopotam.Ecs {
 #endif
         public int GetComponentTypeIndex () {
             return _typeIndex;
+        }
+
+#if NET_4_6 || NET_STANDARD_2_0
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public bool IsOneFrameComponent () {
+            return IsOneFrame;
         }
 
         /// <summary>

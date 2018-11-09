@@ -23,7 +23,9 @@ namespace Leopotam.Ecs {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             Components1 = _allow1 ? new Inc1[MinSize] : null;
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
         }
+
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
@@ -97,6 +99,8 @@ namespace Leopotam.Ecs {
             Components2 = _allow2 ? new Inc2[MinSize] : null;
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
+            AddComponentPool (EcsComponentPool<Inc2>.Instance);
             ValidateMasks (2, 0);
         }
 #if NET_4_6 || NET_STANDARD_2_0
@@ -186,6 +190,9 @@ namespace Leopotam.Ecs {
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
+            AddComponentPool (EcsComponentPool<Inc2>.Instance);
+            AddComponentPool (EcsComponentPool<Inc3>.Instance);
             ValidateMasks (3, 0);
         }
 #if NET_4_6 || NET_STANDARD_2_0
@@ -289,6 +296,10 @@ namespace Leopotam.Ecs {
             IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc4>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
+            AddComponentPool (EcsComponentPool<Inc2>.Instance);
+            AddComponentPool (EcsComponentPool<Inc3>.Instance);
+            AddComponentPool (EcsComponentPool<Inc4>.Instance);
             ValidateMasks (4, 0);
         }
 #if NET_4_6 || NET_STANDARD_2_0
@@ -482,6 +493,25 @@ namespace Leopotam.Ecs {
             public void Reset () {
                 _idx = -1;
             }
+        }
+
+        IEcsComponentPool[] _pools = new IEcsComponentPool[4];
+        int _poolsCount;
+
+        protected void AddComponentPool (IEcsComponentPool pool) {
+            if (_pools.Length == _poolsCount) {
+                Array.Resize (ref _pools, _poolsCount << 1);
+            }
+            _pools[_poolsCount++] = pool;
+        }
+
+        public IEcsComponentPool GetComponentPool (int id) {
+#if DEBUG
+            if (id < 0 || id >= _poolsCount) {
+                throw new Exception (string.Format ("Invalid included component index {0} for filter \"{1}\".", id, GetType ()));
+            }
+#endif
+            return _pools[id];
         }
 
         /// <summary>
