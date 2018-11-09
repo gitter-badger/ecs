@@ -179,6 +179,8 @@ class Startup : MonoBehaviour {
     void Update() {
         // process all dependent systems.
         _systems.Run ();
+        // optional behaviour for one-frame components.
+        _world.RemoveOneFrameComponents ();
     }
 
     void OnDisable() {
