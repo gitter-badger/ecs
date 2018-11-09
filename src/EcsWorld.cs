@@ -669,7 +669,6 @@ namespace Leopotam.Ecs {
                 }
             }
             ProcessDelayedUpdates ();
-            ProcessDelayedUpdates ();
         }
 
         /// <summary>
