@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using Leopotam.Ecs.Internals;
 
 #if ENABLE_IL2CPP
@@ -96,9 +97,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// List of requested one-frame component filters.
         /// </summary>
-        EcsFilter[] _oneFrameFilters = new EcsFilter[32];
-
-        int _oneFrameFiltersCount;
+        readonly Dictionary<int, EcsFilter> _oneFrameFilters = new Dictionary<int, EcsFilter> (32);
 
         /// <summary>
         /// Temporary buffer for filter updates.
@@ -153,7 +152,6 @@ namespace Leopotam.Ecs {
             _filters = null;
             _filtersCount = 0;
             _oneFrameFilters = null;
-            _oneFrameFiltersCount = 0;
             _reservedEntities = null;
             _reservedEntitiesCount = 0;
             _delayedUpdates = null;
@@ -359,6 +357,13 @@ namespace Leopotam.Ecs {
             }
             if (i != -1) { throw new Exception (string.Format ("\"{0}\" component already exists on entity {1}", typeof (T).Name, entity)); }
 #endif
+            // create separate filter for one-frame components.
+            if (pool.IsOneFrame) {
+                if (!_oneFrameFilters.ContainsKey (pool.GetComponentTypeIndex ())) {
+                    _oneFrameFilters[pool.GetComponentTypeIndex ()] = GetFilter (typeof (EcsFilter<T>));
+                }
+            }
+
             var link = new ComponentLink (pool, pool.RequestNewId ());
             if (entityData.ComponentsCount == entityData.Components.Length) {
                 Array.Resize (ref entityData.Components, entityData.ComponentsCount << 1);
@@ -476,7 +481,7 @@ namespace Leopotam.Ecs {
                 ReservedEntities = _reservedEntitiesCount,
                 Filters = _filtersCount,
                 Components = EcsHelpers.ComponentsCount,
-                OneFrameComponents = _oneFrameFiltersCount
+                OneFrameComponents = _oneFrameFilters.Count
             };
             return stats;
         }
@@ -582,6 +587,9 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Gets filter with specific include / exclude masks.
         /// </summary>
+#if NET_4_6 || NET_STANDARD_2_0
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public T GetFilter<T> () where T : EcsFilter {
             return GetFilter (typeof (T)) as T;
         }
@@ -590,6 +598,9 @@ namespace Leopotam.Ecs {
         /// Gets filter with specific include / exclude masks.
         /// </summary>
         /// <param name="filterType">Type of filter.</param>
+#if NET_4_6 || NET_STANDARD_2_0
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
         public EcsFilter GetFilter (Type filterType) {
 #if DEBUG
             if (filterType == null) { throw new Exception ("FilterType is null"); }
@@ -614,14 +625,6 @@ namespace Leopotam.Ecs {
             }
             _filters[_filtersCount++] = filter;
 
-            // one-frame component filters.
-            if (filter.IncludeMask.BitsCount == 1 && filter.GetComponentPool (0).IsOneFrameComponent ()) {
-                if (_oneFrameFilters.Length == _oneFrameFiltersCount) {
-                    Array.Resize (ref _oneFrameFilters, _oneFrameFiltersCount << 1);
-                }
-                _oneFrameFilters[_oneFrameFiltersCount++] = filter;
-            }
-
             return filter;
         }
 
@@ -638,10 +641,10 @@ namespace Leopotam.Ecs {
                     break;
                 }
             }
-            for (int i = 0, iMax = _oneFrameFiltersCount; i < iMax; i++) {
-                if (_oneFrameFilters[i].GetType () == filterType) {
-                    _oneFrameFiltersCount--;
-                    Array.Copy (_oneFrameFilters, i + 1, _oneFrameFilters, i, _oneFrameFiltersCount - i);
+
+            foreach (var pair in _oneFrameFilters) {
+                if (pair.Value.GetType () == filterType) {
+                    _oneFrameFilters.Remove (pair.Key);
                     break;
                 }
             }
@@ -651,8 +654,8 @@ namespace Leopotam.Ecs {
         /// Removes all components marked with EcsOneFrameAttribute.
         /// </summary>
         public void RemoveOneFrameComponents () {
-            for (int f = 0, fMax = _oneFrameFiltersCount; f < fMax; f++) {
-                var filter = _oneFrameFilters[f];
+            foreach (var pair in _oneFrameFilters) {
+                var filter = pair.Value;
                 if (filter.EntitiesCount > 0) {
                     var pool = filter.GetComponentPool (0);
                     for (int e = 0, eMax = filter.EntitiesCount; e < eMax; e++) {
