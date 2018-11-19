@@ -151,7 +151,7 @@ namespace Leopotam.Ecs {
             _entitiesCount = 0;
             _filters = null;
             _filtersCount = 0;
-            _oneFrameFilters = null;
+            _oneFrameFilters.Clear ();
             _reservedEntities = null;
             _reservedEntitiesCount = 0;
             _delayedUpdates = null;
