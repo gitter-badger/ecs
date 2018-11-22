@@ -9,53 +9,6 @@ using System.Collections.Generic;
 
 namespace Leopotam.Ecs {
     /// <summary>
-    /// Marks component class to be not autofilled as ComponentX in filter.
-    /// </summary>
-    [AttributeUsage (AttributeTargets.Class)]
-    public sealed class EcsIgnoreInFilterAttribute : Attribute { }
-
-    /// <summary>
-    /// Container for single component for sharing between systems.
-    /// </summary>
-    [Obsolete ("Use EcsSystems.Inject instead, custom EcsFilter implementation or custom EcsWorld implementation.")]
-#if ENABLE_IL2CPP
-    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
-    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
-#endif
-    public class EcsFilterSingle<Inc1> : EcsFilter where Inc1 : class, new () {
-        public Inc1 Data;
-
-        protected EcsFilterSingle () {
-            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
-        }
-
-        /// <summary>
-        /// Creates entity with single component at specified EcsWorld.
-        /// </summary>
-        /// <param name="world">World instance.</param>
-        public static Inc1 Create (EcsWorld world) {
-            world.GetFilter<EcsFilterSingle<Inc1>> ();
-            var data = world.CreateEntityWith<Inc1> ();
-            world.ProcessDelayedUpdates ();
-            return data;
-        }
-
-        public override void RaiseOnAddEvent (int entity) {
-            Internals.EcsHelpers.Assert (EntitiesCount == 0,
-                () => string.Format ("Cant add entity \"{1}\" to single filter \"{0}\": another one already added.", GetType (), entity));
-            Data = World.GetComponent<Inc1> (entity);
-            Entities[EntitiesCount++] = entity;
-        }
-
-        public override void RaiseOnRemoveEvent (int entity) {
-            Internals.EcsHelpers.Assert (EntitiesCount == 1 && Entities[0] == entity,
-                () => string.Format ("Cant remove entity \"{1}\" from single filter \"{0}\".", GetType (), entity));
-            EntitiesCount--;
-            Data = null;
-        }
-    }
-
-    /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
 #if ENABLE_IL2CPP
@@ -70,7 +23,9 @@ namespace Leopotam.Ecs {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             Components1 = _allow1 ? new Inc1[MinSize] : null;
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
         }
+
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
@@ -144,6 +99,8 @@ namespace Leopotam.Ecs {
             Components2 = _allow2 ? new Inc2[MinSize] : null;
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
+            AddComponentPool (EcsComponentPool<Inc2>.Instance);
             ValidateMasks (2, 0);
         }
 #if NET_4_6 || NET_STANDARD_2_0
@@ -233,6 +190,9 @@ namespace Leopotam.Ecs {
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
+            AddComponentPool (EcsComponentPool<Inc2>.Instance);
+            AddComponentPool (EcsComponentPool<Inc3>.Instance);
             ValidateMasks (3, 0);
         }
 #if NET_4_6 || NET_STANDARD_2_0
@@ -336,6 +296,10 @@ namespace Leopotam.Ecs {
             IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.GetComponentTypeIndex (), true);
             IncludeMask.SetBit (EcsComponentPool<Inc4>.Instance.GetComponentTypeIndex (), true);
+            AddComponentPool (EcsComponentPool<Inc1>.Instance);
+            AddComponentPool (EcsComponentPool<Inc2>.Instance);
+            AddComponentPool (EcsComponentPool<Inc3>.Instance);
+            AddComponentPool (EcsComponentPool<Inc4>.Instance);
             ValidateMasks (4, 0);
         }
 #if NET_4_6 || NET_STANDARD_2_0
@@ -531,6 +495,25 @@ namespace Leopotam.Ecs {
             }
         }
 
+        IEcsComponentPool[] _pools = new IEcsComponentPool[4];
+        int _poolsCount;
+
+        protected void AddComponentPool (IEcsComponentPool pool) {
+            if (_pools.Length == _poolsCount) {
+                Array.Resize (ref _pools, _poolsCount << 1);
+            }
+            _pools[_poolsCount++] = pool;
+        }
+
+        public IEcsComponentPool GetComponentPool (int id) {
+#if DEBUG
+            if (id < 0 || id >= _poolsCount) {
+                throw new Exception (string.Format ("Invalid included component index {0} for filter \"{1}\".", id, GetType ()));
+            }
+#endif
+            return _pools[id];
+        }
+
         /// <summary>
         /// Vaidates amount of constraint components.
         /// </summary>
@@ -539,10 +522,12 @@ namespace Leopotam.Ecs {
         [System.Diagnostics.Conditional ("DEBUG")]
         protected void ValidateMasks (int inc, int exc) {
 #if DEBUG
-            Internals.EcsHelpers.Assert (IncludeMask.BitsCount == inc && ExcludeMask.BitsCount == exc,
-                () => string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
-            Internals.EcsHelpers.Assert (!IncludeMask.IsIntersects (ExcludeMask),
-                () => string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
+            if (IncludeMask.BitsCount != inc || ExcludeMask.BitsCount != exc) {
+                throw new Exception (string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
+            }
+            if (IncludeMask.IsIntersects (ExcludeMask)) {
+                throw new Exception (string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
+            }
 #endif
         }
 

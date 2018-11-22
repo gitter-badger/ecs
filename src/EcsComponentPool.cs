@@ -7,10 +7,23 @@
 using System;
 
 namespace Leopotam.Ecs {
-    interface IEcsComponentPool {
-        object GetExistItemById (int idx);
-        void RecycleById (int id);
-        int GetComponentTypeIndex ();
+    /// <summary>
+    /// Marks component class to be not autofilled as ComponentX in filter.
+    /// </summary>
+    [AttributeUsage (AttributeTargets.Class)]
+    public sealed class EcsIgnoreInFilterAttribute : Attribute { }
+
+    /// <summary>
+    /// Marks component class to be auto removed from world.
+    /// </summary>
+    [AttributeUsage (AttributeTargets.Class)]
+    public sealed class EcsOneFrameAttribute : Attribute { }
+
+    /// <summary>
+    /// Marks component class as resettable with custom logic.
+    /// </summary>
+    public interface IEcsAutoResetComponent {
+        void Reset ();
     }
 
     /// <summary>
@@ -20,6 +33,13 @@ namespace Leopotam.Ecs {
     [System.Diagnostics.Conditional ("DEBUG")]
     [AttributeUsage (AttributeTargets.Field)]
     public sealed class EcsIgnoreNullCheckAttribute : Attribute { }
+
+    public interface IEcsComponentPool {
+        object GetExistItemById (int idx);
+        void RecycleById (int id);
+        int GetComponentTypeIndex ();
+        bool IsOneFrameComponent ();
+    }
 
     /// <summary>
     /// Components pool container.
@@ -36,6 +56,10 @@ namespace Leopotam.Ecs {
         public T[] Items = new T[MinSize];
 
         public readonly bool IsIgnoreInFilter = Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
+
+        public readonly bool IsOneFrame = Attribute.IsDefined (typeof (T), typeof (EcsOneFrameAttribute));
+
+        public readonly bool IsAutoReset = typeof (IEcsAutoResetComponent).IsAssignableFrom (typeof (T));
 
         int _typeIndex;
 
@@ -89,14 +113,18 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void RecycleById (int id) {
+            if (IsAutoReset) {
+                ((IEcsAutoResetComponent) Items[id]).Reset ();
+            }
 #if DEBUG
-            // check all marshal-by-reference types for nulls.
+            // check all marshal-by-reference typed fields for nulls.
             var obj = Items[id];
             for (var i = 0; i < _nullableFields.Count; i++) {
-                Internals.EcsHelpers.Assert (_nullableFields[i].GetValue (obj) == null,
-                    () => string.Format (
+                if (_nullableFields[i].GetValue (obj) != null) {
+                    throw new Exception (string.Format (
                         "Memory leak for \"{0}\" component: \"{1}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute",
                         typeof (T).Name, _nullableFields[i].Name));
+                }
             }
 #endif
             if (_reservedItemsCount == _reservedItems.Length) {
@@ -108,7 +136,7 @@ namespace Leopotam.Ecs {
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
-        object IEcsComponentPool.GetExistItemById (int idx) {
+        public object GetExistItemById (int idx) {
             return Items[idx];
         }
 
@@ -117,6 +145,13 @@ namespace Leopotam.Ecs {
 #endif
         public int GetComponentTypeIndex () {
             return _typeIndex;
+        }
+
+#if NET_4_6 || NET_STANDARD_2_0
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public bool IsOneFrameComponent () {
+            return IsOneFrame;
         }
 
         /// <summary>

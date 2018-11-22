@@ -31,6 +31,13 @@ WeaponComponent myWeapon;
 int entityId = _world.CreateEntityWith<WeaponComponent> (out myWeapon);
 _world.RemoveEntity (entityId);
 ```
+Dont forget that `EcsWorld.CreateEntityWith` method has multiple overloaded versions:
+```csharp
+Component1 c1;
+Component2 c2;
+int entityId = _world.CreateEntityWith<Component1, Component2> (out c1, out c2);
+_world.RemoveEntity (entityId);
+```
 
 > **Important!** Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
 
@@ -93,7 +100,7 @@ Each system will be scanned for compatible fields (can contains all of them or n
 # Special classes
 
 ## EcsFilter<T>
-Container for keep filtered entities with specified component list:
+Container for keeping filtered entities with specified component list:
 ```csharp
 [EcsInject]
 class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
@@ -172,6 +179,8 @@ class Startup : MonoBehaviour {
     void Update() {
         // process all dependent systems.
         _systems.Run ();
+        // optional behaviour for one-frame components.
+        _world.RemoveOneFrameComponents ();
     }
 
     void OnDisable() {
@@ -303,6 +312,8 @@ systems.Initialize ();
 
 [Reactive filters / systems](https://github.com/Leopotam/ecs-reactive)
 
+[Multithreading support](https://github.com/Leopotam/ecs-threads)
+
 [Unity integration](https://github.com/Leopotam/ecs-unityintegration)
 
 [Unity uGui event bindings](https://github.com/Leopotam/ecs-ui)
@@ -424,6 +435,32 @@ can be replaced with
 for (int i = 0, iMax = _filter.EntitiesCount; i < iMax; i++)
 ```
 
+### I copy&paste my reset components code again and again. How I can do it in other manner?
+
+If you want to simplify your code and keep reset-code in one place, you can use `IEcsAutoResetComponent` interface for components:
+```csharp
+class MyComponent : IEcsAutoResetComponent {
+    public object LinkToAnotherComponent;
+
+    void IEcsAutoResetComponent.Reset() {
+        // Cleanup all marshal-by-reference fields here.
+        LinkToAnotherComponent = null;
+    }
+}
+```
+This method will be automatically called after component removing from entity and before recycling to component pool.
+
+### I use components as events that works only one frame, then remove it at last system in execution sequence. It's boring, how I can automate it?
+
+If you want to remove one-frame components without additional custom code, you can use `EcsOneFrame` attribute:
+```csharp
+[EcsOneFrame]
+class MyComponent { }
+```
+> Important: Do not forget to call `EcsWorld.RemoveOneFrameComponents` method once after all `EcsSystems.Run` calls.
+
+> Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoResetComponent` interface.
+
 ### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
 
 Reactive filters / systems can be found at [separate repo](https://github.com/Leopotam/ecs-reactive).
@@ -446,6 +483,9 @@ public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
 
         // And set valid bit of required component at IncludeMask.
         IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
+
+        // Add component pool to internal list of required component pools.
+        AddComponentPool (EcsComponentPool<Inc1>.Instance);
 
         // Its recommended method for masks validation (will be auto-removed in RELEASE-mode).
         ValidateMasks (1, 0);
