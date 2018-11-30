@@ -612,7 +612,7 @@ namespace Leopotam.Ecs {
                 }
             }
             var filter = (EcsFilter) Activator.CreateInstance (filterType, true);
-            filter.SetWorld (this);
+            filter.World = this;
 #if DEBUG
             for (int j = 0, jMax = _filtersCount; j < jMax; j++) {
                 if (_filters[j].IncludeMask.IsEquals (filter.IncludeMask) && _filters[j].ExcludeMask.IsEquals (filter.ExcludeMask)) {

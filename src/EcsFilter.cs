@@ -9,6 +9,14 @@ using System.Collections.Generic;
 
 namespace Leopotam.Ecs {
     /// <summary>
+    /// Common interface for all filter listeners.
+    /// </summary>
+    public interface IEcsFilterListener {
+        void OnEntityAdded (int entity);
+        void OnEntityRemoved (int entity);
+    }
+
+    /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
 #if ENABLE_IL2CPP
@@ -37,9 +45,12 @@ namespace Leopotam.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = World.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             Entities[EntitiesCount++] = entity;
+            for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                _listeners[j].OnEntityAdded (entity);
+            }
         }
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -51,6 +62,9 @@ namespace Leopotam.Ecs {
                     Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
                     if (_allow1) {
                         Array.Copy (Components1, i + 1, Components1, i, EntitiesCount - i);
+                    }
+                    for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                        _listeners[j].OnEntityRemoved (entity);
                     }
                     break;
                 }
@@ -117,12 +131,15 @@ namespace Leopotam.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = World.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = World.GetComponent<Inc2> (entity);
+                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             Entities[EntitiesCount++] = entity;
+            for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                _listeners[j].OnEntityAdded (entity);
+            }
         }
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -137,6 +154,9 @@ namespace Leopotam.Ecs {
                     }
                     if (_allow2) {
                         Array.Copy (Components2, i + 1, Components2, i, EntitiesCount - i);
+                    }
+                    for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                        _listeners[j].OnEntityRemoved (entity);
                     }
                     break;
                 }
@@ -212,15 +232,18 @@ namespace Leopotam.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = World.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = World.GetComponent<Inc2> (entity);
+                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             if (_allow3) {
-                Components3[EntitiesCount] = World.GetComponent<Inc3> (entity);
+                Components3[EntitiesCount] = _world.GetComponent<Inc3> (entity);
             }
             Entities[EntitiesCount++] = entity;
+            for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                _listeners[j].OnEntityAdded (entity);
+            }
         }
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -238,6 +261,9 @@ namespace Leopotam.Ecs {
                     }
                     if (_allow3) {
                         Array.Copy (Components3, i + 1, Components3, i, EntitiesCount - i);
+                    }
+                    for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                        _listeners[j].OnEntityRemoved (entity);
                     }
                     break;
                 }
@@ -322,18 +348,21 @@ namespace Leopotam.Ecs {
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = World.GetComponent<Inc1> (entity);
+                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = World.GetComponent<Inc2> (entity);
+                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             if (_allow3) {
-                Components3[EntitiesCount] = World.GetComponent<Inc3> (entity);
+                Components3[EntitiesCount] = _world.GetComponent<Inc3> (entity);
             }
             if (_allow4) {
-                Components4[EntitiesCount] = World.GetComponent<Inc4> (entity);
+                Components4[EntitiesCount] = _world.GetComponent<Inc4> (entity);
             }
             Entities[EntitiesCount++] = entity;
+            for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                _listeners[j].OnEntityAdded (entity);
+            }
         }
 #if NET_4_6 || NET_STANDARD_2_0
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -354,6 +383,9 @@ namespace Leopotam.Ecs {
                     }
                     if (_allow4) {
                         Array.Copy (Components4, i + 1, Components4, i, EntitiesCount - i);
+                    }
+                    for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                        _listeners[j].OnEntityRemoved (entity);
                     }
                     break;
                 }
@@ -404,21 +436,23 @@ namespace Leopotam.Ecs {
         public readonly EcsComponentMask ExcludeMask = new EcsComponentMask ();
 
         /// <summary>
-        /// Returns connected EcsWorld instance.
+        /// Access to connected EcsWorld instance.
         /// </summary>
-        public EcsWorld GetWorld () {
-            return World;
+        public EcsWorld World {
+            get { return _world; }
+            internal set { _world = value; }
         }
 
         /// <summary>
         /// Instance of connected EcsWorld.
         /// Do not change it manually!
         /// </summary>
-        protected EcsWorld World;
+        protected EcsWorld _world;
 
-        internal void SetWorld (EcsWorld world) {
-            World = world;
-        }
+        IEcsComponentPool[] _pools = new IEcsComponentPool[4];
+        int _poolsCount;
+        protected IEcsFilterListener[] _listeners = new IEcsFilterListener[4];
+        protected int _listenersCount;
 
         /// <summary>
         /// Will be raised by EcsWorld for new compatible with this filter entity.
@@ -495,9 +529,6 @@ namespace Leopotam.Ecs {
             }
         }
 
-        IEcsComponentPool[] _pools = new IEcsComponentPool[4];
-        int _poolsCount;
-
         protected void AddComponentPool (IEcsComponentPool pool) {
             if (_pools.Length == _poolsCount) {
                 Array.Resize (ref _pools, _poolsCount << 1);
@@ -505,6 +536,10 @@ namespace Leopotam.Ecs {
             _pools[_poolsCount++] = pool;
         }
 
+        /// <summary>
+        /// Gets connected component pool from constraint components type index.
+        /// </summary>
+        /// <param name="id">Constraint components type index.</param>
         public IEcsComponentPool GetComponentPool (int id) {
 #if DEBUG
             if (id < 0 || id >= _poolsCount) {
@@ -512,6 +547,38 @@ namespace Leopotam.Ecs {
             }
 #endif
             return _pools[id];
+        }
+
+        /// <summary>
+        /// Subscribes listener to filter events.
+        /// </summary>
+        /// <param name="listener">Listener.</param>
+        public void AddListener (IEcsFilterListener listener) {
+#if DEBUG
+            for (int i = 0, iMax = _listenersCount; i < iMax; i++) {
+                if (_listeners[i] == listener) {
+                    throw new Exception ("Listener already subscribed.");
+                }
+            }
+#endif
+            if (_listeners.Length == _listenersCount) {
+                Array.Resize (ref _listeners, _listenersCount << 1);
+            }
+            _listeners[_listenersCount++] = listener;
+        }
+
+        /// <summary>
+        /// Unsubscribes listener from filter events.
+        /// </summary>
+        /// <param name="listener">Listener.</param>
+        public void RemoveListener (IEcsFilterListener listener) {
+            for (int i = 0, iMax = _listenersCount; i < iMax; i++) {
+                if (_listeners[i] == listener) {
+                    _listenersCount--;
+                    Array.Copy (_listeners, i + 1, _listeners, i, _listenersCount - i);
+                    break;
+                }
+            }
         }
 
         /// <summary>
