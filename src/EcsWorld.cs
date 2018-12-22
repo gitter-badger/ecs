@@ -311,7 +311,14 @@ namespace Leopotam.Ecs {
             for (var i = 0; i < entityData.ComponentsCount; i++) {
                 if (entityData.Components[i].Pool == pool) {
                     isNew = false;
-                    return (T) entityData.Components[i].Pool.GetExistItemById (entityData.Components[i].ItemId);
+                    return pool.Items[entityData.Components[i].ItemId];
+                }
+            }
+
+            // create separate filter for one-frame components.
+            if (pool.IsOneFrame) {
+                if (!_oneFrameFilters.ContainsKey (pool.GetComponentTypeIndex ())) {
+                    _oneFrameFilters[pool.GetComponentTypeIndex ()] = GetFilter (typeof (EcsFilter<T>));
                 }
             }
 
@@ -612,7 +619,7 @@ namespace Leopotam.Ecs {
                 }
             }
             var filter = (EcsFilter) Activator.CreateInstance (filterType, true);
-            filter.SetWorld (this);
+            filter.World = this;
 #if DEBUG
             for (int j = 0, jMax = _filtersCount; j < jMax; j++) {
                 if (_filters[j].IncludeMask.IsEquals (filter.IncludeMask) && _filters[j].ExcludeMask.IsEquals (filter.ExcludeMask)) {

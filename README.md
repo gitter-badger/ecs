@@ -1,9 +1,9 @@
 [![gitter](https://img.shields.io/gitter/room/leopotam/ecs.svg)](https://gitter.im/leopotam/ecs)
 [![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
-# LeoECS - Another one Entity Component System framework
-Performance and zero memory allocation / small size, no dependencies on any game engine - main goals of this project.
+# LeoECS - Simple lightweight C# Entity Component System framework
+Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
-> Tested on unity 2018.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
+> Tested on unity 2018.3 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
 > **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
@@ -463,75 +463,8 @@ class MyComponent { }
 
 ### I used reactive systems and filter events before, but now I can't find them. How I can get it back?
 
-Reactive filters / systems can be found at [separate repo](https://github.com/Leopotam/ecs-reactive).
+You can implement them by yourself with `EcsFilter.AddListener` / `EcsFilter.RemoveListener` methods or use default implementation, that can be found at [separate repo](https://github.com/Leopotam/ecs-reactive).
 
 ### I need more than 4 components in filter, how i can do it?
 
-First of all - looks like there are problems in architecture and better to rethink it. Anyway, custom filter can be implemented it this way:
-
-```csharp
-// Custom class should be inherited from EcsFilter.
-public class CustomEcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
-    public Inc1[] Components1;
-    bool _allow1;
-
-    // Access can be any, even non-public.
-    protected CustomEcsFilter () {
-        // We should check - is requested type should be not auto-filled in Components1 array.
-        _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
-        Components1 = _allow1 ? new Inc1[MinSize] : null;
-
-        // And set valid bit of required component at IncludeMask.
-        IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
-
-        // Add component pool to internal list of required component pools.
-        AddComponentPool (EcsComponentPool<Inc1>.Instance);
-
-        // Its recommended method for masks validation (will be auto-removed in RELEASE-mode).
-        ValidateMasks (1, 0);
-    }
-
-    // This method will be called for new compatible entities.
-    public override void RaiseOnAddEvent (int entity) {
-        if (Entities.Length == EntitiesCount) {
-            Array.Resize (ref Entities, EntitiesCount << 1);
-            if (_allow1) {
-                Array.Resize (ref Components1, EntitiesCount << 1);
-            }
-        }
-        if (_allow1) {
-            Components1[EntitiesCount] = World.GetComponent<Inc1> (entity);
-        }
-        Entities[EntitiesCount++] = entity;
-    }
-
-    // This method will be called for added before, but already non-compatible entities.
-    public override void RaiseOnRemoveEvent (int entity) {
-        for (var i = 0; i < EntitiesCount; i++) {
-            if (Entities[i] == entity) {
-                EntitiesCount--;
-                Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
-                if (_allow1) {
-                    Array.Copy (Components1, i + 1, Components1, i, EntitiesCount - i);
-                }
-                break;
-            }
-        }
-    }
-
-    // Even exclude filters can be declared in this way.
-    public class Exclude<Exc1, Exc2> : CustomEcsFilter<Inc1> where Exc1 : class, new () {
-        internal Exclude () {
-            // Update ExcludeMask for 2 denied types.
-            ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
-            ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.GetComponentTypeIndex (), true);
-            // And validate all masks (1 included type, 2 excluded type).
-            ValidateMasks (1, 2);
-        }
-    }
-}
-```
-
-### How it fast relative to Entitas?
-
-[Previous version](https://github.com/Leopotam/ecs/releases/tag/v20180422) was benchmarked at [this repo](https://github.com/echeg/unityecs_speedtest). Current version works in slightly different manner, better to grab last versions of ECS frameworks and check boths locally on your code.
+Check `EcsFilter<Inc1, Inc2, Inc3, Inc4>` class and create new class with more components in same manner.

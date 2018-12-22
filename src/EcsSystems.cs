@@ -68,7 +68,7 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    public sealed class EcsSystems : IDisposable, IEcsRunSystem, IEcsInitSystem {
+    public sealed class EcsSystems : IDisposable, IEcsInitSystem, IEcsRunSystem {
 #if DEBUG
         /// <summary>
         /// List of all debug listeners.
@@ -77,6 +77,8 @@ namespace Leopotam.Ecs {
 
         readonly public System.Collections.Generic.List<bool> DisabledInDebugSystems = new System.Collections.Generic.List<bool> (32);
 #endif
+
+        public readonly string Name;
 
         /// <summary>
         /// Ecs world instance.
@@ -125,13 +127,19 @@ namespace Leopotam.Ecs {
         bool _isDisposed;
 #endif
 
-        public EcsSystems (EcsWorld world) {
+        /// <summary>
+        /// Creates new instance of EcsSystems group.
+        /// </summary>
+        /// <param name="world">EcsWorld instance.</param>
+        /// <param name="name">Custom name for this group.</param>
+        public EcsSystems (EcsWorld world, string name = null) {
 #if DEBUG
             if (world == null) {
                 throw new ArgumentNullException ();
             }
 #endif
             _world = world;
+            Name = name;
         }
 
 #if DEBUG
