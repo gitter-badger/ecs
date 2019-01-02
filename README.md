@@ -395,6 +395,19 @@ void FixedUpdate() {
 }
 ```
 
+### I want to add new or get already exist component on entity, but `GetComponent` with checking result - so boring. How it can be simplified?
+
+There is `EnsureComponent` method at `EcsWorld`, next 2 code blocks are identical:
+```csharp
+var c1 = _world.GetComponent<C1>(id);
+if (c1 == null) {
+    c1 = _world.AddComponent<C1>(id);
+}
+...
+bool isNew;
+var c1 = _world.EnsureComponent<C1>(id, out isNew);
+```
+
 ### I want to add reaction on add / remove entity / components in `EcsWorld`. How I can do it?
 
 It will add performance penalty and should be avoided. Anyway, **LEOECS_ENABLE_WORLD_EVENTS** preprocessor define can be used for this:
