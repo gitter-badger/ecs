@@ -63,11 +63,11 @@ namespace Leopotam.Ecs {
 
         int _typeIndex;
 
-        int[] _reservedItems = new int[MinSize];
+        public int[] ReservedItems = new int[MinSize];
 
-        int _itemsCount;
+        public int ItemsCount;
 
-        int _reservedItemsCount;
+        public int ReservedItemsCount;
 
         Func<T> _creator;
 
@@ -97,14 +97,14 @@ namespace Leopotam.Ecs {
 #endif
         public int RequestNewId () {
             int id;
-            if (_reservedItemsCount > 0) {
-                id = _reservedItems[--_reservedItemsCount];
+            if (ReservedItemsCount > 0) {
+                id = ReservedItems[--ReservedItemsCount];
             } else {
-                id = _itemsCount;
-                if (_itemsCount == Items.Length) {
-                    Array.Resize (ref Items, _itemsCount << 1);
+                id = ItemsCount;
+                if (ItemsCount == Items.Length) {
+                    Array.Resize (ref Items, ItemsCount << 1);
                 }
-                Items[_itemsCount++] = _creator != null ? _creator () : (T) Activator.CreateInstance (typeof (T));
+                Items[ItemsCount++] = _creator != null ? _creator () : (T) Activator.CreateInstance (typeof (T));
             }
             return id;
         }
@@ -127,10 +127,10 @@ namespace Leopotam.Ecs {
                 }
             }
 #endif
-            if (_reservedItemsCount == _reservedItems.Length) {
-                Array.Resize (ref _reservedItems, _reservedItemsCount << 1);
+            if (ReservedItemsCount == ReservedItems.Length) {
+                Array.Resize (ref ReservedItems, ReservedItemsCount << 1);
             }
-            _reservedItems[_reservedItemsCount++] = id;
+            ReservedItems[ReservedItemsCount++] = id;
         }
 
 #if NET_4_6 || NET_STANDARD_2_0
@@ -178,13 +178,13 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void Shrink () {
             int capacity;
-            capacity = _itemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (_itemsCount);
+            capacity = ItemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (ItemsCount);
             if (Items.Length != capacity) {
                 Array.Resize (ref Items, capacity);
             }
-            capacity = _reservedItemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (_reservedItemsCount);
-            if (_reservedItems.Length != capacity) {
-                Array.Resize (ref _reservedItems, capacity);
+            capacity = ReservedItemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (ReservedItemsCount);
+            if (ReservedItems.Length != capacity) {
+                Array.Resize (ref ReservedItems, capacity);
             }
         }
     }
