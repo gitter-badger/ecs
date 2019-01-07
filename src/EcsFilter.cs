@@ -22,6 +22,7 @@ namespace Leopotam.Ecs {
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+    [UnityEngine.Scripting.Preserve]
 #endif
     public class EcsFilter<Inc1> : EcsFilter where Inc1 : class, new () {
         public Inc1[] Components1;
@@ -99,6 +100,7 @@ namespace Leopotam.Ecs {
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+    [UnityEngine.Scripting.Preserve]
 #endif
     public class EcsFilter<Inc1, Inc2> : EcsFilter where Inc1 : class, new () where Inc2 : class, new () {
         public Inc1[] Components1;
@@ -106,7 +108,7 @@ namespace Leopotam.Ecs {
         bool _allow1;
         bool _allow2;
 
-        internal EcsFilter () {
+        protected EcsFilter () {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
             Components1 = _allow1 ? new Inc1[MinSize] : null;
@@ -191,6 +193,7 @@ namespace Leopotam.Ecs {
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+    [UnityEngine.Scripting.Preserve]
 #endif
     public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter where Inc1 : class, new () where Inc2 : class, new () where Inc3 : class, new () {
         public Inc1[] Components1;
@@ -298,6 +301,7 @@ namespace Leopotam.Ecs {
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+    [UnityEngine.Scripting.Preserve]
 #endif
     public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter where Inc1 : class, new () where Inc2 : class, new () where Inc3 : class, new () where Inc4 : class, new () {
         public Inc1[] Components1;
