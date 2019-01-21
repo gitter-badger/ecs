@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2018 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -285,6 +285,13 @@ namespace Leopotam.Ecs {
 #endif
 #if !LEOECS_DISABLE_INJECT
             for (var i = 0; i < _injectSystemsCount; i++) {
+                // injection for nested EcsSystems.
+                var nestedSystems = _injectSystems[i] as EcsSystems;
+                if (nestedSystems != null) {
+                    foreach (var pair in _injections) {
+                        nestedSystems._injections[pair.Key] = pair.Value;
+                    }
+                }
                 EcsInjections.Inject (_injectSystems[i], _world, _injections);
             }
 #endif
