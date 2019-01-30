@@ -31,7 +31,7 @@ namespace Leopotam.Ecs {
         protected EcsFilter () {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             Components1 = _allow1 ? new Inc1[MinSize] : null;
-            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
+            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.TypeIndex, true);
             AddComponentPool (EcsComponentPool<Inc1>.Instance);
         }
 
@@ -77,7 +77,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1> where Exc1 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (1, 1);
             }
         }
@@ -87,8 +87,8 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1> where Exc1 : class, new () where Exc2 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
-                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
                 ValidateMasks (1, 2);
             }
         }
@@ -113,8 +113,8 @@ namespace Leopotam.Ecs {
             _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
             Components1 = _allow1 ? new Inc1[MinSize] : null;
             Components2 = _allow2 ? new Inc2[MinSize] : null;
-            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
-            IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
+            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.TypeIndex, true);
+            IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.TypeIndex, true);
             AddComponentPool (EcsComponentPool<Inc1>.Instance);
             AddComponentPool (EcsComponentPool<Inc2>.Instance);
             ValidateMasks (2, 0);
@@ -170,7 +170,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2> where Exc1 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (2, 1);
             }
         }
@@ -180,8 +180,8 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2> where Exc1 : class, new () where Exc2 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
-                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
                 ValidateMasks (2, 2);
             }
         }
@@ -210,9 +210,9 @@ namespace Leopotam.Ecs {
             Components1 = _allow1 ? new Inc1[MinSize] : null;
             Components2 = _allow2 ? new Inc2[MinSize] : null;
             Components3 = _allow3 ? new Inc3[MinSize] : null;
-            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
-            IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
-            IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.GetComponentTypeIndex (), true);
+            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.TypeIndex, true);
+            IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.TypeIndex, true);
+            IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.TypeIndex, true);
             AddComponentPool (EcsComponentPool<Inc1>.Instance);
             AddComponentPool (EcsComponentPool<Inc2>.Instance);
             AddComponentPool (EcsComponentPool<Inc3>.Instance);
@@ -278,7 +278,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (3, 1);
             }
         }
@@ -288,8 +288,8 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class, new () where Exc2 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
-                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
                 ValidateMasks (3, 2);
             }
         }
@@ -322,10 +322,10 @@ namespace Leopotam.Ecs {
             Components2 = _allow2 ? new Inc2[MinSize] : null;
             Components3 = _allow3 ? new Inc3[MinSize] : null;
             Components4 = _allow4 ? new Inc4[MinSize] : null;
-            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.GetComponentTypeIndex (), true);
-            IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.GetComponentTypeIndex (), true);
-            IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.GetComponentTypeIndex (), true);
-            IncludeMask.SetBit (EcsComponentPool<Inc4>.Instance.GetComponentTypeIndex (), true);
+            IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.TypeIndex, true);
+            IncludeMask.SetBit (EcsComponentPool<Inc2>.Instance.TypeIndex, true);
+            IncludeMask.SetBit (EcsComponentPool<Inc3>.Instance.TypeIndex, true);
+            IncludeMask.SetBit (EcsComponentPool<Inc4>.Instance.TypeIndex, true);
             AddComponentPool (EcsComponentPool<Inc1>.Instance);
             AddComponentPool (EcsComponentPool<Inc2>.Instance);
             AddComponentPool (EcsComponentPool<Inc3>.Instance);
@@ -401,7 +401,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (4, 1);
             }
         }
@@ -411,8 +411,8 @@ namespace Leopotam.Ecs {
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class, new () where Exc2 : class, new () {
             protected Exclude () {
-                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.GetComponentTypeIndex (), true);
-                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.GetComponentTypeIndex (), true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
+                ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
                 ValidateMasks (4, 2);
             }
         }
