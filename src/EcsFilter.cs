@@ -39,16 +39,16 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
-            if (Entities.Length == EntitiesCount) {
-                Array.Resize (ref Entities, EntitiesCount << 1);
+            if (Entities.Length == _entitiesCount) {
+                Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
-                    Array.Resize (ref Components1, EntitiesCount << 1);
+                    Array.Resize (ref Components1, _entitiesCount << 1);
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
+                Components1[_entitiesCount] = _world.GetComponent<Inc1> (entity);
             }
-            Entities[EntitiesCount++] = entity;
+            Entities[_entitiesCount++] = entity;
             for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                 _listeners[j].OnEntityAdded (entity);
             }
@@ -57,12 +57,12 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {
-            for (var i = 0; i < EntitiesCount; i++) {
+            for (var i = 0; i < _entitiesCount; i++) {
                 if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
+                    _entitiesCount--;
+                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, EntitiesCount - i);
+                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
@@ -123,22 +123,22 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
-            if (Entities.Length == EntitiesCount) {
-                Array.Resize (ref Entities, EntitiesCount << 1);
+            if (Entities.Length == _entitiesCount) {
+                Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
-                    Array.Resize (ref Components1, EntitiesCount << 1);
+                    Array.Resize (ref Components1, _entitiesCount << 1);
                 }
                 if (_allow2) {
-                    Array.Resize (ref Components2, EntitiesCount << 1);
+                    Array.Resize (ref Components2, _entitiesCount << 1);
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
+                Components1[_entitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
+                Components2[_entitiesCount] = _world.GetComponent<Inc2> (entity);
             }
-            Entities[EntitiesCount++] = entity;
+            Entities[_entitiesCount++] = entity;
             for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                 _listeners[j].OnEntityAdded (entity);
             }
@@ -147,15 +147,15 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {
-            for (var i = 0; i < EntitiesCount; i++) {
+            for (var i = 0; i < _entitiesCount; i++) {
                 if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
+                    _entitiesCount--;
+                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, EntitiesCount - i);
+                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
                     }
                     if (_allow2) {
-                        Array.Copy (Components2, i + 1, Components2, i, EntitiesCount - i);
+                        Array.Copy (Components2, i + 1, Components2, i, _entitiesCount - i);
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
@@ -222,28 +222,28 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
-            if (Entities.Length == EntitiesCount) {
-                Array.Resize (ref Entities, EntitiesCount << 1);
+            if (Entities.Length == _entitiesCount) {
+                Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
-                    Array.Resize (ref Components1, EntitiesCount << 1);
+                    Array.Resize (ref Components1, _entitiesCount << 1);
                 }
                 if (_allow2) {
-                    Array.Resize (ref Components2, EntitiesCount << 1);
+                    Array.Resize (ref Components2, _entitiesCount << 1);
                 }
                 if (_allow3) {
-                    Array.Resize (ref Components3, EntitiesCount << 1);
+                    Array.Resize (ref Components3, _entitiesCount << 1);
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
+                Components1[_entitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
+                Components2[_entitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             if (_allow3) {
-                Components3[EntitiesCount] = _world.GetComponent<Inc3> (entity);
+                Components3[_entitiesCount] = _world.GetComponent<Inc3> (entity);
             }
-            Entities[EntitiesCount++] = entity;
+            Entities[_entitiesCount++] = entity;
             for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                 _listeners[j].OnEntityAdded (entity);
             }
@@ -252,18 +252,18 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {
-            for (var i = 0; i < EntitiesCount; i++) {
+            for (var i = 0; i < _entitiesCount; i++) {
                 if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
+                    _entitiesCount--;
+                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, EntitiesCount - i);
+                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
                     }
                     if (_allow2) {
-                        Array.Copy (Components2, i + 1, Components2, i, EntitiesCount - i);
+                        Array.Copy (Components2, i + 1, Components2, i, _entitiesCount - i);
                     }
                     if (_allow3) {
-                        Array.Copy (Components3, i + 1, Components3, i, EntitiesCount - i);
+                        Array.Copy (Components3, i + 1, Components3, i, _entitiesCount - i);
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
@@ -336,34 +336,34 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnAddEvent (int entity) {
-            if (Entities.Length == EntitiesCount) {
-                Array.Resize (ref Entities, EntitiesCount << 1);
+            if (Entities.Length == _entitiesCount) {
+                Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
-                    Array.Resize (ref Components1, EntitiesCount << 1);
+                    Array.Resize (ref Components1, _entitiesCount << 1);
                 }
                 if (_allow2) {
-                    Array.Resize (ref Components2, EntitiesCount << 1);
+                    Array.Resize (ref Components2, _entitiesCount << 1);
                 }
                 if (_allow3) {
-                    Array.Resize (ref Components3, EntitiesCount << 1);
+                    Array.Resize (ref Components3, _entitiesCount << 1);
                 }
                 if (_allow4) {
-                    Array.Resize (ref Components4, EntitiesCount << 1);
+                    Array.Resize (ref Components4, _entitiesCount << 1);
                 }
             }
             if (_allow1) {
-                Components1[EntitiesCount] = _world.GetComponent<Inc1> (entity);
+                Components1[_entitiesCount] = _world.GetComponent<Inc1> (entity);
             }
             if (_allow2) {
-                Components2[EntitiesCount] = _world.GetComponent<Inc2> (entity);
+                Components2[_entitiesCount] = _world.GetComponent<Inc2> (entity);
             }
             if (_allow3) {
-                Components3[EntitiesCount] = _world.GetComponent<Inc3> (entity);
+                Components3[_entitiesCount] = _world.GetComponent<Inc3> (entity);
             }
             if (_allow4) {
-                Components4[EntitiesCount] = _world.GetComponent<Inc4> (entity);
+                Components4[_entitiesCount] = _world.GetComponent<Inc4> (entity);
             }
-            Entities[EntitiesCount++] = entity;
+            Entities[_entitiesCount++] = entity;
             for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                 _listeners[j].OnEntityAdded (entity);
             }
@@ -372,21 +372,21 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public override void RaiseOnRemoveEvent (int entity) {
-            for (var i = 0; i < EntitiesCount; i++) {
+            for (var i = 0; i < _entitiesCount; i++) {
                 if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, EntitiesCount - i);
+                    _entitiesCount--;
+                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, EntitiesCount - i);
+                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
                     }
                     if (_allow2) {
-                        Array.Copy (Components2, i + 1, Components2, i, EntitiesCount - i);
+                        Array.Copy (Components2, i + 1, Components2, i, _entitiesCount - i);
                     }
                     if (_allow3) {
-                        Array.Copy (Components3, i + 1, Components3, i, EntitiesCount - i);
+                        Array.Copy (Components3, i + 1, Components3, i, _entitiesCount - i);
                     }
                     if (_allow4) {
-                        Array.Copy (Components4, i + 1, Components4, i, EntitiesCount - i);
+                        Array.Copy (Components4, i + 1, Components4, i, _entitiesCount - i);
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
@@ -484,13 +484,26 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public Enumerator GetEnumerator () {
-            return new Enumerator (EntitiesCount);
+            return new Enumerator (_entitiesCount);
+        }
+
+#if NET_4_6 || NET_STANDARD_2_0
+        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        /// <summary>
+        /// Is filter empty.
+        /// </summary>
+        public bool IsEmpty () {
+            return _entitiesCount == 0;
         }
 
         /// <summary>
         /// Amount of filtered entities.
         /// </summary>
-        public int EntitiesCount;
+        [Obsolete ("Use foreach(var idx in filter) { } loop instead, or IsEmpty() for check that filter is empty or not")]
+        public int EntitiesCount { get { return _entitiesCount; } }
+
+        internal protected int _entitiesCount;
 
         public struct Enumerator : IEnumerator<int> {
             readonly int _count;
@@ -530,6 +543,13 @@ namespace Leopotam.Ecs {
 #endif
             public void Reset () {
                 _idx = -1;
+            }
+
+#if NET_4_6 || NET_STANDARD_2_0
+            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+            public int GetCount () {
+                return _count;
             }
         }
 

@@ -656,10 +656,10 @@ namespace Leopotam.Ecs {
         public void RemoveOneFrameComponents () {
             foreach (var pair in _oneFrameFilters) {
                 var filter = pair.Value;
-                if (filter.EntitiesCount > 0) {
+                if (filter._entitiesCount > 0) {
                     var pool = filter.GetComponentPool (0);
                     var poolId = pool.GetComponentTypeIndex ();
-                    for (int e = 0, eMax = filter.EntitiesCount; e < eMax; e++) {
+                    for (int e = 0, eMax = filter._entitiesCount; e < eMax; e++) {
                         var entityData = _entities[filter.Entities[e]];
                         for (int c = 0, cMax = entityData.ComponentsCount; c < cMax; c += 2) {
                             if (entityData.Components[c] == poolId) {
@@ -759,7 +759,7 @@ namespace Leopotam.Ecs {
                 if (oldMask.IsCompatible (filter)) {
                     if (!isNewMaskCompatible) {
 #if DEBUG
-                        var ii = filter.EntitiesCount - 1;
+                        var ii = filter._entitiesCount - 1;
                         for (; ii >= 0; ii--) {
                             if (filter.Entities[ii] == entity) {
                                 break;
