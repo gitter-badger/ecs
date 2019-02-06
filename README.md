@@ -437,6 +437,19 @@ Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** prepro
 
 `EcsWorld` should be injected somehow (for example, through constructor of system), `EcsFilter<T>` data can be requested through `EcsWorld.GetFilter<T>` method.
 
+### I like how dependency injection works, but i want to skip some fields from initialization. How I can do it?
+
+You can use `[EcsIgnoreinject]` attribute on any field of system:
+```csharp
+...
+// will be injected.
+EcsFilter<C1> _filter1 = null;
+
+// will be skipped.
+[EcsIgnoreInject]
+EcsFilter<C2> _filter2 = null;
+```
+
 ### I do not like foreach-loops, I know that for-loops are faster. How I can use it?
 
 Current implementation of foreach-loop fast enough (custom enumerator, no memory allocation), small performance differences can be found on 10k items and more. Current version not support for-loop iterations anymore.
