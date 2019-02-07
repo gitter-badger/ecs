@@ -288,14 +288,14 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         public void RemoveEntity (int entity) {
-            var gen = EcsHelpers.DecodeEntityGen (ref entity);
 #if DEBUG
             if (entity < 0 || entity >= _entitiesCount) { throw new Exception (string.Format ("Invalid entity: {0}", entity)); }
-            if (_entities[entity].ComponentsCount < 0 || _entities[entity].Generation != gen) { throw new Exception (string.Format ("Cant remove already removed entity {0}", entity)); }
+            if (_entities[entity].ComponentsCount < 0) { throw new Exception (string.Format ("Cant remove already removed entity {0}", entity)); }
 #endif
             var entityData = _entities[entity];
-            if (entityData.ComponentsCount < 0 || entityData.Generation != gen) { return; }
-            AddDelayedUpdate (DelayedUpdate.Op.RemoveEntity, entity, null, -1);
+            if (entityData.ComponentsCount >= 0) {
+                AddDelayedUpdate (DelayedUpdate.Op.RemoveEntity, entity, null, -1);
+            }
         }
 
         /// <summary>
@@ -307,13 +307,11 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public T EnsureComponent<T> (int entity, out bool isNew) where T : class, new () {
-            var gen = EcsHelpers.DecodeEntityGen (ref entity);
 #if DEBUG
             if (entity < 0 || entity >= _entitiesCount) { throw new Exception (string.Format ("Invalid entity: {0}", entity)); }
-            if (_entities[entity].ComponentsCount < 0 || _entities[entity].Generation != gen) { throw new Exception (string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity)); }
+            if (_entities[entity].ComponentsCount < 0) { throw new Exception (string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity)); }
 #endif
             var entityData = _entities[entity];
-            if (entityData.Generation != gen) { isNew = false; return null; }
             var pool = EcsComponentPool<T>.Instance;
             for (int i = 0, iMax = entityData.ComponentsCount; i < iMax; i += 2) {
                 if (entityData.Components[i] == pool.TypeIndex) {
@@ -360,13 +358,11 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public T AddComponent<T> (int entity) where T : class, new () {
-            var gen = EcsHelpers.DecodeEntityGen (ref entity);
 #if DEBUG
             if (entity < 0 || entity >= _entitiesCount) { throw new Exception (string.Format ("Invalid entity: {0}", entity)); }
-            if (_entities[entity].ComponentsCount < 0 || _entities[entity].Generation != gen) { throw new Exception (string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity)); }
+            if (_entities[entity].ComponentsCount < 0) { throw new Exception (string.Format ("\"{0}\" component cant be added to removed entity {1}", typeof (T).Name, entity)); }
 #endif
             var entityData = _entities[entity];
-            if (entityData.Generation != gen) { return null; }
             var pool = EcsComponentPool<T>.Instance;
 #if DEBUG
             for (int i = 0, iMax = entityData.ComponentsCount; i < iMax; i += 2) {
@@ -413,13 +409,11 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public void RemoveComponent<T> (int entity, bool noError = false) where T : class, new () {
-            var gen = EcsHelpers.DecodeEntityGen (ref entity);
 #if DEBUG
             if (entity < 0 || entity >= _entitiesCount) { throw new Exception (string.Format ("Invalid entity: {0}", entity)); }
-            if (_entities[entity].ComponentsCount < 0 || _entities[entity].Generation != gen) { throw new Exception (string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity)); }
+            if (_entities[entity].ComponentsCount < 0) { throw new Exception (string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity)); }
 #endif
             var entityData = _entities[entity];
-            if (entityData.Generation != gen) { return; }
             var pool = EcsComponentPool<T>.Instance;
             for (int i = 0, iMax = entityData.ComponentsCount; i < iMax; i += 2) {
                 if (entityData.Components[i] == pool.TypeIndex) {
@@ -444,13 +438,11 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public T GetComponent<T> (int entity) where T : class, new () {
-            var gen = EcsHelpers.DecodeEntityGen (ref entity);
 #if DEBUG
             if (entity < 0 || entity >= _entitiesCount) { throw new Exception (string.Format ("Invalid entity: {0}", entity)); }
-            if (_entities[entity].ComponentsCount < 0 || _entities[entity].Generation != gen) { throw new Exception (string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity)); }
+            if (_entities[entity].ComponentsCount < 0) { throw new Exception (string.Format ("\"{0}\" component cant be obtained from removed entity {1}", typeof (T).Name, entity)); }
 #endif
             var entityData = _entities[entity];
-            if (entityData.Generation != gen) { return null; }
             var pool = EcsComponentPool<T>.Instance;
             for (int i = 0, iMax = entityData.ComponentsCount; i < iMax; i += 2) {
                 if (entityData.Components[i] == pool.TypeIndex) {
@@ -467,13 +459,11 @@ namespace Leopotam.Ecs {
         /// <param name="list">List to put results in it. if null - will be created.</param>
         /// <returns>Amount of components in list.</returns>
         public int GetComponents (int entity, ref object[] list) {
-            var gen = EcsHelpers.DecodeEntityGen (ref entity);
 #if DEBUG
             if (entity < 0 || entity >= _entitiesCount) { throw new Exception (string.Format ("Invalid entity: {0}", entity)); }
-            if (_entities[entity].ComponentsCount < 0 || _entities[entity].Generation != gen) { throw new Exception (string.Format ("Components cant be obtained from removed entity {0}", entity)); }
+            if (_entities[entity].ComponentsCount < 0) { throw new Exception (string.Format ("Components cant be obtained from removed entity {0}", entity)); }
 #endif
             var entityData = _entities[entity];
-            if (entityData.Generation != gen) { return 0; }
             var itemsCount = entityData.ComponentsCount >> 1;
             if (list == null || list.Length < itemsCount) {
                 list = new object[itemsCount];
@@ -492,8 +482,7 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public bool IsEntityExists (int entity) {
-            var gen = EcsHelpers.DecodeEntityGen (ref entity);
-            return entity >= 0 && entity < _entitiesCount && _entities[entity].ComponentsCount >= 0 && _entities[entity].Generation == gen;
+            return entity >= 0 && entity < _entitiesCount && _entities[entity].ComponentsCount >= 0;
         }
 
         /// <summary>
@@ -712,7 +701,6 @@ namespace Leopotam.Ecs {
                 entity = _reservedEntities[_reservedEntitiesCount];
                 var entityData = _entities[entity];
                 entityData.ComponentsCount = 0;
-                EcsHelpers.EncodeEntityGen (ref entity, entityData.Generation);
             } else {
                 entity = _entitiesCount;
                 if (_entitiesCount == _entities.Length) {
@@ -753,7 +741,6 @@ namespace Leopotam.Ecs {
 #endif
         protected void ReserveEntity (int entity, EcsEntityInternal entityData) {
             entityData.ComponentsCount = -1;
-            entityData.Generation = (short) ((entityData.Generation + 1) % EcsHelpers.MaxEntityGen);
             if (_reservedEntitiesCount == _reservedEntities.Length) {
                 Array.Resize (ref _reservedEntities, _reservedEntitiesCount << 1);
             }
@@ -827,7 +814,6 @@ namespace Leopotam.Ecs {
 
         [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
         protected sealed class EcsEntityInternal {
-            public short Generation;
             public readonly EcsComponentMask Mask = new EcsComponentMask ();
             // negative value if entity removed / reserved.
             public short ComponentsCount;
