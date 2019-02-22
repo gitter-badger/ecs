@@ -8,6 +8,10 @@ using System;
 using System.Collections.Generic;
 using Leopotam.Ecs.Internals;
 
+#if !NET_4_6 && !NET_STANDARD_2_0
+#warning [Leopotam.Ecs] .Net Framework v3.5 support deprecated and will be removed in next release.
+#endif
+
 #if ENABLE_IL2CPP
 // Unity IL2CPP performance optimization attribute.
 namespace Unity.IL2CPP.CompilerServices {
