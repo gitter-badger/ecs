@@ -9,10 +9,16 @@ using System.Reflection;
 
 namespace Leopotam.Ecs {
     /// <summary>
-    /// Attribute for automatic DI injection at ECS systems.
+    /// Attribute for automatic DI injection at fields of system.
     /// </summary>
     [AttributeUsage (AttributeTargets.Class)]
     public sealed class EcsInjectAttribute : Attribute { }
+
+    /// <summary>
+    /// Attribute for ignore automatic DI injection to field.
+    /// </summary>
+    [AttributeUsage (AttributeTargets.Field)]
+    public sealed class EcsIgnoreInjectAttribute : Attribute { }
 
     /// <summary>
     /// Processes dependency injection to ecs systems.
@@ -34,8 +40,13 @@ namespace Leopotam.Ecs {
             }
             var worldType = world.GetType ();
             var filterType = typeof (EcsFilter);
+            var ignoreType = typeof (EcsIgnoreInjectAttribute);
 
             foreach (var f in systemType.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)) {
+                // skip fields with [EcsIgnoreInject] attribute.
+                if (Attribute.IsDefined (f, ignoreType)) {
+                    continue;
+                }
                 // EcsWorld
                 if (f.FieldType.IsAssignableFrom (worldType) && !f.IsStatic) {
                     f.SetValue (system, world);

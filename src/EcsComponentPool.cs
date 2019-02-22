@@ -61,7 +61,7 @@ namespace Leopotam.Ecs {
 
         public readonly bool IsAutoReset = typeof (IEcsAutoResetComponent).IsAssignableFrom (typeof (T));
 
-        int _typeIndex;
+        public readonly int TypeIndex;
 
         public int[] ReservedItems = new int[MinSize];
 
@@ -76,7 +76,8 @@ namespace Leopotam.Ecs {
 #endif
 
         EcsComponentPool () {
-            _typeIndex = Internals.EcsHelpers.ComponentsCount++;
+            TypeIndex = Internals.EcsHelpers.ComponentPoolsCount++;
+            Internals.EcsHelpers.ComponentPools[TypeIndex] = this;
 #if DEBUG
             // collect all marshal-by-reference fields.
             var fields = typeof (T).GetFields ();
@@ -144,7 +145,7 @@ namespace Leopotam.Ecs {
         [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 #endif
         public int GetComponentTypeIndex () {
-            return _typeIndex;
+            return TypeIndex;
         }
 
 #if NET_4_6 || NET_STANDARD_2_0

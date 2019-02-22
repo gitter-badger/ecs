@@ -1,4 +1,5 @@
 [![gitter](https://img.shields.io/gitter/room/leopotam/ecs.svg)](https://gitter.im/leopotam/ecs)
+[![discord](https://img.shields.io/discord/404358247621853185.svg?label=discord)](https://discord.gg/5GZVde6)
 [![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
@@ -437,16 +438,22 @@ Builtin Reflection-based DI can be removed with **LEOECS_DISABLE_INJECT** prepro
 
 `EcsWorld` should be injected somehow (for example, through constructor of system), `EcsFilter<T>` data can be requested through `EcsWorld.GetFilter<T>` method.
 
+### I like how dependency injection works, but i want to skip some fields from initialization. How I can do it?
+
+You can use `[EcsIgnoreinject]` attribute on any field of system:
+```csharp
+...
+// will be injected.
+EcsFilter<C1> _filter1 = null;
+
+// will be skipped.
+[EcsIgnoreInject]
+EcsFilter<C2> _filter2 = null;
+```
+
 ### I do not like foreach-loops, I know that for-loops are faster. How I can use it?
 
-Current implementation of foreach-loop fast enough (custom enumerator, no memory allocation), performance differences can be found on 10k items and more. Anyway, for-loop can be used instead foreach-loop as next in-place replacement without issues:
-```csharp
-foreach (var i in _filter)
-```
-can be replaced with
-```csharp
-for (int i = 0, iMax = _filter.EntitiesCount; i < iMax; i++)
-```
+Current implementation of foreach-loop fast enough (custom enumerator, no memory allocation), small performance differences can be found on 10k items and more. Current version not support for-loop iterations anymore.
 
 ### I copy&paste my reset components code again and again. How I can do it in other manner?
 
@@ -462,6 +469,25 @@ class MyComponent : IEcsAutoResetComponent {
 }
 ```
 This method will be automatically called after component removing from entity and before recycling to component pool.
+
+### I want to add component to entity or get exists one, how I can simplify sequence of "var c = GetComponent(); if (c == null) {c = AddComponent()}"?
+
+This sequence
+```csharp
+var c = _world.GetComponent<C1>(entityId);
+if (c == null) {
+    c = _world.AddComponent<C1>(entityId);
+    // optional - init new instance.
+}
+```
+Can be replaced with
+```csharp
+bool isNew;
+var c = _world.EnsureComponent<C1>(entityId, out isNew);
+if (isNew) {
+    // optional - init new instance.
+}
+```
 
 ### I use components as events that works only one frame, then remove it at last system in execution sequence. It's boring, how I can automate it?
 
