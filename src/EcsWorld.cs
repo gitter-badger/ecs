@@ -68,7 +68,7 @@ namespace Leopotam.Ecs {
         /// Last created instance of EcsWorld.
         /// Can be force reassigned manually when multiple worlds in use.
         /// </summary>
-        [Obsolete ("Use any external storage instead.")]
+        [Obsolete ("Use any external storage instead. Warning: This field already not works as before!")]
         public static EcsWorld Active = null;
 
         /// <summary>
@@ -114,16 +114,6 @@ namespace Leopotam.Ecs {
 #endif
 
         /// <summary>
-        /// Creates new instance of ecs world container.
-        /// </summary>
-        /// <param name="useAsActive">Should this instance be set as Active or not.</param>
-        public EcsWorld (bool useAsActive = true) {
-            if (useAsActive) {
-                Active = this;
-            }
-        }
-
-        /// <summary>
         /// Destroys all registered external data, full cleanup for internal data.
         /// </summary>
         public void Dispose () {
@@ -139,9 +129,6 @@ namespace Leopotam.Ecs {
                 _eventListeners[i].OnWorldDestroyed (this);
             }
 #endif
-            if (this == Active) {
-                Active = null;
-            }
             for (var i = 0; i < _entitiesCount; i++) {
                 // already reserved entities cant contains components.
                 if (_entities[i].ComponentsCount > 0) {
