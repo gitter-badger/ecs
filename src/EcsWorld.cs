@@ -68,6 +68,7 @@ namespace Leopotam.Ecs {
         /// Last created instance of EcsWorld.
         /// Can be force reassigned manually when multiple worlds in use.
         /// </summary>
+        [Obsolete ("Use any external storage instead.")]
         public static EcsWorld Active = null;
 
         /// <summary>
