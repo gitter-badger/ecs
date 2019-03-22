@@ -8,6 +8,10 @@ using System;
 using System.Collections.Generic;
 using Leopotam.Ecs.Internals;
 
+#if !NET_4_6 && !NET_STANDARD_2_0
+#warning [Leopotam.Ecs] .Net Framework v3.5 support deprecated and will be removed in next release.
+#endif
+
 #if ENABLE_IL2CPP
 // Unity IL2CPP performance optimization attribute.
 namespace Unity.IL2CPP.CompilerServices {
@@ -64,6 +68,7 @@ namespace Leopotam.Ecs {
         /// Last created instance of EcsWorld.
         /// Can be force reassigned manually when multiple worlds in use.
         /// </summary>
+        [Obsolete ("Use any external storage instead. Warning: This field already not works as before!")]
         public static EcsWorld Active = null;
 
         /// <summary>
@@ -109,16 +114,6 @@ namespace Leopotam.Ecs {
 #endif
 
         /// <summary>
-        /// Creates new instance of ecs world container.
-        /// </summary>
-        /// <param name="useAsActive">Should this instance be set as Active or not.</param>
-        public EcsWorld (bool useAsActive = true) {
-            if (useAsActive) {
-                Active = this;
-            }
-        }
-
-        /// <summary>
         /// Destroys all registered external data, full cleanup for internal data.
         /// </summary>
         public void Dispose () {
@@ -134,9 +129,6 @@ namespace Leopotam.Ecs {
                 _eventListeners[i].OnWorldDestroyed (this);
             }
 #endif
-            if (this == Active) {
-                Active = null;
-            }
             for (var i = 0; i < _entitiesCount; i++) {
                 // already reserved entities cant contains components.
                 if (_entities[i].ComponentsCount > 0) {

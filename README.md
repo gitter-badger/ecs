@@ -504,6 +504,10 @@ class MyComponent { }
 
 You can implement them by yourself with `EcsFilter.AddListener` / `EcsFilter.RemoveListener` methods or use default implementation, that can be found at [separate repo](https://github.com/Leopotam/ecs-reactive).
 
+### I used `EcsWorld.Active` static instance as singleton for `EcsWorld`, but now I can't find it. How I can get it back?
+
+You should use any custom singleton / service locator implementation for sharing `EcsWorld` as before. For example, `Service<T>` class from [Globals support repo](https://github.com/Leopotam/globals) can be used.
+
 ### I need more than 4 components in filter, how i can do it?
 
 Check `EcsFilter<Inc1, Inc2, Inc3, Inc4>` class and create new class with more components in same manner.
