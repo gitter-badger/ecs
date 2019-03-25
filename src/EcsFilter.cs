@@ -6,14 +6,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
     /// <summary>
     /// Common interface for all filter listeners.
     /// </summary>
     public interface IEcsFilterListener {
-        void OnEntityAdded (int entity);
-        void OnEntityRemoved (int entity);
+        void OnEntityAdded (in EcsEntity entity);
+        void OnEntityRemoved (in EcsEntity entity);
     }
 
     /// <summary>
@@ -35,10 +36,8 @@ namespace Leopotam.Ecs {
             AddComponentPool (EcsComponentPool<Inc1>.Instance);
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnAddEvent (int entity) {
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnAddEvent (in EcsEntity entity) {
             if (Entities.Length == _entitiesCount) {
                 Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
@@ -53,12 +52,11 @@ namespace Leopotam.Ecs {
                 _listeners[j].OnEntityAdded (entity);
             }
         }
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnRemoveEvent (int entity) {
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnRemoveEvent (in EcsEntity entity) {
             for (var i = 0; i < _entitiesCount; i++) {
-                if (Entities[i] == entity) {
+                if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
                     Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
@@ -119,10 +117,9 @@ namespace Leopotam.Ecs {
             AddComponentPool (EcsComponentPool<Inc2>.Instance);
             ValidateMasks (2, 0);
         }
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnAddEvent (int entity) {
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnAddEvent (in EcsEntity entity) {
             if (Entities.Length == _entitiesCount) {
                 Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
@@ -143,12 +140,11 @@ namespace Leopotam.Ecs {
                 _listeners[j].OnEntityAdded (entity);
             }
         }
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnRemoveEvent (int entity) {
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnRemoveEvent (in EcsEntity entity) {
             for (var i = 0; i < _entitiesCount; i++) {
-                if (Entities[i] == entity) {
+                if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
                     Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
@@ -218,10 +214,9 @@ namespace Leopotam.Ecs {
             AddComponentPool (EcsComponentPool<Inc3>.Instance);
             ValidateMasks (3, 0);
         }
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnAddEvent (int entity) {
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnAddEvent (in EcsEntity entity) {
             if (Entities.Length == _entitiesCount) {
                 Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
@@ -248,12 +243,11 @@ namespace Leopotam.Ecs {
                 _listeners[j].OnEntityAdded (entity);
             }
         }
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnRemoveEvent (int entity) {
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnRemoveEvent (in EcsEntity entity) {
             for (var i = 0; i < _entitiesCount; i++) {
-                if (Entities[i] == entity) {
+                if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
                     Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
@@ -332,10 +326,9 @@ namespace Leopotam.Ecs {
             AddComponentPool (EcsComponentPool<Inc4>.Instance);
             ValidateMasks (4, 0);
         }
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnAddEvent (int entity) {
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnAddEvent (in EcsEntity entity) {
             if (Entities.Length == _entitiesCount) {
                 Array.Resize (ref Entities, _entitiesCount << 1);
                 if (_allow1) {
@@ -368,12 +361,11 @@ namespace Leopotam.Ecs {
                 _listeners[j].OnEntityAdded (entity);
             }
         }
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
-        public override void RaiseOnRemoveEvent (int entity) {
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnRemoveEvent (in EcsEntity entity) {
             for (var i = 0; i < _entitiesCount; i++) {
-                if (Entities[i] == entity) {
+                if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
                     Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
                     if (_allow1) {
@@ -443,6 +435,7 @@ namespace Leopotam.Ecs {
         /// Access to connected EcsWorld instance.
         /// </summary>
         public EcsWorld World {
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
             get { return _world; }
             internal set { _world = value; }
         }
@@ -463,14 +456,14 @@ namespace Leopotam.Ecs {
         /// Do not call it manually!
         /// </summary>
         /// <param name="entity">Entity id.</param>
-        public abstract void RaiseOnAddEvent (int entity);
+        public abstract void RaiseOnAddEvent (in EcsEntity entity);
 
         /// <summary>
         /// Will be raised by EcsWorld for old already non-compatible with this filter entity.
         /// Do not call it manually!
         /// </summary>
         /// <param name="entity">Entity id.</param>
-        public abstract void RaiseOnRemoveEvent (int entity);
+        public abstract void RaiseOnRemoveEvent (in EcsEntity entity);
 
         /// <summary>
         /// Storage of filtered entities.
@@ -478,18 +471,14 @@ namespace Leopotam.Ecs {
         /// use EntitiesCount instead of Entities.Length!
         /// Do not change it manually!
         /// </summary>
-        public int[] Entities = new int[MinSize];
+        public EcsEntity[] Entities = new EcsEntity[MinSize];
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
             return new Enumerator (_entitiesCount);
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         /// <summary>
         /// Is filter empty.
         /// </summary>
@@ -497,57 +486,39 @@ namespace Leopotam.Ecs {
             return _entitiesCount == 0;
         }
 
-        /// <summary>
-        /// Amount of filtered entities.
-        /// </summary>
-        [Obsolete ("Use foreach(var idx in filter) { } loop instead, or IsEmpty() for check that filter is empty or not")]
-        public int EntitiesCount { get { return _entitiesCount; } }
-
         internal protected int _entitiesCount;
 
         public struct Enumerator : IEnumerator<int> {
             readonly int _count;
             int _idx;
 
-#if NET_4_6 || NET_STANDARD_2_0
-            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
             internal Enumerator (int entitiesCount) {
                 _count = entitiesCount;
                 _idx = -1;
             }
 
             public int Current {
-#if NET_4_6 || NET_STANDARD_2_0
-                [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+                [MethodImpl (MethodImplOptions.AggressiveInlining)]
                 get { return _idx; }
             }
 
             object System.Collections.IEnumerator.Current { get { return null; } }
 
-#if NET_4_6 || NET_STANDARD_2_0
-            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public void Dispose () { }
 
-#if NET_4_6 || NET_STANDARD_2_0
-            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public bool MoveNext () {
                 return ++_idx < _count;
             }
 
-#if NET_4_6 || NET_STANDARD_2_0
-            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public void Reset () {
                 _idx = -1;
             }
 
-#if NET_4_6 || NET_STANDARD_2_0
-            [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public int GetCount () {
                 return _count;
             }
@@ -564,6 +535,7 @@ namespace Leopotam.Ecs {
         /// Gets connected component pool from constraint components type index.
         /// </summary>
         /// <param name="id">Constraint components type index.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public IEcsComponentPool GetComponentPool (int id) {
 #if DEBUG
             if (id < 0 || id >= _poolsCount) {

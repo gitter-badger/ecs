@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
     /// <summary>
@@ -50,27 +51,16 @@ namespace Leopotam.Ecs {
 #endif
     public sealed class EcsComponentPool<T> : IEcsComponentPool where T : class, new () {
         const int MinSize = 8;
-
         public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
-
         public T[] Items = new T[MinSize];
-
         public readonly bool IsIgnoreInFilter = Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
-
         public readonly bool IsOneFrame = Attribute.IsDefined (typeof (T), typeof (EcsOneFrameAttribute));
-
         public readonly bool IsAutoReset = typeof (IEcsAutoResetComponent).IsAssignableFrom (typeof (T));
-
         public readonly int TypeIndex;
-
         public int[] ReservedItems = new int[MinSize];
-
         public int ItemsCount;
-
         public int ReservedItemsCount;
-
         Func<T> _creator;
-
 #if DEBUG
         System.Collections.Generic.List<System.Reflection.FieldInfo> _nullableFields = new System.Collections.Generic.List<System.Reflection.FieldInfo> (8);
 #endif
@@ -93,9 +83,7 @@ namespace Leopotam.Ecs {
 #endif
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public int RequestNewId () {
             int id;
             if (ReservedItemsCount > 0) {
@@ -110,9 +98,7 @@ namespace Leopotam.Ecs {
             return id;
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public void RecycleById (int id) {
             if (IsAutoReset) {
                 ((IEcsAutoResetComponent) Items[id]).Reset ();
@@ -134,23 +120,17 @@ namespace Leopotam.Ecs {
             ReservedItems[ReservedItemsCount++] = id;
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public object GetExistItemById (int idx) {
             return Items[idx];
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public int GetComponentTypeIndex () {
             return TypeIndex;
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsOneFrameComponent () {
             return IsOneFrame;
         }
@@ -179,11 +159,11 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void Shrink () {
             int capacity;
-            capacity = ItemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (ItemsCount);
+            capacity = ItemsCount < MinSize ? MinSize : ItemsCount;
             if (Items.Length != capacity) {
                 Array.Resize (ref Items, capacity);
             }
-            capacity = ReservedItemsCount < MinSize ? MinSize : Internals.EcsHelpers.GetPowerOfTwoSize (ReservedItemsCount);
+            capacity = ReservedItemsCount < MinSize ? MinSize : ReservedItemsCount;
             if (ReservedItems.Length != capacity) {
                 Array.Resize (ref ReservedItems, capacity);
             }
