@@ -804,14 +804,28 @@ namespace Leopotam.Ecs {
     [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
     public struct EcsEntity {
         /// <summary>
-        /// Warning: for internal use, dont change it directly!
+        /// Warning: for internal use, dont touch it directly!
         /// </summary>
         public int Id;
 
         /// <summary>
-        /// Warning: for internal use, dont change it directly!
+        /// Warning: for internal use, dont touch it directly!
         /// </summary>
         public short Gen;
+
+        /// <summary>
+        /// Null entity index, can be used to reset indices.
+        /// </summary>
+        public static readonly EcsEntity Null = new EcsEntity ();
+
+        /// <summary>
+        /// Returns true if entity is nulled.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public bool IsNull () {
+            return Id == 0 && Gen == 0;
+        }
 
         [Obsolete ("Use EcsEntity instead")]
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
