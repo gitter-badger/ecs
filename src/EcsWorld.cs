@@ -799,56 +799,6 @@ namespace Leopotam.Ecs {
     }
 
     /// <summary>
-    /// Entity index descriptor.
-    /// </summary>
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
-    public struct EcsEntity {
-        /// <summary>
-        /// Warning: for internal use, dont touch it directly!
-        /// </summary>
-        public int Id;
-
-        /// <summary>
-        /// Warning: for internal use, dont touch it directly!
-        /// </summary>
-        public short Gen;
-
-        /// <summary>
-        /// Null entity index, can be used to reset indices.
-        /// </summary>
-        public static readonly EcsEntity Null = new EcsEntity ();
-
-        /// <summary>
-        /// Returns true if entity is nulled.
-        /// </summary>
-        /// <returns></returns>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public bool IsNull () {
-            return Id == 0 && Gen == 0;
-        }
-
-        [Obsolete ("Use EcsEntity instead")]
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static implicit operator int (in EcsEntity lhs) {
-            return lhs.Id;
-        }
-
-        [Obsolete ("Use EcsEntity instead")]
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static implicit operator EcsEntity (int lhs) {
-            EcsEntity idx;
-            idx.Gen = 1;
-            idx.Id = lhs;
-            return idx;
-        }
-
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode () {
-            return Id.GetHashCode () ^ (Gen.GetHashCode () << 2);
-        }
-    }
-
-    /// <summary>
     /// Stats of EcsWorld instance.
     /// </summary>
     public struct EcsWorldStats {
