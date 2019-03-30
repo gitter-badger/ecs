@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
     /// <summary>
@@ -16,7 +17,6 @@ namespace Leopotam.Ecs {
 #endif
     public sealed class EcsComponentMask {
         public int[] Bits = new int[8];
-
         public int BitsCount;
 
 #if DEBUG
@@ -48,9 +48,7 @@ namespace Leopotam.Ecs {
         }
 #endif
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public void SetBit (int bitId, bool state) {
             var i = BitsCount - 1;
             for (; i >= 0; i--) {
@@ -73,9 +71,7 @@ namespace Leopotam.Ecs {
             }
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool GetBit (int bitId) {
             var i = BitsCount - 1;
             for (; i >= 0; i--) {
@@ -86,9 +82,7 @@ namespace Leopotam.Ecs {
             return i != -1;
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public void CopyFrom (EcsComponentMask mask) {
             BitsCount = mask.BitsCount;
             if (Bits.Length < BitsCount) {
@@ -97,9 +91,7 @@ namespace Leopotam.Ecs {
             Array.Copy (mask.Bits, 0, Bits, 0, BitsCount);
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsCompatible (EcsFilter filter) {
             if (BitsCount > 0 && filter.IncludeMask.BitsCount <= BitsCount) {
                 int i = filter.IncludeMask.BitsCount - 1;
@@ -123,9 +115,7 @@ namespace Leopotam.Ecs {
             return false;
         }
 
-#if NET_4_6 || NET_STANDARD_2_0
-        [System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsIntersects (EcsComponentMask mask) {
             if (BitsCount > 0 && mask.BitsCount > 0) {
                 for (var i = 0; i < BitsCount; i++) {
