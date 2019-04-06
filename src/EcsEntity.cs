@@ -75,5 +75,10 @@ namespace Leopotam.Ecs {
             var rhs = (EcsEntity) other;
             return Id == rhs.Id && Gen == rhs.Gen;
         }
+#if DEBUG
+        public override string ToString () {
+            return string.Format ("Entity-{0}", GetHashCode ());
+        }
+#endif
     }
 }
