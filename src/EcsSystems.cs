@@ -74,7 +74,6 @@ namespace Leopotam.Ecs {
         /// List of all debug listeners.
         /// </summary>
         readonly System.Collections.Generic.List<IEcsSystemsDebugListener> _debugListeners = new System.Collections.Generic.List<IEcsSystemsDebugListener> (4);
-
         readonly public System.Collections.Generic.List<bool> DisabledInDebugSystems = new System.Collections.Generic.List<bool> (32);
 #endif
 
@@ -134,9 +133,7 @@ namespace Leopotam.Ecs {
         /// <param name="name">Custom name for this group.</param>
         public EcsSystems (EcsWorld world, string name = null) {
 #if DEBUG
-            if (world == null) {
-                throw new ArgumentNullException ();
-            }
+            if (world == null) { throw new ArgumentNullException ("world"); }
 #endif
             _world = world;
             Name = name;
@@ -212,7 +209,7 @@ namespace Leopotam.Ecs {
         /// <param name="system">System instance.</param>
         public EcsSystems Add (IEcsSystem system) {
 #if DEBUG
-            if (system == null) { throw new Exception ("system is null"); }
+            if (system == null) { throw new ArgumentNullException ("system"); }
 #endif
 #if !LEOECS_DISABLE_INJECT
             if (_injectSystemsCount == _injectSystems.Length) {
@@ -251,7 +248,6 @@ namespace Leopotam.Ecs {
         /// Systems to builtin inject behaviour.
         /// </summary>
         IEcsSystem[] _injectSystems = new IEcsSystem[16];
-
         int _injectSystemsCount;
 
         /// <summary>
@@ -295,12 +291,12 @@ namespace Leopotam.Ecs {
                 EcsInjections.Inject (_injectSystems[i], _world, _injections);
             }
 #endif
-            for (var i = 0; i < _preInitSystemsCount; i++) {
+            for (int i = 0, iMax = _preInitSystemsCount; i < iMax; i++) {
                 _preInitSystems[i].PreInitialize ();
                 _world.ProcessDelayedUpdates ();
             }
 
-            for (var i = 0; i < _initSystemsCount; i++) {
+            for (int i = 0, iMax = _initSystemsCount; i < iMax; i++) {
                 _initSystems[i].Initialize ();
                 _world.ProcessDelayedUpdates ();
             }
