@@ -4,6 +4,7 @@
 // Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
+using System;
 using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
@@ -11,6 +12,7 @@ namespace Leopotam.Ecs {
     /// Entity index descriptor.
     /// </summary>
     [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
+    [Serializable]
     public struct EcsEntity {
         /// <summary>
         /// Warning: for internal use, dont touch it directly!
@@ -20,7 +22,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Warning: for internal use, dont touch it directly!
         /// </summary>
-        internal short Gen;
+        internal ushort Gen;
 
         /// <summary>
         /// Null entity index, can be used to reset indices.
@@ -69,7 +71,7 @@ namespace Leopotam.Ecs {
         }
 
         public override string ToString () {
-            return string.Format ("Entity-{0}", GetHashCode ());
+            return IsNull () ? "Entity-Null" : string.Format ("Entity-{0}:{1}", Id, Gen);
         }
 #endif
     }
