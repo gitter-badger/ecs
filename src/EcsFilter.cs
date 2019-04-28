@@ -481,6 +481,20 @@ namespace Leopotam.Ecs {
         /// </summary>
         public EcsEntity[] Entities = new EcsEntity[MinSize];
 
+        /// <summary>
+        /// Returns filtered entities count.
+        /// Warning: Never try to use this value for custom for-loop iterations,
+        /// always use foreach-loop over filter.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public int GetEntitiesCount () {
+            return _entitiesCount;
+        }
+
+        /// <summary>
+        /// Returns enumerator over entities in filter.
+        /// Warning: you should Dispose() requested enumerator after use.
+        /// </summary>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
             return new Enumerator (_entitiesCount);
@@ -526,6 +540,7 @@ namespace Leopotam.Ecs {
                 _idx = -1;
             }
 
+            [Obsolete ("Use filter.GetEntitiesCount() instead")]
             [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public int GetCount () {
                 return _count;
