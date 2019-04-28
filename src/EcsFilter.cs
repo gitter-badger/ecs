@@ -55,12 +55,14 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void RaiseOnRemoveEvent (in EcsEntity entity) {
-            for (var i = 0; i < _entitiesCount; i++) {
+            for (int i = 0, iMax = _entitiesCount; i < iMax; i++) {
                 if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
-                    if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
+                    if (i < _entitiesCount) {
+                        Entities[i] = Entities[_entitiesCount];
+                        if (_allow1) {
+                            Components1[i] = Components1[_entitiesCount];
+                        }
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
@@ -143,15 +145,17 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void RaiseOnRemoveEvent (in EcsEntity entity) {
-            for (var i = 0; i < _entitiesCount; i++) {
+            for (int i = 0, iMax = _entitiesCount; i < iMax; i++) {
                 if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
-                    if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
-                    }
-                    if (_allow2) {
-                        Array.Copy (Components2, i + 1, Components2, i, _entitiesCount - i);
+                    if (i < _entitiesCount) {
+                        Entities[i] = Entities[_entitiesCount];
+                        if (_allow1) {
+                            Components1[i] = Components1[_entitiesCount];
+                        }
+                        if (_allow2) {
+                            Components2[i] = Components2[_entitiesCount];
+                        }
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
@@ -246,18 +250,20 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void RaiseOnRemoveEvent (in EcsEntity entity) {
-            for (var i = 0; i < _entitiesCount; i++) {
+            for (int i = 0, iMax = _entitiesCount; i < iMax; i++) {
                 if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
-                    if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
-                    }
-                    if (_allow2) {
-                        Array.Copy (Components2, i + 1, Components2, i, _entitiesCount - i);
-                    }
-                    if (_allow3) {
-                        Array.Copy (Components3, i + 1, Components3, i, _entitiesCount - i);
+                    if (i < _entitiesCount) {
+                        Entities[i] = Entities[_entitiesCount];
+                        if (_allow1) {
+                            Components1[i] = Components1[_entitiesCount];
+                        }
+                        if (_allow2) {
+                            Components2[i] = Components2[_entitiesCount];
+                        }
+                        if (_allow3) {
+                            Components3[i] = Components3[_entitiesCount];
+                        }
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
@@ -364,21 +370,23 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void RaiseOnRemoveEvent (in EcsEntity entity) {
-            for (var i = 0; i < _entitiesCount; i++) {
+            for (int i = 0, iMax = _entitiesCount; i < iMax; i++) {
                 if (Entities[i].Id == entity.Id) {
                     _entitiesCount--;
-                    Array.Copy (Entities, i + 1, Entities, i, _entitiesCount - i);
-                    if (_allow1) {
-                        Array.Copy (Components1, i + 1, Components1, i, _entitiesCount - i);
-                    }
-                    if (_allow2) {
-                        Array.Copy (Components2, i + 1, Components2, i, _entitiesCount - i);
-                    }
-                    if (_allow3) {
-                        Array.Copy (Components3, i + 1, Components3, i, _entitiesCount - i);
-                    }
-                    if (_allow4) {
-                        Array.Copy (Components4, i + 1, Components4, i, _entitiesCount - i);
+                    if (i < _entitiesCount) {
+                        Entities[i] = Entities[_entitiesCount];
+                        if (_allow1) {
+                            Components1[i] = Components1[_entitiesCount];
+                        }
+                        if (_allow2) {
+                            Components2[i] = Components2[_entitiesCount];
+                        }
+                        if (_allow3) {
+                            Components3[i] = Components3[_entitiesCount];
+                        }
+                        if (_allow4) {
+                            Components4[i] = Components4[_entitiesCount];
+                        }
                     }
                     for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
                         _listeners[j].OnEntityRemoved (entity);
