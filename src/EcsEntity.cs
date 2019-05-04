@@ -6,12 +6,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Leopotam.Ecs {
     /// <summary>
     /// Entity index descriptor.
     /// </summary>
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
+    [StructLayout (LayoutKind.Sequential)]
     [Serializable]
     public struct EcsEntity {
         /// <summary>
