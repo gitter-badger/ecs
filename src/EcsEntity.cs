@@ -71,6 +71,13 @@ namespace Leopotam.Ecs {
             return Gen;
         }
 
+        public static EcsEntity CreateDebugEntity (int gen, int id) {
+            EcsEntity entity;
+            entity.Gen = (ushort) gen;
+            entity.Id = id;
+            return entity;
+        }
+
         public override string ToString () {
             return IsNull () ? "Entity-Null" : string.Format ("Entity-{0}:{1}", Id, Gen);
         }
