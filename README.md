@@ -4,7 +4,7 @@
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
-> C#7.2 or above required for this framework.
+> C#7.3 or above required for this framework.
 
 > Tested on unity 2018.3 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
@@ -106,6 +106,8 @@ systems.Initialize ();
 ```
 Each system will be scanned for compatible fields (can contains all of them or no one) with proper initialization.
 
+> **Important!** Data injection for any user type can be used for sharing external data between systems.
+
 # Special classes
 
 ## EcsFilter<T>
@@ -126,6 +128,10 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 
     void IEcsRunSystem.Run () {
         foreach (var i in _filter) {
+            // entity that contains WeaponComponent.
+            // Performance hint: use 'ref' prefixes for disable copying entity structure.
+            ref var entity = ref _filter.Entities[i];
+
             // Components1 array will be automatically filled with instances of type "WeaponComponent".
             var weapon = _filter.Components1[i];
             weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
@@ -135,6 +141,8 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 
 All compatible entities will be stored at `filter.Entities` array.
+
+> Important: `filter.Entities` array data should be used with `ref` prefixes for performance boost (no copying, marshal by reference).
 
 > Important: `filter.Entities`, `filter.Components1`, `filter.Components2`, etc - can't be iterated with foreach-loop directly, use foreach-loop over `filter`.
 
@@ -206,7 +214,7 @@ class Startup : MonoBehaviour {
 
 `EcsSystems` instance can be used as nested system (any types of `IEcsPreInitSystem`, `IEcsInitSystem` or `IEcsRunSystem` behaviours are supported):
 ```csharp
-// initialization
+// initialization.
 var nestedSystems = new EcsSystems (_world)
     .Add (new NestedSystem ());
 // dont call nestedSystems.Initialize() here, rootSystems will do it automatically.
@@ -215,101 +223,13 @@ var rootSystems = new EcsSystems (_world)
     .Add (nestedSystems);
 rootSystems.Initialize();
 
-// update loop
+// update loop.
 // dont call nestedSystems.Run() here, rootSystems will do it automatically.
 rootSystems.Run();
 
-// destroying
+// destroying.
 // dont call nestedSystems.Dispose() here, rootSystems will do it automatically.
 rootSystems.Dispose();
-```
-
-# Sharing data between systems
-If some data should be shared between systems - there are 3 ways to do it.
-## Custom `EcsWorld` class
-Useful for global singleton-like access to independent systems:
-```csharp
-class MyEcsWorld : EcsWorld {
-    readonly public MyData Data;
-
-    public MyEcsWorld(MyData data) {
-        Data = data;
-    }
-}
-var shared = new MyData();
-// fill it here.
-// ...
-var world = new MyEcsWorld (shared);
-var systems = new EcsSystems (world)
-    .Add (new System1 ())
-    .Add (new System2 ());
-systems.Initialize();
-```
-## Component with `EcsFilter`
-Custom component can be used for this and sharing with `EcsFilter`:
-```csharp
-class MyData {
-    // shared data.
-}
-[EcsInject]
-class CreateSharedData : IEcsInitSystem {
-    // just to be sure that filter already created before component initialization.
-    EcsFilter<MyData> _shared = null;
-    EcsWorld _world = null;
-
-    void IEcsInitSystem.Initialize () {
-        var data = _world.CreateEntityWith<MyData>();
-        // fill data here.
-    }
-
-    void IEcsInitSystem.Destroy () { }
-}
-
-[EcsInject]
-class ReadSharedData : IEcsRunSystem {
-    EcsFilter<MyData> _shared = null;
-
-    void IEcsRunSystem.Run () {
-        var data = _shared.Components1[0];
-        // read data here.
-    }
-}
-```
-## Dependency Injection
-> **Important!** Will not work when LEOECS_DISABLE_INJECT preprocessor constant defined.
-
-External data can be shared for all systems at `EcsSystems`:
-```csharp
-class MyData {
-    // shared data.
-}
-[EcsInject]
-class ReadSharedData1 : IEcsRunSystem {
-    // will be automatically injected.
-    MyData _shared = null;
-
-    void IEcsRunSystem.Run () {
-        // read _shared fields here.
-    }
-}
-[EcsInject]
-class ReadSharedData2 : IEcsRunSystem {
-    // will be automatically injected.
-    MyData _shared = null;
-
-    void IEcsRunSystem.Run () {
-        // read _shared fields here.
-    }
-}
-//...
-var shared = new MyData();
-// fill it here.
-
-var systems = new EcsSystems (world)
-    .Add (new ReadSharedData1 ())
-    .Add (new ReadSharedData2 ())
-    .Inject (shared);
-systems.Initialize ();
 ```
 
 # Examples
