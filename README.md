@@ -10,6 +10,21 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 
 > **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
+# Installation
+
+## As unity module
+This repository can be installed as unity module directly from git url. In this way new line should be added to `Packages/manifest.json`:
+```
+"com.leopotam.ecs": "https://github.com/Leopotam/ecs.git",
+```
+By default last released version will be used. If you need trunk / developing version then `develop` name of branch should be added after hash:
+```
+"com.leopotam.ecs": "https://github.com/Leopotam/ecs.git#develop",
+```
+
+## As source
+If you can't / don't want to use unity modules, code can be downloaded as sources archive of required release from [Releases page](`https://github.com/Leopotam/ecs/releases`).
+
 # Main parts of ecs
 
 ## Component
