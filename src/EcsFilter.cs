@@ -5,7 +5,6 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
@@ -510,7 +509,7 @@ namespace Leopotam.Ecs {
 
         internal protected int _entitiesCount;
 
-        public struct Enumerator : IEnumerator<int> {
+        public struct Enumerator {
             readonly int _count;
             int _idx;
 
@@ -525,19 +524,12 @@ namespace Leopotam.Ecs {
                 get { return _idx; }
             }
 
-            object System.Collections.IEnumerator.Current { get { return null; } }
-
             [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public void Dispose () { }
 
             [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public bool MoveNext () {
                 return ++_idx < _count;
-            }
-
-            [MethodImpl (MethodImplOptions.AggressiveInlining)]
-            public void Reset () {
-                _idx = -1;
             }
 
             [Obsolete ("Use filter.GetEntitiesCount() instead")]
