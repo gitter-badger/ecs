@@ -709,8 +709,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected void ReserveEntity (in EcsEntity entity, EcsEntityInternal entityData) {
             entityData.ComponentsCount = -1;
-            // FIXME: temporary disabled for backward compatibility.
-            // entityData.Gen = (short) ((entityData.Gen % short.MaxValue) + 1);
+            entityData.Gen = (ushort) ((entityData.Gen % ushort.MaxValue) + 1);
             if (_reservedEntitiesCount == _reservedEntities.Length) {
                 Array.Resize (ref _reservedEntities, _reservedEntitiesCount << 1);
             }
@@ -791,7 +790,7 @@ namespace Leopotam.Ecs {
         [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
         protected sealed class EcsEntityInternal {
             public readonly EcsComponentMask Mask = new EcsComponentMask ();
-            public short Gen = 1;
+            public ushort Gen = 1;
             // negative value if entity removed / reserved.
             public short ComponentsCount;
             public int[] Components = new int[16];
