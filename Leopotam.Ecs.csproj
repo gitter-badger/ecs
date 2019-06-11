@@ -3,4 +3,20 @@
     <TargetFrameworks>net452;netstandard2.0</TargetFrameworks>
     <DefineConstants>NET_STANDARD_2_0</DefineConstants>
   </PropertyGroup>
+  <ItemGroup>
+    <None Update="src\EcsFilter.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>EcsFilter.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="src\EcsFilter.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>EcsFilter.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
