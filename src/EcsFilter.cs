@@ -532,12 +532,6 @@ namespace Leopotam.Ecs {
             public bool MoveNext () {
                 return ++_idx < _count;
             }
-
-            [Obsolete ("Use filter.GetEntitiesCount() instead")]
-            [MethodImpl (MethodImplOptions.AggressiveInlining)]
-            public int GetCount () {
-                return _count;
-            }
         }
 
         protected void AddComponentPool (IEcsComponentPool pool) {
