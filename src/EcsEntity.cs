@@ -6,22 +6,24 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Leopotam.Ecs {
     /// <summary>
     /// Entity index descriptor.
     /// </summary>
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
+    [StructLayout (LayoutKind.Sequential)]
+    [Serializable]
     public struct EcsEntity {
         /// <summary>
         /// Warning: for internal use, dont touch it directly!
         /// </summary>
-        public int Id;
+        internal int Id;
 
         /// <summary>
         /// Warning: for internal use, dont touch it directly!
         /// </summary>
-        public short Gen;
+        internal ushort Gen;
 
         /// <summary>
         /// Null entity index, can be used to reset indices.
@@ -35,21 +37,6 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsNull () {
             return Id == 0 && Gen == 0;
-        }
-
-        [Obsolete ("Use EcsEntity instead")]
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static implicit operator int (in EcsEntity lhs) {
-            return lhs.Id;
-        }
-
-        [Obsolete ("Use EcsEntity instead")]
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static implicit operator EcsEntity (int lhs) {
-            EcsEntity idx;
-            idx.Gen = 1;
-            idx.Id = lhs;
-            return idx;
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -76,8 +63,23 @@ namespace Leopotam.Ecs {
             return Id == rhs.Id && Gen == rhs.Gen;
         }
 #if DEBUG
+        public int GetDebugId () {
+            return Id;
+        }
+
+        public int GetDebugGen () {
+            return Gen;
+        }
+
+        public static EcsEntity CreateDebugEntity (int gen, int id) {
+            EcsEntity entity;
+            entity.Gen = (ushort) gen;
+            entity.Id = id;
+            return entity;
+        }
+
         public override string ToString () {
-            return string.Format ("Entity-{0}", GetHashCode ());
+            return IsNull () ? "Entity-Null" : string.Format ("Entity-{0}:{1}", Id, Gen);
         }
 #endif
     }

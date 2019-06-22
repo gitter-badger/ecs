@@ -62,13 +62,6 @@ namespace Leopotam.Ecs {
 #endif
     public class EcsWorld : IDisposable {
         /// <summary>
-        /// Last created instance of EcsWorld.
-        /// Can be force reassigned manually when multiple worlds in use.
-        /// </summary>
-        [Obsolete ("Use any external storage instead. Warning: This field already not works as before!")]
-        public static EcsWorld Active = null;
-
-        /// <summary>
         /// List of all entities (their components).
         /// </summary>
         protected EcsEntityInternal[] _entities = new EcsEntityInternal[1024];
@@ -212,17 +205,6 @@ namespace Leopotam.Ecs {
             var entity = CreateEntityInternal ();
             AddDelayedUpdate (DelayedUpdate.Op.SafeRemoveEntity, entity, null, -1);
             return entity;
-        }
-
-        /// <summary>
-        /// Creates new entity and adds component to it.
-        /// Slightly faster than CreateEntity() + AddComponent() sequence.
-        /// </summary>
-        [Obsolete ("Use 'int CreateEntityWith<T>(out T component)' instead")]
-        public T CreateEntityWith<T> () where T : class, new () {
-            T component;
-            CreateEntityWith<T> (out component);
-            return component;
         }
 
         /// <summary>
@@ -709,8 +691,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected void ReserveEntity (in EcsEntity entity, EcsEntityInternal entityData) {
             entityData.ComponentsCount = -1;
-            // FIXME: temporary disabled for backward compatibility.
-            // entityData.Gen = (short) ((entityData.Gen % short.MaxValue) + 1);
+            entityData.Gen = (ushort) ((entityData.Gen % ushort.MaxValue) + 1);
             if (_reservedEntitiesCount == _reservedEntities.Length) {
                 Array.Resize (ref _reservedEntities, _reservedEntitiesCount << 1);
             }
@@ -791,7 +772,7 @@ namespace Leopotam.Ecs {
         [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
         protected sealed class EcsEntityInternal {
             public readonly EcsComponentMask Mask = new EcsComponentMask ();
-            public short Gen = 1;
+            public ushort Gen = 1;
             // negative value if entity removed / reserved.
             public short ComponentsCount;
             public int[] Components = new int[16];

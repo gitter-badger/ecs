@@ -259,11 +259,40 @@ namespace Leopotam.Ecs {
         System.Collections.Generic.Dictionary<Type, object> _injections = new System.Collections.Generic.Dictionary<Type, object> (32);
 
         /// <summary>
+        /// Is already injected?
+        /// </summary>
+        bool _injected;
+
+        /// <summary>
         /// Injects instance of object type to all compatible fields of added systems.
         /// </summary>
         /// <param name="obj">Instance.</param>
         public EcsSystems Inject<T> (T obj) {
+#if DEBUG
+            if (_injected) { throw new Exception ("EcsSystems already injected"); }
+#endif
             _injections[typeof (T)] = obj;
+            return this;
+        }
+
+        /// <summary>
+        /// Processes injections immediately.
+        /// Can be used to DI before Initialize() call.
+        /// </summary>
+        public EcsSystems ProcessInjects () {
+            if (!_injected) {
+                _injected = true;
+                for (var i = 0; i < _injectSystemsCount; i++) {
+                    // injection for nested EcsSystems.
+                    var nestedSystems = _injectSystems[i] as EcsSystems;
+                    if (nestedSystems != null) {
+                        foreach (var pair in _injections) {
+                            nestedSystems._injections[pair.Key] = pair.Value;
+                        }
+                    }
+                    EcsInjections.Inject (_injectSystems[i], _world, _injections);
+                }
+            }
             return this;
         }
 #endif
@@ -280,16 +309,7 @@ namespace Leopotam.Ecs {
             _inited = true;
 #endif
 #if !LEOECS_DISABLE_INJECT
-            for (var i = 0; i < _injectSystemsCount; i++) {
-                // injection for nested EcsSystems.
-                var nestedSystems = _injectSystems[i] as EcsSystems;
-                if (nestedSystems != null) {
-                    foreach (var pair in _injections) {
-                        nestedSystems._injections[pair.Key] = pair.Value;
-                    }
-                }
-                EcsInjections.Inject (_injectSystems[i], _world, _injections);
-            }
+            ProcessInjects ();
 #endif
             for (int i = 0, iMax = _preInitSystemsCount; i < iMax; i++) {
                 _preInitSystems[i].PreInitialize ();
