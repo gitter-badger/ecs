@@ -387,7 +387,10 @@ namespace Leopotam.Ecs {
                 if (entityData.Components[i] == pool.TypeIndex) {
                     AddDelayedUpdate (DelayedUpdate.Op.RemoveComponent, entity, pool, entityData.Components[i + 1]);
                     entityData.ComponentsCount -= 2;
-                    Array.Copy (entityData.Components, i + 2, entityData.Components, i, entityData.ComponentsCount - i);
+                    if (i < entityData.ComponentsCount) {
+                        entityData.Components[i] = entityData.Components[entityData.ComponentsCount];
+                        entityData.Components[i + 1] = entityData.Components[entityData.ComponentsCount + 1];
+                    }
                     return;
                 }
             }
@@ -638,7 +641,10 @@ namespace Leopotam.Ecs {
                             if (entityData.Components[c] == poolId) {
                                 AddDelayedUpdate (DelayedUpdate.Op.RemoveComponent, filter.Entities[e], pool, entityData.Components[c + 1]);
                                 entityData.ComponentsCount -= 2;
-                                Array.Copy (entityData.Components, c + 2, entityData.Components, c, entityData.ComponentsCount - c);
+                                if (c < entityData.ComponentsCount) {
+                                    entityData.Components[c] = entityData.Components[entityData.ComponentsCount];
+                                    entityData.Components[c + 1] = entityData.Components[entityData.ComponentsCount + 1];
+                                }
                                 break;
                             }
                         }
