@@ -1,0 +1,304 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+// ----------------------------------------------------------------------------
+// The MIT License
+// Simple Entity Component System framework https://github.com/Leopotam/ecs
+// Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
+// ----------------------------------------------------------------------------
+
+using System;
+using System.Runtime.CompilerServices;
+
+namespace Leopotam.Ecs {
+    /// <summary>
+    /// Common interface for all filter listeners.
+    /// </summary>
+    public interface IEcsFilterListener {
+        void OnEntityAdded (in EcsEntity entity);
+        void OnEntityRemoved (in EcsEntity entity);
+    }
+
+<# 
+
+for (int numArguments=1; numArguments<=4; ++numArguments)
+{
+	var genericArguments = Enumerable.Range(1,numArguments).ToList();
+	Func<string,string,string,string,string,string> GenList = (prefix, itemPrefix, itemPostfix, separator, postfix) => prefix+string.Join(separator, genericArguments.Select(_=>itemPrefix+_+itemPostfix))+postfix;
+	Func<string,Func<int,string>,string,string,string> GenListF = (prefix, proj, separator, postfix) => prefix+string.Join(separator, genericArguments.Select(proj))+postfix;
+#>
+    /// <summary>
+    /// Container for filtered entities based on specified constraints.
+    /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public class EcsFilter<#= GenList("<", "Inc", "", ", ", ">") #> : EcsFilter <#= GenList("", "where Inc", " : class, new ()", " " ,"") #> {
+<#= GenListF("", _=>"        public Inc"+_+"[] Components"+_+";", Environment.NewLine, "") #>
+<#= GenListF("", _=>"        bool _allow"+_+";", Environment.NewLine, "") #>
+
+        protected EcsFilter () {
+<#= GenListF("", _=>"            _allow"+_+" = !EcsComponentPool<Inc"+_+">.Instance.IsIgnoreInFilter;", Environment.NewLine, "") #>
+<#= GenListF("", _=>"            Components"+_+" = _allow"+_+" ? new Inc"+_+"[MinSize] : null;", Environment.NewLine, "") #>
+<#= GenListF("", _=>"            IncludeMask.SetBit (EcsComponentPool<Inc"+_+">.Instance.TypeIndex, true);", Environment.NewLine, "") #>
+<#= GenListF("", _=>"            AddComponentPool (EcsComponentPool<Inc"+_+">.Instance);", Environment.NewLine, "") #>
+            ValidateMasks (<#=numArguments #>, 0);
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnAddEvent (in EcsEntity entity) {
+            if (Entities.Length == _entitiesCount) {
+                Array.Resize (ref Entities, _entitiesCount << 1);
+<#= GenListF("", _=>"                if (_allow"+_+@") {
+                    Array.Resize (ref Components"+_+@", _entitiesCount << 1);
+                }", Environment.NewLine, "") #>
+            }
+<#= GenListF("", _=>"            if (_allow"+_+@") {
+                Components"+_+"[_entitiesCount] = _world.GetComponent<Inc"+_+@"> (entity);
+            }", Environment.NewLine, "") #>
+            Entities[_entitiesCount++] = entity;
+            for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                _listeners[j].OnEntityAdded (entity);
+            }
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void RaiseOnRemoveEvent (in EcsEntity entity) {
+            for (int i = 0, iMax = _entitiesCount; i < iMax; i++) {
+                if (Entities[i].Id == entity.Id) {
+                    _entitiesCount--;
+                    if (i < _entitiesCount) {
+                        Entities[i] = Entities[_entitiesCount];
+<#= GenListF("", _=>@"                        if (_allow"+_+@") {
+                            Components"+_+"[i] = Components"+_+@"[_entitiesCount];
+                        }", Environment.NewLine, "") #>
+                    }
+                    for (int j = 0, jMax = _listenersCount; j < jMax; j++) {
+                        _listeners[j].OnEntityRemoved (entity);
+                    }
+                    break;
+                }
+            }
+        }
+<# 
+for (int numExArguments=1; numExArguments<=2; ++numExArguments)
+{
+	var genericExArguments = Enumerable.Range(1,numExArguments).ToList();
+	Func<string,string,string,string,string,string> GenExList = (prefix, itemPrefix, itemPostfix, separator, postfix) => prefix+string.Join(separator, genericExArguments.Select(_=>itemPrefix+_+itemPostfix))+postfix;
+	Func<string,Func<int,string>,string,string,string> GenExListF = (prefix, proj, separator, postfix) => prefix+string.Join(separator, genericExArguments.Select(proj))+postfix;
+#>
+
+        /// <summary>
+        /// Container for filtered entities based on specified constraints.
+        /// </summary>
+        public class Exclude<#= GenExList("<", "Exc", "", ", ", ">") #> : EcsFilter<#= GenList("<", "Inc", "", ", ", ">") #> <#= GenExList("", "where Exc", " : class, new ()", " " ,"") #> {
+            protected Exclude () {
+<#= GenExListF("", _=>"                ExcludeMask.SetBit (EcsComponentPool<Exc"+_+">.Instance.TypeIndex, true);", Environment.NewLine, "") #>
+                ValidateMasks (<#=numArguments #>, <#=numExArguments #>);
+            }
+        }
+<# 
+}
+#>    }
+
+<# 
+}
+#>
+    /// <summary>
+    /// Container for filtered entities based on specified constraints.
+    /// </summary>
+    public abstract class EcsFilter {
+        /// <summary>
+        /// Default minimal size for components / entities buffers.
+        /// </summary>
+        protected const int MinSize = 32;
+
+        /// <summary>
+        /// Mask of included (required) components with this filter.
+        /// Do not change it manually!
+        /// </summary>
+        public readonly EcsComponentMask IncludeMask = new EcsComponentMask ();
+
+        /// <summary>
+        /// Mask of excluded (denied) components with this filter.
+        /// Do not change it manually!
+        /// </summary>
+        public readonly EcsComponentMask ExcludeMask = new EcsComponentMask ();
+
+        /// <summary>
+        /// Access to connected EcsWorld instance.
+        /// </summary>
+        public EcsWorld World {
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
+            get { return _world; }
+            internal set { _world = value; }
+        }
+
+        /// <summary>
+        /// Instance of connected EcsWorld.
+        /// Do not change it manually!
+        /// </summary>
+        protected EcsWorld _world;
+
+        IEcsComponentPool[] _pools = new IEcsComponentPool[4];
+        int _poolsCount;
+        protected IEcsFilterListener[] _listeners = new IEcsFilterListener[4];
+        protected int _listenersCount;
+
+        /// <summary>
+        /// Will be raised by EcsWorld for new compatible with this filter entity.
+        /// Do not call it manually!
+        /// </summary>
+        /// <param name="entity">Entity id.</param>
+        public abstract void RaiseOnAddEvent (in EcsEntity entity);
+
+        /// <summary>
+        /// Will be raised by EcsWorld for old already non-compatible with this filter entity.
+        /// Do not call it manually!
+        /// </summary>
+        /// <param name="entity">Entity id.</param>
+        public abstract void RaiseOnRemoveEvent (in EcsEntity entity);
+
+        /// <summary>
+        /// Storage of filtered entities.
+        /// Important: Length of this storage can be larger than real amount of items,
+        /// use EntitiesCount instead of Entities.Length!
+        /// Do not change it manually!
+        /// </summary>
+        public EcsEntity[] Entities = new EcsEntity[MinSize];
+
+        /// <summary>
+        /// Returns filtered entities count.
+        /// Warning: Never try to use this value for custom for-loop iterations,
+        /// always use foreach-loop over filter.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public int GetEntitiesCount () {
+            return _entitiesCount;
+        }
+
+        /// <summary>
+        /// Returns enumerator over entities in filter.
+        /// Warning: you should Dispose() requested enumerator after use.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator () {
+            return new Enumerator (_entitiesCount);
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// Is filter empty.
+        /// </summary>
+        public bool IsEmpty () {
+            return _entitiesCount == 0;
+        }
+
+        internal protected int _entitiesCount;
+
+        public struct Enumerator {
+            readonly int _count;
+            int _idx;
+
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
+            internal Enumerator (int entitiesCount) {
+                _count = entitiesCount;
+                _idx = -1;
+            }
+
+            public int Current {
+                [MethodImpl (MethodImplOptions.AggressiveInlining)]
+                get { return _idx; }
+            }
+
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
+            public void Dispose () { }
+
+            [MethodImpl (MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext () {
+                return ++_idx < _count;
+            }
+        }
+
+        protected void AddComponentPool (IEcsComponentPool pool) {
+            if (_pools.Length == _poolsCount) {
+                Array.Resize (ref _pools, _poolsCount << 1);
+            }
+            _pools[_poolsCount++] = pool;
+        }
+
+        /// <summary>
+        /// Gets connected component pool from constraint components type index.
+        /// </summary>
+        /// <param name="id">Constraint components type index.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public IEcsComponentPool GetComponentPool (int id) {
+#if DEBUG
+            if (id < 0 || id >= _poolsCount) {
+                throw new Exception (string.Format ("Invalid included component index {0} for filter \"{1}\".", id, GetType ()));
+            }
+#endif
+            return _pools[id];
+        }
+
+        /// <summary>
+        /// Subscribes listener to filter events.
+        /// </summary>
+        /// <param name="listener">Listener.</param>
+        public void AddListener (IEcsFilterListener listener) {
+#if DEBUG
+            for (int i = 0, iMax = _listenersCount; i < iMax; i++) {
+                if (_listeners[i] == listener) {
+                    throw new Exception ("Listener already subscribed.");
+                }
+            }
+#endif
+            if (_listeners.Length == _listenersCount) {
+                Array.Resize (ref _listeners, _listenersCount << 1);
+            }
+            _listeners[_listenersCount++] = listener;
+        }
+
+        /// <summary>
+        /// Unsubscribes listener from filter events.
+        /// </summary>
+        /// <param name="listener">Listener.</param>
+        public void RemoveListener (IEcsFilterListener listener) {
+            for (int i = 0, iMax = _listenersCount; i < iMax; i++) {
+                if (_listeners[i] == listener) {
+                    _listenersCount--;
+                    Array.Copy (_listeners, i + 1, _listeners, i, _listenersCount - i);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Vaidates amount of constraint components.
+        /// </summary>
+        /// <param name="inc">Valid amount for included components.</param>
+        /// <param name="exc">Valid amount for excluded components.</param>
+        [System.Diagnostics.Conditional ("DEBUG")]
+        protected void ValidateMasks (int inc, int exc) {
+#if DEBUG
+            if (IncludeMask.BitsCount != inc || ExcludeMask.BitsCount != exc) {
+                throw new Exception (string.Format ("Invalid filter type \"{0}\": possible duplicated component types.", GetType ()));
+            }
+            if (IncludeMask.IsIntersects (ExcludeMask)) {
+                throw new Exception (string.Format ("Invalid filter type \"{0}\": Include types intersects with exclude types.", GetType ()));
+            }
+#endif
+        }
+
+#if DEBUG
+        public override string ToString () {
+            return string.Format ("Filter(+{0} -{1})", IncludeMask, ExcludeMask);
+        }
+#endif
+    }
+}

@@ -1,4 +1,4 @@
-// ----------------------------------------------------------------------------
+﻿// ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
 // Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
@@ -33,6 +33,7 @@ namespace Leopotam.Ecs {
             Components1 = _allow1 ? new Inc1[MinSize] : null;
             IncludeMask.SetBit (EcsComponentPool<Inc1>.Instance.TypeIndex, true);
             AddComponentPool (EcsComponentPool<Inc1>.Instance);
+            ValidateMasks (1, 0);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -530,12 +531,6 @@ namespace Leopotam.Ecs {
             [MethodImpl (MethodImplOptions.AggressiveInlining)]
             public bool MoveNext () {
                 return ++_idx < _count;
-            }
-
-            [Obsolete ("Use filter.GetEntitiesCount() instead")]
-            [MethodImpl (MethodImplOptions.AggressiveInlining)]
-            public int GetCount () {
-                return _count;
             }
         }
 

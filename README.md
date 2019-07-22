@@ -123,6 +123,58 @@ Each system will be scanned for compatible fields (can contains all of them or n
 
 > **Important!** Data injection for any user type can be used for sharing external data between systems.
 
+## Data Injection with multiple EcsSystems
+
+If you want to use multiple `EcsSystems` you can find strange behaviour with DI:
+
+```csharp
+class Component1 { }
+
+[EcsInject]
+class System1 : IEcsInitSystem {
+    EcsWorld _world = null;
+
+    void IEcsInitSystem.Initialize () {
+        _world.CreateEntityWith<Component1> ();
+    }
+
+    void IEcsInitSystem.Destroy () { }    
+}
+
+[EcsInject]
+class System2 : IEcsInitSystem {
+    EcsFilter<Component1> _filter;
+
+    void IEcsInitSystem.Initialize () {
+        Debug.Log (_filter.GetEntitiesCount());
+    }
+
+    void IEcsInitSystem.Destroy () { }    
+}
+
+var systems1 = new EcsSystems (world);
+var systems2 = new EcsSystems (world);
+systems1.Add (new System1 ());
+systems2.Add (new System2 ());
+systems1.Initialize ();
+systems2.Initialize ();
+```
+You will get "0" at console. Problem is that DI starts at `Initialize` method inside each `EcsSystems`. It means that any new `EcsFilter` instance (with lazy initialization) will be correctly injected only at current `EcsSystems`. 
+
+To fix this behaviour startup code should be modified in this way:
+
+```csharp
+var systems1 = new EcsSystems (world);
+var systems2 = new EcsSystems (world);
+systems1.Add (new System1 ());
+systems2.Add (new System2 ());
+systems1.ProcessInjects();
+systems2.ProcessInjects();
+systems1.Initialize ();
+systems2.Initialize ();
+```
+You should get "1" at console after fix.
+
 # Special classes
 
 ## EcsFilter<T>
