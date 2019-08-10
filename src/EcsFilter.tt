@@ -42,6 +42,9 @@ for (int numArguments=1; numArguments<=4; ++numArguments)
 <#= GenListF("", _=>"        public Inc"+_+"[] Components"+_+";", Environment.NewLine, "") #>
 <#= GenListF("", _=>"        bool _allow"+_+";", Environment.NewLine, "") #>
 
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter () {
 <#= GenListF("", _=>"            _allow"+_+" = !EcsComponentPool<Inc"+_+">.Instance.IsIgnoreInFilter;", Environment.NewLine, "") #>
 <#= GenListF("", _=>"            Components"+_+" = _allow"+_+" ? new Inc"+_+"[MinSize] : null;", Environment.NewLine, "") #>
@@ -97,6 +100,9 @@ for (int numExArguments=1; numExArguments<=2; ++numExArguments)
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<#= GenExList("<", "Exc", "", ", ", ">") #> : EcsFilter<#= GenList("<", "Inc", "", ", ", ">") #> <#= GenExList("", "where Exc", " : class, new ()", " " ,"") #> {
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude () {
 <#= GenExListF("", _=>"                ExcludeMask.SetBit (EcsComponentPool<Exc"+_+">.Instance.TypeIndex, true);", Environment.NewLine, "") #>
                 ValidateMasks (<#=numArguments #>, <#=numExArguments #>);
