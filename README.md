@@ -8,7 +8,11 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 
 > Tested on unity 2018.3 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
+> **Important!** Only Unity IL2CPP runtime is supported (no support for Mono code stripping).
+
 > **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
+
+
 
 # Installation
 
