@@ -28,9 +28,6 @@ namespace Leopotam.Ecs {
         public Inc1[] Components1;
         bool _allow1;
 
-#if ENABLE_IL2CPP
-        [UnityEngine.Scripting.Preserve]
-#endif
         protected EcsFilter () {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             Components1 = _allow1 ? new Inc1[MinSize] : null;
@@ -79,9 +76,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1> where Exc1 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (1, 1);
@@ -92,9 +86,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1> where Exc1 : class, new () where Exc2 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
@@ -117,9 +108,6 @@ namespace Leopotam.Ecs {
         bool _allow1;
         bool _allow2;
 
-#if ENABLE_IL2CPP
-        [UnityEngine.Scripting.Preserve]
-#endif
         protected EcsFilter () {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
@@ -181,9 +169,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2> where Exc1 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (2, 1);
@@ -194,9 +179,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2> where Exc1 : class, new () where Exc2 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
@@ -221,9 +203,6 @@ namespace Leopotam.Ecs {
         bool _allow2;
         bool _allow3;
 
-#if ENABLE_IL2CPP
-        [UnityEngine.Scripting.Preserve]
-#endif
         protected EcsFilter () {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
@@ -298,9 +277,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (3, 1);
@@ -311,9 +287,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class, new () where Exc2 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
@@ -340,9 +313,6 @@ namespace Leopotam.Ecs {
         bool _allow3;
         bool _allow4;
 
-#if ENABLE_IL2CPP
-        [UnityEngine.Scripting.Preserve]
-#endif
         protected EcsFilter () {
             _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
             _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
@@ -430,9 +400,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ValidateMasks (4, 1);
@@ -443,9 +410,6 @@ namespace Leopotam.Ecs {
         /// Container for filtered entities based on specified constraints.
         /// </summary>
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class, new () where Exc2 : class, new () {
-#if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-#endif
             protected Exclude () {
                 ExcludeMask.SetBit (EcsComponentPool<Exc1>.Instance.TypeIndex, true);
                 ExcludeMask.SetBit (EcsComponentPool<Exc2>.Instance.TypeIndex, true);
