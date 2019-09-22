@@ -55,16 +55,16 @@ _world.RemoveEntity (entity);
 ```
 Previous example can be simplified with new C# syntax:
 ```csharp
-var entityId = _world.CreateEntityWith<WeaponComponent> (out var myWeapon);
-_world.RemoveEntity (entityId);
+EcsEntity entity = _world.CreateEntityWith<WeaponComponent> (out var myWeapon);
+_world.RemoveEntity (entity);
 ```
 
 Dont forget that `EcsWorld.CreateEntityWith` method has multiple overloaded versions:
 ```csharp
 Component1 c1;
 Component2 c2;
-EcsEntity entityId = _world.CreateEntityWith<Component1, Component2> (out c1, out c2);
-_world.RemoveEntity (entityId);
+EcsEntity entity = _world.CreateEntityWith<Component1, Component2> (out c1, out c2);
+_world.RemoveEntity (entity);
 ```
 
 > **Important!** Entities without components on them will be automatically removed from `EcsWorld` right after finish execution of current system.
