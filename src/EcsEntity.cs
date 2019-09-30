@@ -79,7 +79,7 @@ namespace Leopotam.Ecs {
             var typeIdx = EcsComponentPool<T>.Instance.TypeIndex;
             for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
                 if (entityData.Components[i] == typeIdx) {
-                    return EcsComponentPool<T>.Instance.Items[entityData.Components[i] + 1];
+                    return EcsComponentPool<T>.Instance.Items[entityData.Components[i + 1]];
                 }
             }
             return null;
