@@ -223,12 +223,13 @@ Root level container for all entities / components, works like isolated environm
 Group of systems to process `EcsWorld` instance:
 ```csharp
 class Startup : MonoBehaviour {
+    EcsWorld _world;
     EcsSystems _systems;
 
     void OnEnable() {
         // create ecs environment.
-        var world = new EcsWorld ();
-        _systems = new EcsSystems(world)
+        _world = new EcsWorld ();
+        _systems = new EcsSystems(_world)
             .Add (new WeaponSystem ());
         _systems.Init ();
     }
