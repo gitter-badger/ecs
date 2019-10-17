@@ -67,11 +67,11 @@ namespace Leopotam.Ecs {
 #endif
     public sealed class EcsSystems : IEcsInitSystem, IEcsDestroySystem, IEcsRunSystem {
         public readonly string Name;
+        public readonly EcsWorld World;
         readonly EcsGrowList<IEcsSystem> _allSystems = new EcsGrowList<IEcsSystem> (64);
         readonly EcsGrowList<EcsSystemsRunItem> _runSystems = new EcsGrowList<EcsSystemsRunItem> (64);
         readonly Dictionary<int, int> _namedRunSystems = new Dictionary<int, int> (64);
         readonly Dictionary<Type, object> _injections = new Dictionary<Type, object> (32);
-        readonly EcsWorld _world;
         bool _injected;
 #if DEBUG
         bool _inited;
@@ -103,7 +103,7 @@ namespace Leopotam.Ecs {
         /// <param name="world">EcsWorld instance.</param>
         /// <param name="name">Custom name for this group.</param>
         public EcsSystems (EcsWorld world, string name = null) {
-            _world = world;
+            World = world;
             Name = name;
         }
 
@@ -200,7 +200,7 @@ namespace Leopotam.Ecs {
                         }
                         nestedSystems.ProcessInjects ();
                     } else {
-                        InjectDataToSystem (_allSystems.Items[i], _world, _injections);
+                        InjectDataToSystem (_allSystems.Items[i], World, _injections);
                     }
                 }
             }
@@ -222,7 +222,7 @@ namespace Leopotam.Ecs {
                 if (system is IEcsPreInitSystem) {
                     ((IEcsPreInitSystem) system).PreInit ();
 #if DEBUG
-                    _world.CheckForLeakedEntities ($"{system.GetType().Name}.PreInit()");
+                    World.CheckForLeakedEntities ($"{system.GetType().Name}.PreInit()");
 #endif
                 }
             }
@@ -232,7 +232,7 @@ namespace Leopotam.Ecs {
                 if (system is IEcsInitSystem) {
                     ((IEcsInitSystem) system).Init ();
 #if DEBUG
-                    _world.CheckForLeakedEntities ($"{system.GetType().Name}.Init()");
+                    World.CheckForLeakedEntities ($"{system.GetType().Name}.Init()");
 #endif
                 }
             }
@@ -256,7 +256,7 @@ namespace Leopotam.Ecs {
                 }
 #if DEBUG
                 var system = _runSystems.Items[i];
-                _world.CheckForLeakedEntities ($"{system.GetType ().Name}.Run ()");
+                World.CheckForLeakedEntities ($"{system.GetType ().Name}.Run ()");
 #endif
             }
         }
@@ -275,7 +275,7 @@ namespace Leopotam.Ecs {
                 if (system is IEcsDestroySystem) {
                     ((IEcsDestroySystem) system).Destroy ();
 #if DEBUG
-                    _world.CheckForLeakedEntities ($"{system.GetType ().Name}.Destroy ()");
+                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.Destroy ()");
 #endif
                 }
             }
@@ -285,7 +285,7 @@ namespace Leopotam.Ecs {
                 if (system is IEcsAfterDestroySystem) {
                     ((IEcsAfterDestroySystem) system).AfterDestroy ();
 #if DEBUG
-                    _world.CheckForLeakedEntities ($"{system.GetType ().Name}.AfterDestroy ()");
+                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.AfterDestroy ()");
 #endif
                 }
             }
