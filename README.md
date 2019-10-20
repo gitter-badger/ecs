@@ -45,42 +45,42 @@ class WeaponComponent {
 ## Entity
 Сontainer for components. Implemented as `EcsEntity` for wrapping internal identifiers:
 ```csharp
-EcsEntity entity = _world.NewEntity();
+EcsEntity entity = _world.NewEntity ();
 Component1 c1 = entity.Set<Component1> ();
 Component2 c2 = entity.Set<Component2> ();
 ```
 There are some helpers to simplify creation of entity with multiple components:
 ```csharp
-EcsEntity entity = _world.NewEntityWith<Component1, Component2>(out Component1 c1, out Component2 c2);
+EcsEntity entity = _world.NewEntityWith<Component1, Component2> (out Component1 c1, out Component2 c2);
 ```
 
 > **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Unset()` call.
 
 ## System
-Сontainer for logic for processing filtered entities. User class should implements `IEcsPreInitSystem`, `IEcsInitSystem` or / and `IEcsRunSystem` interfaces:
+Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem`, `IEcsDestroySystem`, `IEcsRunSystem` (or other supported) interfaces:
 ```csharp
 class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsPreDestroySystem {
-    void IEcsPreInitSystem.PreInit () {
-        // Will be called once during world initialization and before IEcsInitSystem.Init.
+    public void PreInit () {
+        // Will be called once during EcsSystems.Init() call and before IEcsInitSystem.Init.
     }
 
-    void IEcsInitSystem.Init () {
-        // Will be called once during world initialization.
+    public void Init () {
+        // Will be called once during EcsSystems.Init() call.
     }
 
-    void IEcsDestroySystem.Destroy () {
-        // Will be called once during world destruction.
+    public void Destroy () {
+        // Will be called once during EcsSystems.Destroy() call.
     }
 
-    void IEcsPreDestroySystem.PreDestroy () {
-        // Will be called once during world destruction and after IEcsDestroySystem.Destroy.
+    public void AfterDestroy () {
+        // Will be called once during EcsSystems.Destroy() call and after IEcsDestroySystem.Destroy.
     }
 }
 ```
 
 ```csharp
 class HealthSystem : IEcsRunSystem {
-    void IEcsRunSystem.Run () {
+    public void Run () {
         // Will be called on each EcsSystems.Run() call.
     }
 }
@@ -121,16 +121,16 @@ class Component1 { }
 class System1 : IEcsInitSystem {
     EcsWorld _world = null;
 
-    void IEcsInitSystem.Init () {
-        _world.NewEntity().Set<Component1> ();
+    public void Init () {
+        _world.NewEntity ().Set<Component1> ();
     } 
 }
 
 class System2 : IEcsInitSystem {
     EcsFilter<Component1> _filter = null;
 
-    void IEcsInitSystem.Init () {
-        Debug.Log (_filter.GetEntitiesCount());
+    public void Init () {
+        Debug.Log (_filter.GetEntitiesCount ());
     }
 }
 
@@ -150,8 +150,8 @@ var systems1 = new EcsSystems (world);
 var systems2 = new EcsSystems (world);
 systems1.Add (new System1 ());
 systems2.Add (new System2 ());
-systems1.ProcessInjects();
-systems2.ProcessInjects();
+systems1.ProcessInjects ();
+systems2.ProcessInjects ();
 systems1.Init ();
 systems2.Init ();
 ```
@@ -163,17 +163,17 @@ You should get "1" at console after fix.
 Container for keeping filtered entities with specified component list:
 ```csharp
 class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
+    // auto-injected fields: EcsWorld instance and EcsFilter.
     EcsWorld _world = null;
-
     // We wants to get entities with "WeaponComponent" and without "HealthComponent".
     EcsFilter<WeaponComponent>.Exclude<HealthComponent> _filter = null;
 
-    void IEcsInitSystem.Init () {
+    public void Init () {
         // new C# syntax can be used if component instance not required right now.
         _world.NewEntityWith<WeaponComponent> (out _);
     }
 
-    void IEcsRunSystem.Run () {
+    public void Run () {
         foreach (var i in _filter) {
             // entity that contains WeaponComponent.
             // Performance hint: use 'ref' prefixes for disable copying entity structure.
@@ -195,15 +195,15 @@ class Component1 { }
 
 class Component2 : IEcsIgnoreInFilter { }
 
-class TestSystem : IEcsSystem {
+class TestSystem : IEcsRunSystem {
     EcsFilter<Component1, Component2> _filter = null;
 
-    public Test() {
+    public void Run () {
         foreach (var i in _filter) {
             // its valid code.
             var component1 = _filter.Get1[i];
 
-            // its invalid code due to cache for _filter.Get2() calls is null for memory / performance reasons.
+            // its invalid code due to cache for _filter.Get2[] is null for memory / performance reasons.
             var component2 = _filter.Get2[i];
         }
     }
@@ -226,21 +226,21 @@ class Startup : MonoBehaviour {
     EcsWorld _world;
     EcsSystems _systems;
 
-    void OnEnable() {
+    void Start () {
         // create ecs environment.
         _world = new EcsWorld ();
-        _systems = new EcsSystems(_world)
+        _systems = new EcsSystems (_world)
             .Add (new WeaponSystem ());
         _systems.Init ();
     }
     
-    void Update() {
+    void Update () {
         // process all dependent systems.
         _systems.Run ();
         _world.EndFrame ();
     }
 
-    void OnDisable() {
+    void Destroy () {
         // destroy systems logical group.
         _systems.Destroy ();
         // destroy world.
@@ -253,21 +253,19 @@ class Startup : MonoBehaviour {
 `EcsSystems` instance can be used as nested system (any types of `IEcsInitSystem`, `IEcsRunSystem`, ecs behaviours are supported):
 ```csharp
 // initialization.
-var nestedSystems = new EcsSystems (_world)
-    .Add (new NestedSystem ());
+var nestedSystems = new EcsSystems (_world).Add (new NestedSystem ());
 // dont call nestedSystems.Init() here, rootSystems will do it automatically.
 
-var rootSystems = new EcsSystems (_world)
-    .Add (nestedSystems);
-rootSystems.Init();
+var rootSystems = new EcsSystems (_world).Add (nestedSystems);
+rootSystems.Init ();
 
 // update loop.
 // dont call nestedSystems.Run() here, rootSystems will do it automatically.
-rootSystems.Run();
+rootSystems.Run ();
 
 // destroying.
 // dont call nestedSystems.Destroy() here, rootSystems will do it automatically.
-rootSystems.Destroy();
+rootSystems.Destroy ();
 ```
 
 Any `IEcsRunSystem` or `EcsSystems` instance can be enabled or disabled from processing in runtime:
@@ -275,9 +273,9 @@ Any `IEcsRunSystem` or `EcsSystems` instance can be enabled or disabled from pro
 class TestSystem : IEcsRunSystem {
     public void Run () { }
 }
-var systems
-    .Add (new TestSystem (), "my special system")
-    .Init ();
+var systems = new EcsSystems (_world);
+systems.Add (new TestSystem (), "my special system");
+systems.Init ();
 var idx = systems.GetNamedRunSystem ("my special system");
 
 // state will be true here, all systems are active by default.
@@ -315,10 +313,12 @@ For splitting systems by `MonoBehaviour`-method multiple `EcsSystems` logical gr
 EcsSystems _update;
 EcsSystems _fixedUpdate;
 
-void OnEnable () {
+void Start () {
     var world = new EcsWorld ();
     _update = new EcsSystems (world).Add (new UpdateSystem ());
+    _update.Init ();
     _fixedUpdate = new EcsSystems (world).Add (new FixedUpdateSystem ());
+    _fixedUpdate.Init ();
 }
 
 void Update () {
@@ -354,7 +354,7 @@ If you want to simplify your code and keep reset-code in one place, you can use 
 class MyComponent : IEcsAutoReset {
     public object LinkToAnotherComponent;
 
-    void IEcsAutoReset.Reset() {
+    public void Reset() {
         // Cleanup all marshal-by-reference fields here.
         LinkToAnotherComponent = null;
     }
