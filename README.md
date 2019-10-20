@@ -240,7 +240,7 @@ class Startup : MonoBehaviour {
         _world.EndFrame ();
     }
 
-    void Destroy () {
+    void OnDestroy () {
         // destroy systems logical group.
         _systems.Destroy ();
         // destroy world.
