@@ -6,37 +6,265 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Leopotam.Ecs {
     /// <summary>
-    /// Entity index descriptor.
+    /// Entity descriptor.
     /// </summary>
-    [StructLayout (LayoutKind.Sequential)]
-    [Serializable]
     public struct EcsEntity {
-        /// <summary>
-        /// Warning: for internal use, dont touch it directly!
-        /// </summary>
         internal int Id;
-
-        /// <summary>
-        /// Warning: for internal use, dont touch it directly!
-        /// </summary>
         internal ushort Gen;
+        internal EcsWorld Owner;
 
-        /// <summary>
-        /// Null entity index, can be used to reset indices.
-        /// </summary>
         public static readonly EcsEntity Null = new EcsEntity ();
 
         /// <summary>
-        /// Returns true if entity is nulled.
+        /// Attaches or finds already attached component to entity.
         /// </summary>
-        /// <returns></returns>
+        /// <typeparam name="T">Type of component.</typeparam>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public T Set<T> () where T : class {
+            ref var entityData = ref Owner.GetEntityData (this);
+#if DEBUG
+            if (entityData.Gen != Gen) { throw new Exception ("Cant add component to destroyed entity."); }
+#endif
+            var typeIdx = EcsComponentPool<T>.Instance.TypeIndex;
+            int idx;
+            // check already attached components.
+            for (int i = 0, iiMax = entityData.ComponentsCountX2; i < iiMax; i += 2) {
+                if (entityData.Components[i] == typeIdx) {
+                    return EcsComponentPool<T>.Instance.Items[entityData.Components[i + 1]];
+                }
+            }
+            // attach new component.
+            if (entityData.Components.Length == entityData.ComponentsCountX2) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCountX2 << 1);
+            }
+            entityData.Components[entityData.ComponentsCountX2++] = typeIdx;
+            idx = EcsComponentPool<T>.Instance.New ();
+            entityData.Components[entityData.ComponentsCountX2++] = idx;
+#if DEBUG
+            var component = EcsComponentPool<T>.Instance.Items[idx];
+            for (var ii = 0; ii < Owner._debugListeners.Count; ii++) {
+                Owner._debugListeners[ii].OnComponentAdded (this, component);
+            }
+#endif
+            // create separate filter for one-frame components.
+            if (EcsComponentPool<T>.Instance.IsOneFrame) {
+                Owner.ValidateOneFrameFilter<T> ();
+            }
+
+            Owner.UpdateFilters (typeIdx, this, entityData);
+            return EcsComponentPool<T>.Instance.Items[idx];
+        }
+
+        /// <summary>
+        /// Gets component attached to entity or null.
+        /// </summary>
+        /// <typeparam name="T">Type of component.</typeparam>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public T Get<T> () where T : class {
+            ref var entityData = ref Owner.GetEntityData (this);
+#if DEBUG
+            if (entityData.Gen != Gen) { throw new Exception ("Cant check component on destroyed entity."); }
+#endif
+            var typeIdx = EcsComponentPool<T>.Instance.TypeIndex;
+            for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
+                if (entityData.Components[i] == typeIdx) {
+                    return EcsComponentPool<T>.Instance.Items[entityData.Components[i + 1]];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Removes component from entity.
+        /// </summary>
+        /// <typeparam name="T">Type of component.</typeparam>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public void Unset<T> () where T : class {
+            Unset (EcsComponentPool<T>.Instance.TypeIndex);
+        }
+
+        /// <summary>
+        /// Removes component from entity.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        internal void Unset (int typeIndex) {
+            ref var entityData = ref Owner.GetEntityData (this);
+#if DEBUG
+            if (entityData.Gen != Gen) { throw new Exception ("Cant touch destroyed entity."); }
+#endif
+            for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
+                if (entityData.Components[i] == typeIndex) {
+                    Owner.UpdateFilters (-typeIndex, this, entityData);
+#if DEBUG
+                    var removedComponent = EcsComponentPools.Items[typeIndex].GetItem (entityData.Components[i + 1]);
+#endif
+                    EcsComponentPools.Items[typeIndex].Recycle (entityData.Components[i + 1]);
+                    // remove current item and move last component to this gap.
+                    entityData.ComponentsCountX2 -= 2;
+                    if (i < entityData.ComponentsCountX2) {
+                        entityData.Components[i] = entityData.Components[entityData.ComponentsCountX2];
+                        entityData.Components[i + 1] = entityData.Components[entityData.ComponentsCountX2 + 1];
+                    }
+#if DEBUG
+                    for (var ii = 0; ii < Owner._debugListeners.Count; ii++) {
+                        Owner._debugListeners[ii].OnComponentRemoved (this, removedComponent);
+                    }
+#endif
+                    break;
+                }
+            }
+            // unrolled and inlined Destroy() call.
+            if (entityData.ComponentsCountX2 == 0) {
+                Owner.RecycleEntityData (Id, ref entityData);
+#if DEBUG
+                for (var ii = 0; ii < Owner._debugListeners.Count; ii++) {
+                    Owner._debugListeners[ii].OnEntityDestroyed (this);
+                }
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Gets component index at component pool.
+        /// If component doesnt exists "-1" will be returned.
+        /// </summary>
+        /// <typeparam name="T">Type of component.</typeparam>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public int GetComponentIndexInPool<T> () where T : class {
+            ref var entityData = ref Owner.GetEntityData (this);
+#if DEBUG
+            if (entityData.Gen != Gen) { throw new Exception ("Cant check component on destroyed entity."); }
+#endif
+            var typeIdx = EcsComponentPool<T>.Instance.TypeIndex;
+            for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
+                if (entityData.Components[i] == typeIdx) {
+                    return entityData.Components[i + 1];
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Gets internal identifier.
+        /// </summary>
+        public int GetInternalId () {
+            return Id;
+        }
+
+        /// <summary>
+        /// Removes components from entity and destroys it.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public void Destroy () {
+            ref var entityData = ref Owner.GetEntityData (this);
+#if DEBUG
+            if (entityData.Gen != Gen) { throw new Exception ("Cant touch destroyed entity."); }
+#endif
+            // remove components first.
+            for (var i = entityData.ComponentsCountX2 - 2; i >= 0; i -= 2) {
+                Owner.UpdateFilters (-entityData.Components[i], this, entityData);
+#if DEBUG
+                var removedComponent = EcsComponentPools.Items[entityData.Components[i]].GetItem (entityData.Components[i + 1]);
+#endif
+                EcsComponentPools.Items[entityData.Components[i]].Recycle (entityData.Components[i + 1]);
+                entityData.ComponentsCountX2 -= 2;
+#if DEBUG
+                for (var ii = 0; ii < Owner._debugListeners.Count; ii++) {
+                    Owner._debugListeners[ii].OnComponentRemoved (this, removedComponent);
+                }
+#endif
+            }
+            entityData.ComponentsCountX2 = 0;
+            Owner.RecycleEntityData (Id, ref entityData);
+#if DEBUG
+            for (var ii = 0; ii < Owner._debugListeners.Count; ii++) {
+                Owner._debugListeners[ii].OnEntityDestroyed (this);
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Is entity nulled.
+        /// </summary>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsNull () {
             return Id == 0 && Gen == 0;
+        }
+
+        /// <summary>
+        /// Is entity alive.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public bool IsAlive () {
+            ref var entityData = ref Owner.GetEntityData (this);
+            return entityData.Gen == Gen && entityData.ComponentsCountX2 >= 0;
+        }
+
+        /// <summary>
+        /// Gets components count on entity.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public int GetComponentsCount () {
+            ref var entityData = ref Owner.GetEntityData (this);
+#if DEBUG
+            if (entityData.Gen != Gen) { throw new Exception ("Cant touch destroyed entity."); }
+#endif
+            return entityData.ComponentsCountX2 <= 0 ? 0 : (entityData.ComponentsCountX2 >> 1);
+        }
+
+        /// <summary>
+        /// Gets all components on entity.
+        /// </summary>
+        /// <param name="list">List to put results in it. if null - will be created.</param>
+        /// <returns>Amount of components in list.</returns>
+        public int GetComponents (ref object[] list) {
+            ref var entityData = ref Owner.GetEntityData (this);
+#if DEBUG
+            if (entityData.Gen != Gen) { throw new Exception ("Cant touch destroyed entity."); }
+#endif
+            var itemsCount = entityData.ComponentsCountX2 >> 1;
+            if (list == null || list.Length < itemsCount) {
+                list = new object[itemsCount];
+            }
+            for (int i = 0, j = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2, j++) {
+                list[j] = EcsComponentPools.Items[entityData.Components[i]].GetItem (entityData.Components[i + 1]);
+            }
+            return itemsCount;
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -62,22 +290,8 @@ namespace Leopotam.Ecs {
             var rhs = (EcsEntity) other;
             return Id == rhs.Id && Gen == rhs.Gen;
         }
+
 #if DEBUG
-        public int GetDebugId () {
-            return Id;
-        }
-
-        public int GetDebugGen () {
-            return Gen;
-        }
-
-        public static EcsEntity CreateDebugEntity (int gen, int id) {
-            EcsEntity entity;
-            entity.Gen = (ushort) gen;
-            entity.Id = id;
-            return entity;
-        }
-
         public override string ToString () {
             return IsNull () ? "Entity-Null" : string.Format ("Entity-{0}:{1}", Id, Gen);
         }
