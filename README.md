@@ -194,6 +194,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
         foreach (var i in _filter) {
             // entity that contains WeaponComponent.
             // Performance hint: use 'ref' prefixes for disable copying entity structure.
+            // Important: dont use `ref` on filter data outside of foreach-loop over this filter.
             ref var entity = ref _filter.Entities[i];
 
             // Get1 will return link to attached "WeaponComponent".
@@ -203,6 +204,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     }
 }
 ```
+> **Important!** You should not use `ref` modifier for any filter data outside of foreach-loop over this filter if you want to destroy part of this data (entity or component) - it will break memory integrity.
 
 All components from filter `Include` constraint can be fast accessed through `filter.Get1()`, `filter.Get2()`, etc - in same order as they were used in filter type declaration.
 
