@@ -184,28 +184,33 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public void Destroy () {
             ref var entityData = ref Owner.GetEntityData (this);
+            // save copy to local var for protect from cleanup fields outside.
+            EcsEntity savedEntity;
+            savedEntity.Id = Id;
+            savedEntity.Gen = Gen;
+            savedEntity.Owner = Owner;
 #if DEBUG
             if (entityData.Gen != Gen) { throw new Exception ("Cant touch destroyed entity."); }
 #endif
             // remove components first.
             for (var i = entityData.ComponentsCountX2 - 2; i >= 0; i -= 2) {
-                Owner.UpdateFilters (-entityData.Components[i], this, entityData);
+                savedEntity.Owner.UpdateFilters (-entityData.Components[i], savedEntity, entityData);
 #if DEBUG
                 var removedComponent = EcsComponentPools.Items[entityData.Components[i]].GetItem (entityData.Components[i + 1]);
 #endif
                 EcsComponentPools.Items[entityData.Components[i]].Recycle (entityData.Components[i + 1]);
                 entityData.ComponentsCountX2 -= 2;
 #if DEBUG
-                for (var ii = 0; ii < Owner._debugListeners.Count; ii++) {
-                    Owner._debugListeners[ii].OnComponentRemoved (this, removedComponent);
+                for (var ii = 0; ii < savedEntity.Owner._debugListeners.Count; ii++) {
+                    savedEntity.Owner._debugListeners[ii].OnComponentRemoved (savedEntity, removedComponent);
                 }
 #endif
             }
             entityData.ComponentsCountX2 = 0;
-            Owner.RecycleEntityData (Id, ref entityData);
+            savedEntity.Owner.RecycleEntityData (savedEntity.Id, ref entityData);
 #if DEBUG
-            for (var ii = 0; ii < Owner._debugListeners.Count; ii++) {
-                Owner._debugListeners[ii].OnEntityDestroyed (this);
+            for (var ii = 0; ii < savedEntity.Owner._debugListeners.Count; ii++) {
+                savedEntity.Owner._debugListeners[ii].OnEntityDestroyed (savedEntity);
             }
 #endif
         }
