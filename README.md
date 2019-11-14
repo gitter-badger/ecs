@@ -368,7 +368,7 @@ Current implementation of foreach-loop fast enough (custom enumerator, no memory
 
 ### I copy&paste my reset components code again and again. How I can do it in other manner?
 
-If you want to simplify your code and keep reset-code in one place, you can use `IEcsAutoResetComponent` interface for components:
+If you want to simplify your code and keep reset-code in one place, you can use `IEcsAutoReset` interface for components:
 ```csharp
 class MyComponent : IEcsAutoReset {
     public object LinkToAnotherComponent;
@@ -388,7 +388,7 @@ If you want to remove one-frame components without additional custom code, you c
 ```csharp
 class MyComponent : IEcsOneFrame { }
 ```
-> Important: Do not forget to call `EcsWorld.RemoveOneFrameComponents` method once after all `EcsSystems.Run` calls.
+> Important: Do not forget to call `EcsWorld.EndFrame()` method once after all `EcsSystems.Run` calls.
 
 > Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 
