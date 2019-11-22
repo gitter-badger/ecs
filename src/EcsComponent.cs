@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
     /// <summary>
-    /// Marks component type to be not autofilled as GetX in filter.
+    /// Marks component type to be not auto-filled as GetX in filter.
     /// </summary>
     public interface IEcsIgnoreInFilter { }
 
@@ -67,17 +67,15 @@ namespace Leopotam.Ecs {
         Func<T> _customCtor;
 
 #if DEBUG
-        readonly System.Collections.Generic.List<System.Reflection.FieldInfo> _nullableFields = new System.Collections.Generic.List<System.Reflection.FieldInfo> (8);
+        readonly List<System.Reflection.FieldInfo> _nullableFields = new List<System.Reflection.FieldInfo> (8);
 #endif
 
         EcsComponentPool () {
             TypeIndex = EcsComponentPools.Count++;
             EcsComponentPools.Items[TypeIndex] = this;
             IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (typeof (T));
-#pragma warning disable 618
-            IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (typeof (T)) || Attribute.IsDefined (typeof (T), typeof (EcsIgnoreInFilterAttribute));
-            IsOneFrame = typeof (IEcsOneFrame).IsAssignableFrom (typeof (T)) || Attribute.IsDefined (typeof (T), typeof (EcsOneFrameAttribute));
-#pragma warning restore 618
+            IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (typeof (T));
+            IsOneFrame = typeof (IEcsOneFrame).IsAssignableFrom (typeof (T));
 #if DEBUG
             // collect all marshal-by-reference fields.
             var fields = typeof (T).GetFields ();
@@ -85,7 +83,8 @@ namespace Leopotam.Ecs {
                 var field = fields[i];
                 if (!Attribute.IsDefined (field, typeof (EcsIgnoreNullCheckAttribute))) {
                     var type = field.FieldType;
-                    if (!type.IsValueType || (Nullable.GetUnderlyingType (type) != null) && !Nullable.GetUnderlyingType (type).IsValueType) {
+                    var underlyingType = Nullable.GetUnderlyingType (type);
+                    if (!type.IsValueType || (underlyingType != null && !underlyingType.IsValueType)) {
                         if (type != typeof (string)) {
                             _nullableFields.Add (field);
                         }
@@ -104,9 +103,7 @@ namespace Leopotam.Ecs {
         /// <param name="ctor"></param>
         public void SetCustomCtor (Func<T> ctor) {
 #if DEBUG
-            if (ctor == null) {
-                throw new Exception ("Ctor is null.");
-            }
+            if (ctor == null) { throw new Exception ("Ctor is null."); }
 #endif
             _customCtor = ctor;
         }
@@ -152,16 +149,13 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = _nullableFields.Count; i < iMax; i++) {
                 if (_nullableFields[i].FieldType.IsValueType) {
                     if (_nullableFields[i].FieldType == typeof (EcsEntity) && ((EcsEntity) _nullableFields[i].GetValue (obj)).Owner != null) {
-                        var entity = (EcsEntity) _nullableFields[i].GetValue (obj);
-                        throw new Exception (string.Format (
-                            "Memory leak for \"{0}\" component: \"{1}\" field not nulled with EcsEntity.Null. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.",
-                            typeof (T).Name, _nullableFields[i].Name));
+                        throw new Exception (
+                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not nulled with EcsEntity.Null. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
                     }
                 } else {
                     if (_nullableFields[i].GetValue (obj) != null) {
-                        throw new Exception (string.Format (
-                            "Memory leak for \"{0}\" component: \"{1}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.",
-                            typeof (T).Name, _nullableFields[i].Name));
+                        throw new Exception (
+                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
                     }
                 }
             }

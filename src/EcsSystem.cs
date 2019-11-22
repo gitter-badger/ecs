@@ -111,6 +111,7 @@ namespace Leopotam.Ecs {
         /// Adds new system to processing.
         /// </summary>
         /// <param name="system">System instance.</param>
+        /// <param name="namedRunSystem">Optional name of system.</param>
         public EcsSystems Add (IEcsSystem system, string namedRunSystem = null) {
 #if DEBUG
             if (system == null) { throw new Exception ("System is null."); }
@@ -136,6 +137,7 @@ namespace Leopotam.Ecs {
         /// Sets IEcsRunSystem active state.
         /// </summary>
         /// <param name="idx">Index of system.</param>
+        /// <param name="state">New state of system.</param>
         public void SetRunSystemState (int idx, bool state) {
 #if DEBUG
             if (idx < 0 || idx >= _runSystems.Count) { throw new Exception ("Invalid index"); }
@@ -164,7 +166,6 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Gets all run systems. Important: Dont change collection!
         /// </summary>
-        /// <param name="list">List to put results in it. If null - will be created.</param>
         public EcsGrowList<EcsSystemsRunItem> GetRunSystems () {
             return _runSystems;
         }
@@ -222,7 +223,7 @@ namespace Leopotam.Ecs {
                 if (system is IEcsPreInitSystem) {
                     ((IEcsPreInitSystem) system).PreInit ();
 #if DEBUG
-                    World.CheckForLeakedEntities ($"{system.GetType().Name}.PreInit()");
+                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.PreInit()");
 #endif
                 }
             }
@@ -232,7 +233,7 @@ namespace Leopotam.Ecs {
                 if (system is IEcsInitSystem) {
                     ((IEcsInitSystem) system).Init ();
 #if DEBUG
-                    World.CheckForLeakedEntities ($"{system.GetType().Name}.Init()");
+                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.Init()");
 #endif
                 }
             }
@@ -289,6 +290,11 @@ namespace Leopotam.Ecs {
 #endif
                 }
             }
+#if DEBUG
+            for (int i = 0, iMax = _debugListeners.Count; i < iMax; i++) {
+                _debugListeners[i].OnSystemsDestroyed ();
+            }
+#endif
         }
 
         /// <summary>
@@ -297,7 +303,7 @@ namespace Leopotam.Ecs {
         /// <param name="system">ISystem instance.</param>
         /// <param name="world">EcsWorld instance.</param>
         /// <param name="injections">Additional instances for injection.</param>
-        public static void InjectDataToSystem (IEcsSystem system, EcsWorld world, System.Collections.Generic.Dictionary<Type, object> injections) {
+        public static void InjectDataToSystem (IEcsSystem system, EcsWorld world, Dictionary<Type, object> injections) {
             var systemType = system.GetType ();
             var worldType = world.GetType ();
             var filterType = typeof (EcsFilter);
