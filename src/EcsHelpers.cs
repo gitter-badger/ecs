@@ -8,18 +8,14 @@ using System;
 using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
-    public static class EcsHelpers {
-        public const int EntityChunkBitsSize = 9; // 512
-        public const int EntityComponentsCount = 8;
+    static class EcsHelpers {
+        const int EntityComponentsCount = 8;
         public const int FilterEntitiesSize = 256;
-
-        public const int EntityChunkSize = 1 << EntityChunkBitsSize;
-        public const int EntityChunkMask = EntityChunkSize - 1;
         public const int EntityComponentsCountX2 = EntityComponentsCount * 2;
     }
 
     /// <summary>
-    /// Fast List<> replacement for growing only collections.
+    /// Fast List replacement for growing only collections.
     /// </summary>
     /// <typeparam name="T">Type of item.</typeparam>
     public class EcsGrowList<T> {

@@ -24,7 +24,7 @@ By default last released version will be used. If you need trunk / developing ve
 
 ## As unity module from npm registry (Experimental)
 This repository can be installed as unity module from external npm registry with support of different versions. In this way new block should be added to `Packages/manifest.json` right after opening `{` bracket:
-```json
+```
   "scopedRegistries": [
     {
       "name": "Leopotam",
@@ -194,6 +194,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
         foreach (var i in _filter) {
             // entity that contains WeaponComponent.
             // Performance hint: use 'ref' prefixes for disable copying entity structure.
+            // Important: dont use `ref` on filter data outside of foreach-loop over this filter.
             ref var entity = ref _filter.Entities[i];
 
             // Get1 will return link to attached "WeaponComponent".
@@ -203,6 +204,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     }
 }
 ```
+> **Important!** You should not use `ref` modifier for any filter data outside of foreach-loop over this filter if you want to destroy part of this data (entity or component) - it will break memory integrity.
 
 All components from filter `Include` constraint can be fast accessed through `filter.Get1()`, `filter.Get2()`, etc - in same order as they were used in filter type declaration.
 
@@ -310,7 +312,7 @@ Not ready yet.
 [Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
-The software released under the terms of the [MIT license](./LICENSE). Enjoy.
+The software released under the terms of the [MIT license](./LICENSE.md). Enjoy.
 
 # Donate
 Its free opensource software, but you can buy me a coffee:
@@ -366,7 +368,7 @@ Current implementation of foreach-loop fast enough (custom enumerator, no memory
 
 ### I copy&paste my reset components code again and again. How I can do it in other manner?
 
-If you want to simplify your code and keep reset-code in one place, you can use `IEcsAutoResetComponent` interface for components:
+If you want to simplify your code and keep reset-code in one place, you can use `IEcsAutoReset` interface for components:
 ```csharp
 class MyComponent : IEcsAutoReset {
     public object LinkToAnotherComponent;
@@ -386,7 +388,7 @@ If you want to remove one-frame components without additional custom code, you c
 ```csharp
 class MyComponent : IEcsOneFrame { }
 ```
-> Important: Do not forget to call `EcsWorld.RemoveOneFrameComponents` method once after all `EcsSystems.Run` calls.
+> Important: Do not forget to call `EcsWorld.EndFrame()` method once after all `EcsSystems.Run` calls.
 
 > Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 

@@ -18,18 +18,18 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
     public class EcsWorld {
-        internal EcsEntityData[] _entities = new EcsEntityData[1024];
-        internal int _entitiesCount;
-        internal readonly EcsGrowList<int> _freeEntities = new EcsGrowList<int> (1024);
-        internal readonly EcsGrowList<EcsFilter> _filters = new EcsGrowList<EcsFilter> (128);
-        protected readonly Dictionary<int, EcsGrowList<EcsFilter>> _filterByIncludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
-        protected readonly Dictionary<int, EcsGrowList<EcsFilter>> _filterByExcludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
-        protected readonly Dictionary<int, EcsFilter> _oneFrameFilters = new Dictionary<int, EcsFilter> (64);
+        protected EcsEntityData[] Entities = new EcsEntityData[1024];
+        protected int EntitiesCount;
+        protected readonly EcsGrowList<int> FreeEntities = new EcsGrowList<int> (1024);
+        protected readonly EcsGrowList<EcsFilter> Filters = new EcsGrowList<EcsFilter> (128);
+        protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByIncludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
+        protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByExcludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
+        protected readonly Dictionary<int, EcsFilter> OneFrameFilters = new Dictionary<int, EcsFilter> (64);
 #if DEBUG
-        internal bool _isDestroyed;
-        internal bool _inDestroying;
-        internal EcsGrowList<EcsEntity> _leakedEntities = new EcsGrowList<EcsEntity> (256);
-        internal readonly List<IEcsWorldDebugListener> _debugListeners = new List<IEcsWorldDebugListener> (4);
+        internal readonly List<IEcsWorldDebugListener> DebugListeners = new List<IEcsWorldDebugListener> (4);
+        protected bool IsDestroyed;
+        protected bool InDestroying;
+        readonly EcsGrowList<EcsEntity> _leakedEntities = new EcsGrowList<EcsEntity> (256);
 
         /// <summary>
         /// Adds external event listener.
@@ -37,7 +37,7 @@ namespace Leopotam.Ecs {
         /// <param name="listener">Event listener.</param>
         public void AddDebugListener (IEcsWorldDebugListener listener) {
             if (listener == null) { throw new Exception ("Listener is null."); }
-            _debugListeners.Add (listener);
+            DebugListeners.Add (listener);
         }
 
         /// <summary>
@@ -46,24 +46,23 @@ namespace Leopotam.Ecs {
         /// <param name="listener">Event listener.</param>
         public void RemoveDebugListener (IEcsWorldDebugListener listener) {
             if (listener == null) { throw new Exception ("Listener is null."); }
-            _debugListeners.Remove (listener);
+            DebugListeners.Remove (listener);
         }
 #endif
 
         /// <summary>
-        /// Destroyes world and exist entities.
+        /// Destroys world and exist entities.
         /// </summary>
         public void Destroy () {
 #if DEBUG
-            if (_isDestroyed || _inDestroying) { throw new Exception ("EcsWorld already destroyed."); }
-            _inDestroying = true;
+            if (IsDestroyed || InDestroying) { throw new Exception ("EcsWorld already destroyed."); }
+            InDestroying = true;
             CheckForLeakedEntities ("Destroy");
 #endif
-            var entity = new EcsEntity ();
+            EcsEntity entity;
             entity.Owner = this;
-            var maxCount = _entitiesCount;
-            for (var i = _entitiesCount - 1; i >= 0; i--) {
-                ref var entityData = ref _entities[i];
+            for (var i = EntitiesCount - 1; i >= 0; i--) {
+                ref var entityData = ref Entities[i];
                 if (entityData.ComponentsCountX2 > 0) {
                     entity.Id = i;
                     entity.Gen = entityData.Gen;
@@ -71,9 +70,9 @@ namespace Leopotam.Ecs {
                 }
             }
 #if DEBUG
-            _isDestroyed = true;
-            for (var i = _debugListeners.Count - 1; i >= 0; i--) {
-                _debugListeners[i].OnWorldDestroyed ();
+            IsDestroyed = true;
+            for (var i = DebugListeners.Count - 1; i >= 0; i--) {
+                DebugListeners[i].OnWorldDestroyed ();
             }
 #endif
         }
@@ -84,23 +83,23 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsEntity NewEntity () {
 #if DEBUG
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             EcsEntity entity;
             entity.Owner = this;
             // try to reuse entity from pool.
-            if (_freeEntities.Count > 0) {
-                entity.Id = _freeEntities.Items[--_freeEntities.Count];
-                ref var entityData = ref _entities[entity.Id];
+            if (FreeEntities.Count > 0) {
+                entity.Id = FreeEntities.Items[--FreeEntities.Count];
+                ref var entityData = ref Entities[entity.Id];
                 entity.Gen = entityData.Gen;
                 entityData.ComponentsCountX2 = 0;
             } else {
                 // create new entity.
-                if (_entitiesCount == _entities.Length) {
-                    Array.Resize (ref _entities, _entitiesCount << 1);
+                if (EntitiesCount == Entities.Length) {
+                    Array.Resize (ref Entities, EntitiesCount << 1);
                 }
-                entity.Id = _entitiesCount++;
-                ref var entityData = ref _entities[entity.Id];
+                entity.Id = EntitiesCount++;
+                ref var entityData = ref Entities[entity.Id];
                 entityData.Components = new int[EcsHelpers.EntityComponentsCountX2];
                 entityData.Gen = 1;
                 entity.Gen = entityData.Gen;
@@ -108,8 +107,8 @@ namespace Leopotam.Ecs {
             }
 #if DEBUG
             _leakedEntities.Add (entity);
-            for (var ii = 0; ii < _debugListeners.Count; ii++) {
-                _debugListeners[ii].OnEntityCreated (entity);
+            for (var ii = 0; ii < DebugListeners.Count; ii++) {
+                DebugListeners[ii].OnEntityCreated (entity);
             }
 #endif
             return entity;
@@ -172,7 +171,7 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Restores EcsEntity from internal id.
+        /// Restores EcsEntity from internal id. For internal use only!
         /// </summary>
         /// <param name="id">Internal id.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -187,44 +186,45 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Request exist filter or create new one.
+        /// Request exist filter or create new one. For internal use only!
         /// </summary>
-        /// <param name="filterType"></param>
+        /// <param name="filterType">Filter type.</param>
         public EcsFilter GetFilter (Type filterType) {
 #if DEBUG
             if (filterType == null) { throw new Exception ("FilterType is null."); }
             if (!filterType.IsSubclassOf (typeof (EcsFilter))) { throw new Exception ($"Invalid filter type: {filterType}."); }
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             // check already exist filters.
-            for (int i = 0, iMax = _filters.Count; i < iMax; i++) {
-                if (_filters.Items[i].GetType () == filterType) {
-                    return _filters.Items[i];
+            for (int i = 0, iMax = Filters.Count; i < iMax; i++) {
+                if (Filters.Items[i].GetType () == filterType) {
+                    return Filters.Items[i];
                 }
             }
             // create new filter.
             var filter = (EcsFilter) Activator.CreateInstance (filterType, true);
 #if DEBUG
-            for (var filterIdx = 0; filterIdx < _filters.Count; filterIdx++) {
-                if (filter.AreComponentsSame (_filters.Items[filterIdx])) {
-                    throw new Exception ($"Invalid filter \"{filter.GetType()}\": Another filter \"{_filters.Items[filterIdx].GetType()}\" already has same components, but in different order.");
+            for (var filterIdx = 0; filterIdx < Filters.Count; filterIdx++) {
+                if (filter.AreComponentsSame (Filters.Items[filterIdx])) {
+                    throw new Exception (
+                        $"Invalid filter \"{filter.GetType ()}\": Another filter \"{Filters.Items[filterIdx].GetType ()}\" already has same components, but in different order.");
                 }
             }
 #endif
-            _filters.Add (filter);
+            Filters.Add (filter);
             // add to component dicts for fast compatibility scan.
             for (int i = 0, iMax = filter.IncludedComponentTypes.Length; i < iMax; i++) {
-                if (!_filterByIncludedComponents.TryGetValue (filter.IncludedComponentTypes[i], out var filtersList)) {
+                if (!FilterByIncludedComponents.TryGetValue (filter.IncludedComponentTypes[i], out var filtersList)) {
                     filtersList = new EcsGrowList<EcsFilter> (8);
-                    _filterByIncludedComponents[filter.IncludedComponentTypes[i]] = filtersList;
+                    FilterByIncludedComponents[filter.IncludedComponentTypes[i]] = filtersList;
                 }
                 filtersList.Add (filter);
             }
             if (filter.ExcludedComponentTypes != null) {
                 for (int i = 0, iMax = filter.ExcludedComponentTypes.Length; i < iMax; i++) {
-                    if (!_filterByExcludedComponents.TryGetValue (filter.ExcludedComponentTypes[i], out var filtersList)) {
+                    if (!FilterByExcludedComponents.TryGetValue (filter.ExcludedComponentTypes[i], out var filtersList)) {
                         filtersList = new EcsGrowList<EcsFilter> (8);
-                        _filterByExcludedComponents[filter.ExcludedComponentTypes[i]] = filtersList;
+                        FilterByExcludedComponents[filter.ExcludedComponentTypes[i]] = filtersList;
                     }
                     filtersList.Add (filter);
                 }
@@ -237,7 +237,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void EndFrame () {
             // FIXME: process one-frame components.
-            foreach (var pair in _oneFrameFilters) {
+            foreach (var pair in OneFrameFilters) {
                 var typeIdx = pair.Key;
                 var filter = pair.Value;
                 foreach (var idx in filter) {
@@ -251,11 +251,11 @@ namespace Leopotam.Ecs {
         /// </summary>
         public EcsWorldStats GetStats () {
             var stats = new EcsWorldStats () {
-                ActiveEntities = _entitiesCount - _freeEntities.Count,
-                ReservedEntities = _freeEntities.Count,
-                Filters = _filters.Count,
+                ActiveEntities = EntitiesCount - FreeEntities.Count,
+                ReservedEntities = FreeEntities.Count,
+                Filters = Filters.Count,
                 Components = EcsComponentPools.Count,
-                OneFrameComponents = _oneFrameFilters.Count
+                OneFrameComponents = OneFrameFilters.Count
             };
             return stats;
         }
@@ -266,8 +266,8 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         internal void ValidateOneFrameFilter<T> () where T : class {
             var idx = EcsComponentPool<T>.Instance.TypeIndex;
-            if (!_oneFrameFilters.ContainsKey (idx)) {
-                _oneFrameFilters[idx] = GetFilter (typeof (EcsFilter<T>));
+            if (!OneFrameFilters.ContainsKey (idx)) {
+                OneFrameFilters[idx] = GetFilter (typeof (EcsFilter<T>));
             }
         }
 
@@ -276,13 +276,13 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="id">Entity id.</param>
         /// <param name="entityData">Entity internal data.</param>
-        internal protected void RecycleEntityData (int id, ref EcsEntityData entityData) {
+        protected internal void RecycleEntityData (int id, ref EcsEntityData entityData) {
 #if DEBUG
             if (entityData.ComponentsCountX2 != 0) { throw new Exception ("Cant recycle invalid entity."); }
 #endif
             entityData.ComponentsCountX2 = -2;
             entityData.Gen = (ushort) ((entityData.Gen + 1) % ushort.MaxValue);
-            _freeEntities.Add (id);
+            FreeEntities.Add (id);
         }
 
 #if DEBUG
@@ -307,21 +307,25 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="typeIdx">Component type index.abstract Positive for add operation, negative for remove operation.</param>
         /// <param name="entity">Target entity.</param>
+        /// <param name="entityData">Target entity data.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        internal protected void UpdateFilters (int typeIdx, in EcsEntity entity, in EcsEntityData entityData) {
+        protected internal void UpdateFilters (int typeIdx, in EcsEntity entity, in EcsEntityData entityData) {
 #if DEBUG
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             EcsGrowList<EcsFilter> filters;
             if (typeIdx < 0) {
                 // remove component.
-                if (_filterByIncludedComponents.TryGetValue (-typeIdx, out filters)) {
+                if (FilterByIncludedComponents.TryGetValue (-typeIdx, out filters)) {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
                             var isValid = false;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) { isValid = true; break; }
+                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                    isValid = true;
+                                    break;
+                                }
                             }
                             if (!isValid) { throw new Exception ("Entity not in filter."); }
 #endif
@@ -329,7 +333,7 @@ namespace Leopotam.Ecs {
                         }
                     }
                 }
-                if (_filterByExcludedComponents.TryGetValue (-typeIdx, out filters)) {
+                if (FilterByExcludedComponents.TryGetValue (-typeIdx, out filters)) {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, typeIdx)) {
 #if DEBUG
@@ -348,13 +352,16 @@ namespace Leopotam.Ecs {
                 }
             } else {
                 // add component.
-                if (_filterByIncludedComponents.TryGetValue (typeIdx, out filters)) {
+                if (FilterByIncludedComponents.TryGetValue (typeIdx, out filters)) {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
                             var isValid = true;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) { isValid = false; break; }
+                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                    isValid = false;
+                                    break;
+                                }
                             }
                             if (!isValid) { throw new Exception ("Entity already in filter."); }
 #endif
@@ -362,13 +369,16 @@ namespace Leopotam.Ecs {
                         }
                     }
                 }
-                if (_filterByExcludedComponents.TryGetValue (typeIdx, out filters)) {
+                if (FilterByExcludedComponents.TryGetValue (typeIdx, out filters)) {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, -typeIdx)) {
 #if DEBUG
                             var isValid = false;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) { isValid = true; break; }
+                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                    isValid = true;
+                                    break;
+                                }
                             }
                             if (!isValid) { throw new Exception ("Entity not in filter."); }
 #endif
@@ -386,10 +396,10 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref EcsEntityData GetEntityData (in EcsEntity entity) {
 #if DEBUG
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
-            if (entity.Id < 0 || entity.Id > _entitiesCount) { throw new Exception ($"Invalid entity {entity.Id}"); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (entity.Id < 0 || entity.Id > EntitiesCount) { throw new Exception ($"Invalid entity {entity.Id}"); }
 #endif
-            return ref _entities[entity.Id];
+            return ref Entities[entity.Id];
         }
 
         /// <summary>
@@ -438,10 +448,10 @@ namespace Leopotam.Ecs {
     /// Debug interface for world events processing.
     /// </summary>
     public interface IEcsWorldDebugListener {
-        void OnEntityCreated (in EcsEntity entity);
-        void OnEntityDestroyed (in EcsEntity entity);
-        void OnComponentAdded (in EcsEntity entity, object component);
-        void OnComponentRemoved (in EcsEntity entity, object component);
+        void OnEntityCreated (EcsEntity entity);
+        void OnEntityDestroyed (EcsEntity entity);
+        void OnComponentAdded (EcsEntity entity, object component);
+        void OnComponentRemoved (EcsEntity entity, object component);
         void OnWorldDestroyed ();
     }
 #endif
