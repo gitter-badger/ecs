@@ -144,7 +144,7 @@ namespace Leopotam.Ecs {
 
         /// <summary>
         /// Gets component index at component pool.
-        /// If component doesnt exists "-1" will be returned.
+        /// If component doesn't exists "-1" will be returned.
         /// </summary>
         /// <typeparam name="T">Type of component.</typeparam>
 #if ENABLE_IL2CPP
@@ -215,7 +215,7 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Is entity nulled.
+        /// Is entity null-ed.
         /// </summary>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsNull () {

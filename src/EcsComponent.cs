@@ -103,6 +103,7 @@ namespace Leopotam.Ecs {
         /// <param name="ctor"></param>
         public void SetCustomCtor (Func<T> ctor) {
 #if DEBUG
+            // ReSharper disable once JoinNullCheckWithUsage
             if (ctor == null) { throw new Exception ("Ctor is null."); }
 #endif
             _customCtor = ctor;
@@ -150,12 +151,12 @@ namespace Leopotam.Ecs {
                 if (_nullableFields[i].FieldType.IsValueType) {
                     if (_nullableFields[i].FieldType == typeof (EcsEntity) && ((EcsEntity) _nullableFields[i].GetValue (obj)).Owner != null) {
                         throw new Exception (
-                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not nulled with EcsEntity.Null. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
+                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not null-ed with EcsEntity.Null. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
                     }
                 } else {
                     if (_nullableFields[i].GetValue (obj) != null) {
                         throw new Exception (
-                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
+                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not null-ed. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
                     }
                 }
             }

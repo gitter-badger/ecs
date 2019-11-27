@@ -305,11 +305,26 @@ systems.SetRunSystemState (idx, false);
 ```
 
 # Examples
-Not ready yet.
+##With sources:
+* [Snake game](https://github.com/Leopotam/ecs-snake)
+* [Pacman game](https://github.com/SH42913/pacmanecs)
+* [GTA5 custom wounds mod](https://github.com/SH42913/gunshotwound3)
+* [Ecs Hybrid Unity integration](https://github.com/SH42913/leoecshybrid)
+
+##Without sources:
+* [Hattori2 game](https://www.instagram.com/hattorigame/)
+* [Natives game](https://alex-kpojb.itch.io/natives-ecs)
+* [PrincessRun android game](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
+* [TowerRunner Revenge android game](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
+* [HypnoTap android game](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
+* [Elves-vs-Dwarfs game](https://globalgamejam.org/2019/games/elves-vs-dwarfs)
 
 # Extensions
-
-[Engine independent types](https://github.com/Leopotam/ecs-types)
+* [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
+* [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
+* [Multi-threading support](https://github.com/Leopotam/ecs-threads)
+* [Reactive systems](https://github.com/Leopotam/ecs-reactive)
+* [Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
 The software released under the terms of the [MIT license](./LICENSE.md). Enjoy.
@@ -320,10 +335,6 @@ Its free opensource software, but you can buy me a coffee:
 <a href="https://www.buymeacoffee.com/leopotam" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
 
 # FAQ
-
-### My project complex enough, I need more than 256 components. How I can do it?
-
-There are no components limit, but for performance / memory usage reason better to keep amount of components on each entity less or equals 8.
 
 ### I want to process one system at MonoBehaviour.Update() and another - at MonoBehaviour.FixedUpdate(). How I can do it?
 
