@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 // ReSharper disable ClassNeverInstantiated.Global
 
@@ -41,7 +42,11 @@ namespace Leopotam.Ecs {
     [AttributeUsage (AttributeTargets.Field)]
     public sealed class EcsIgnoreNullCheckAttribute : Attribute { }
 
-    public sealed class EcsComponentType<T> where T : class {
+    /// <summary>
+    /// Global descriptor of used component type.
+    /// </summary>
+    /// <typeparam name="T">Component type.</typeparam>
+    public static class EcsComponentType<T> where T : class {
         // ReSharper disable StaticMemberInGenericType
         public static readonly int TypeIndex;
         public static readonly Type Type;
@@ -51,7 +56,7 @@ namespace Leopotam.Ecs {
         // ReSharper restore StaticMemberInGenericType
 
         static EcsComponentType () {
-            TypeIndex = EcsComponentPool.ComponentTypesCount++;
+            TypeIndex = Interlocked.Increment (ref EcsComponentPool.ComponentTypesCount);
             Type = typeof (T);
             IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (Type);
             IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (Type);
@@ -64,26 +69,25 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
     public sealed class EcsComponentPool {
-        readonly bool _isAutoReset;
-
         /// <summary>
         /// Global component type counter.
-        /// Started from 1 for correct filters updating (add component on positive and remove on negative).
+        /// First component will be "1" for correct filters updating (add component on positive and remove on negative).
         /// </summary>
-        internal static int ComponentTypesCount = 1;
+        internal static int ComponentTypesCount;
 
 #if DEBUG
         readonly List<System.Reflection.FieldInfo> _nullableFields = new List<System.Reflection.FieldInfo> (8);
 #endif
 
-        Func<object> _customCtor;
-
         public object[] Items = new Object[128];
+        
+        Func<object> _customCtor;
+        readonly Type _type;
+        readonly bool _isAutoReset;
+        
         int[] _reservedItems = new int[128];
         int _itemsCount;
         int _reservedItemsCount;
-        
-        readonly Type _type;
 
         internal EcsComponentPool (Type cType, bool isAutoReset) {
             _type = cType;
