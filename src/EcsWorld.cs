@@ -17,7 +17,9 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     public class EcsWorld {
+        // ReSharper disable MemberCanBePrivate.Global
         protected EcsEntityData[] Entities = new EcsEntityData[1024];
         protected int EntitiesCount;
         protected readonly EcsGrowList<int> FreeEntities = new EcsGrowList<int> (1024);
@@ -25,11 +27,19 @@ namespace Leopotam.Ecs {
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByIncludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByExcludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
         protected readonly Dictionary<int, EcsFilter> OneFrameFilters = new Dictionary<int, EcsFilter> (64);
+
+        int _usedComponentsCount;
+
+        /// <summary>
+        /// Component pools cache.
+        /// </summary>
+        // ReSharper restore MemberCanBePrivate.Global
+        public EcsComponentPool[] ComponentPools = new EcsComponentPool[512];
 #if DEBUG
         internal readonly List<IEcsWorldDebugListener> DebugListeners = new List<IEcsWorldDebugListener> (4);
-        protected bool IsDestroyed;
-        protected bool InDestroying;
         readonly EcsGrowList<EcsEntity> _leakedEntities = new EcsGrowList<EcsEntity> (256);
+        bool _isDestroyed;
+        bool _inDestroying;
 
         /// <summary>
         /// Adds external event listener.
@@ -53,10 +63,10 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Destroys world and exist entities.
         /// </summary>
-        public void Destroy () {
+        public virtual void Destroy () {
 #if DEBUG
-            if (IsDestroyed || InDestroying) { throw new Exception ("EcsWorld already destroyed."); }
-            InDestroying = true;
+            if (_isDestroyed || _inDestroying) { throw new Exception ("EcsWorld already destroyed."); }
+            _inDestroying = true;
             CheckForLeakedEntities ("Destroy");
 #endif
             EcsEntity entity;
@@ -70,7 +80,7 @@ namespace Leopotam.Ecs {
                 }
             }
 #if DEBUG
-            IsDestroyed = true;
+            _isDestroyed = true;
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
                 DebugListeners[i].OnWorldDestroyed ();
             }
@@ -83,7 +93,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsEntity NewEntity () {
 #if DEBUG
-            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             EcsEntity entity;
             entity.Owner = this;
@@ -193,7 +203,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
             if (filterType == null) { throw new Exception ("FilterType is null."); }
             if (!filterType.IsSubclassOf (typeof (EcsFilter))) { throw new Exception ($"Invalid filter type: {filterType}."); }
-            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             // check already exist filters.
             for (int i = 0, iMax = Filters.Count; i < iMax; i++) {
@@ -212,7 +222,7 @@ namespace Leopotam.Ecs {
             }
 #endif
             Filters.Add (filter);
-            // add to component dicts for fast compatibility scan.
+            // add to component dictionaries for fast compatibility scan.
             for (int i = 0, iMax = filter.IncludedComponentTypes.Length; i < iMax; i++) {
                 if (!FilterByIncludedComponents.TryGetValue (filter.IncludedComponentTypes[i], out var filtersList)) {
                     filtersList = new EcsGrowList<EcsFilter> (8);
@@ -254,7 +264,7 @@ namespace Leopotam.Ecs {
                 ActiveEntities = EntitiesCount - FreeEntities.Count,
                 ReservedEntities = FreeEntities.Count,
                 Filters = Filters.Count,
-                Components = EcsComponentPools.Count,
+                Components = _usedComponentsCount,
                 OneFrameComponents = OneFrameFilters.Count
             };
             return stats;
@@ -265,7 +275,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         internal void ValidateOneFrameFilter<T> () where T : class {
-            var idx = EcsComponentPool<T>.Instance.TypeIndex;
+            var idx = EcsComponentType<T>.TypeIndex;
             if (!OneFrameFilters.ContainsKey (idx)) {
                 OneFrameFilters[idx] = GetFilter (typeof (EcsFilter<T>));
             }
@@ -311,7 +321,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected internal void UpdateFilters (int typeIdx, in EcsEntity entity, in EcsEntityData entityData) {
 #if DEBUG
-            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             EcsGrowList<EcsFilter> filters;
             if (typeIdx < 0) {
@@ -329,7 +339,7 @@ namespace Leopotam.Ecs {
                             }
                             if (!isValid) { throw new Exception ("Entity not in filter."); }
 #endif
-                            filters.Items[i].RemoveEntity (entity);
+                            filters.Items[i].OnRemoveEntity (entity);
                         }
                     }
                 }
@@ -346,7 +356,7 @@ namespace Leopotam.Ecs {
                             }
                             if (!isValid) { throw new Exception ("Entity already in filter."); }
 #endif
-                            filters.Items[i].AddEntity (entity);
+                            filters.Items[i].OnAddEntity (entity);
                         }
                     }
                 }
@@ -365,7 +375,7 @@ namespace Leopotam.Ecs {
                             }
                             if (!isValid) { throw new Exception ("Entity already in filter."); }
 #endif
-                            filters.Items[i].AddEntity (entity);
+                            filters.Items[i].OnAddEntity (entity);
                         }
                     }
                 }
@@ -382,7 +392,7 @@ namespace Leopotam.Ecs {
                             }
                             if (!isValid) { throw new Exception ("Entity not in filter."); }
 #endif
-                            filters.Items[i].RemoveEntity (entity);
+                            filters.Items[i].OnRemoveEntity (entity);
                         }
                     }
                 }
@@ -396,7 +406,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref EcsEntityData GetEntityData (in EcsEntity entity) {
 #if DEBUG
-            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
             if (entity.Id < 0 || entity.Id > EntitiesCount) { throw new Exception ($"Invalid entity {entity.Id}"); }
 #endif
             return ref Entities[entity.Id];
@@ -410,6 +420,25 @@ namespace Leopotam.Ecs {
             public ushort Gen;
             public short ComponentsCountX2;
             public int[] Components;
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public EcsComponentPool GetPool<T> () where T : class {
+            var typeIdx = EcsComponentType<T>.TypeIndex;
+            if (ComponentPools.Length < typeIdx) {
+                var len = ComponentPools.Length << 1;
+                while (len <= typeIdx) {
+                    len <<= 1;
+                }
+                Array.Resize (ref ComponentPools, len);
+            }
+            var pool = ComponentPools[typeIdx];
+            if (pool == null) {
+                pool = new EcsComponentPool (EcsComponentType<T>.Type, EcsComponentType<T>.IsAutoReset);
+                ComponentPools[typeIdx] = pool;
+                _usedComponentsCount++;
+            }
+            return pool;
         }
     }
 
@@ -450,8 +479,13 @@ namespace Leopotam.Ecs {
     public interface IEcsWorldDebugListener {
         void OnEntityCreated (EcsEntity entity);
         void OnEntityDestroyed (EcsEntity entity);
+
+        // ReSharper disable UnusedParameter.Global
         void OnComponentAdded (EcsEntity entity, object component);
+
         void OnComponentRemoved (EcsEntity entity, object component);
+        // ReSharper restore UnusedParameter.Global
+
         void OnWorldDestroyed ();
     }
 #endif

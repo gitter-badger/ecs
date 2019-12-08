@@ -7,6 +7,8 @@
 using System;
 using System.Runtime.CompilerServices;
 
+// ReSharper disable ClassNeverInstantiated.Global
+
 namespace Leopotam.Ecs {
     /// <summary>
     /// Common interface for all filter listeners.
@@ -35,8 +37,10 @@ namespace Leopotam.Ecs {
         DelayedOp[] _delayedOps = new DelayedOp[EcsHelpers.FilterEntitiesSize];
         int _delayedOpsCount;
 
+        // ReSharper disable MemberCanBePrivate.Global
         protected IEcsFilterListener[] Listeners = new IEcsFilterListener[4];
         protected int ListenersCount;
+        // ReSharper restore MemberCanBePrivate.Global
 
         protected internal int[] IncludedComponentTypes;
         protected internal int[] ExcludedComponentTypes;
@@ -80,6 +84,7 @@ namespace Leopotam.Ecs {
             Listeners[ListenersCount++] = listener;
         }
 
+        // ReSharper disable once CommentTypo
         /// <summary>
         /// Unsubscribes listener from filter events.
         /// </summary>
@@ -187,9 +192,9 @@ namespace Leopotam.Ecs {
                 for (int i = 0, iMax = _delayedOpsCount; i < iMax; i++) {
                     ref var op = ref _delayedOps[i];
                     if (op.IsAdd) {
-                        AddEntity (op.Entity);
+                        OnAddEntity (op.Entity);
                     } else {
-                        RemoveEntity (op.Entity);
+                        OnRemoveEntity (op.Entity);
                     }
                 }
                 _delayedOpsCount = 0;
@@ -228,8 +233,19 @@ namespace Leopotam.Ecs {
         }
 #endif
 
-        public abstract void AddEntity (in EcsEntity entity);
-        public abstract void RemoveEntity (in EcsEntity entity);
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        public abstract void OnAddEntity (in EcsEntity entity);
+
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        public abstract void OnRemoveEntity (in EcsEntity entity);
 
         public struct Enumerator : IDisposable {
             readonly EcsFilter _filter;
@@ -246,7 +262,7 @@ namespace Leopotam.Ecs {
 
             public int Current {
                 [MethodImpl (MethodImplOptions.AggressiveInlining)]
-                get { return _idx; }
+                get => _idx;
             }
 
 #if ENABLE_IL2CPP
@@ -282,13 +298,18 @@ namespace Leopotam.Ecs {
         readonly bool _allow1;
 
         protected EcsFilter () {
-            _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
+            _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             Get1 = _allow1 ? new Inc1[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedComponentTypes = new[] { EcsComponentPool<Inc1>.Instance.TypeIndex };
+            IncludedComponentTypes = new[] { EcsComponentType<Inc1>.TypeIndex };
         }
 
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void AddEntity (in EcsEntity entity) {
+        public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
@@ -300,8 +321,8 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
-                if (allow1 && typeIdx == EcsComponentPool<Inc1>.Instance.TypeIndex) {
-                    Get1[EntitiesCount] = EcsComponentPool<Inc1>.Instance.Items[itemIdx];
+                if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
+                    Get1[EntitiesCount] = (Inc1) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow1 = false;
                 }
             }
@@ -309,8 +330,13 @@ namespace Leopotam.Ecs {
             ProcessListeners (true, entity);
         }
 
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void RemoveEntity (in EcsEntity entity) {
+        public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
             for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
                 if (Entities[i] == entity) {
@@ -327,13 +353,13 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex, EcsComponentPool<Exc2>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
             }
         }
     }
@@ -352,15 +378,20 @@ namespace Leopotam.Ecs {
         readonly bool _allow2;
 
         protected EcsFilter () {
-            _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
-            _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
+            _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
+            _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             Get1 = _allow1 ? new Inc1[EcsHelpers.FilterEntitiesSize] : null;
             Get2 = _allow2 ? new Inc2[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedComponentTypes = new[] { EcsComponentPool<Inc1>.Instance.TypeIndex, EcsComponentPool<Inc2>.Instance.TypeIndex };
+            IncludedComponentTypes = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex };
         }
 
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void AddEntity (in EcsEntity entity) {
+        public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
@@ -374,12 +405,12 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
-                if (allow1 && typeIdx == EcsComponentPool<Inc1>.Instance.TypeIndex) {
-                    Get1[EntitiesCount] = EcsComponentPool<Inc1>.Instance.Items[itemIdx];
+                if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
+                    Get1[EntitiesCount] = (Inc1) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow1 = false;
                 }
-                if (allow2 && typeIdx == EcsComponentPool<Inc2>.Instance.TypeIndex) {
-                    Get2[EntitiesCount] = EcsComponentPool<Inc2>.Instance.Items[itemIdx];
+                if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
+                    Get2[EntitiesCount] = (Inc2) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow2 = false;
                 }
             }
@@ -387,8 +418,13 @@ namespace Leopotam.Ecs {
             ProcessListeners (true, entity);
         }
 
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void RemoveEntity (in EcsEntity entity) {
+        public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
             for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
                 if (Entities[i] == entity) {
@@ -406,13 +442,13 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex, EcsComponentPool<Exc2>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
             }
         }
     }
@@ -425,29 +461,36 @@ namespace Leopotam.Ecs {
     [UnityEngine.Scripting.Preserve]
 #endif
     public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter where Inc1 : class where Inc2 : class where Inc3 : class {
+        // ReSharper disable MemberCanBePrivate.Global
         public Inc1[] Get1;
         public Inc2[] Get2;
         public Inc3[] Get3;
+        // ReSharper restore MemberCanBePrivate.Global
         readonly bool _allow1;
         readonly bool _allow2;
         readonly bool _allow3;
 
         protected EcsFilter () {
-            _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
-            _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
-            _allow3 = !EcsComponentPool<Inc3>.Instance.IsIgnoreInFilter;
+            _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
+            _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
+            _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
             Get1 = _allow1 ? new Inc1[EcsHelpers.FilterEntitiesSize] : null;
             Get2 = _allow2 ? new Inc2[EcsHelpers.FilterEntitiesSize] : null;
             Get3 = _allow3 ? new Inc3[EcsHelpers.FilterEntitiesSize] : null;
             IncludedComponentTypes = new[] {
-                EcsComponentPool<Inc1>.Instance.TypeIndex,
-                EcsComponentPool<Inc2>.Instance.TypeIndex,
-                EcsComponentPool<Inc3>.Instance.TypeIndex
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex
             };
         }
 
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void AddEntity (in EcsEntity entity) {
+        public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
@@ -463,16 +506,16 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
-                if (allow1 && typeIdx == EcsComponentPool<Inc1>.Instance.TypeIndex) {
-                    Get1[EntitiesCount] = EcsComponentPool<Inc1>.Instance.Items[itemIdx];
+                if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
+                    Get1[EntitiesCount] = (Inc1) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow1 = false;
                 }
-                if (allow2 && typeIdx == EcsComponentPool<Inc2>.Instance.TypeIndex) {
-                    Get2[EntitiesCount] = EcsComponentPool<Inc2>.Instance.Items[itemIdx];
+                if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
+                    Get2[EntitiesCount] = (Inc2) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow2 = false;
                 }
-                if (allow3 && typeIdx == EcsComponentPool<Inc3>.Instance.TypeIndex) {
-                    Get3[EntitiesCount] = EcsComponentPool<Inc3>.Instance.Items[itemIdx];
+                if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
+                    Get3[EntitiesCount] = (Inc3) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow3 = false;
                 }
             }
@@ -480,8 +523,13 @@ namespace Leopotam.Ecs {
             ProcessListeners (true, entity);
         }
 
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void RemoveEntity (in EcsEntity entity) {
+        public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
             for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
                 if (Entities[i] == entity) {
@@ -500,13 +548,13 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex, EcsComponentPool<Exc2>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
             }
         }
     }
@@ -519,34 +567,41 @@ namespace Leopotam.Ecs {
     [UnityEngine.Scripting.Preserve]
 #endif
     public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter where Inc1 : class where Inc2 : class where Inc3 : class where Inc4 : class {
+        // ReSharper disable MemberCanBePrivate.Global
         public Inc1[] Get1;
         public Inc2[] Get2;
         public Inc3[] Get3;
         public Inc4[] Get4;
+        // ReSharper restore MemberCanBePrivate.Global
         readonly bool _allow1;
         readonly bool _allow2;
         readonly bool _allow3;
         readonly bool _allow4;
 
         protected EcsFilter () {
-            _allow1 = !EcsComponentPool<Inc1>.Instance.IsIgnoreInFilter;
-            _allow2 = !EcsComponentPool<Inc2>.Instance.IsIgnoreInFilter;
-            _allow3 = !EcsComponentPool<Inc3>.Instance.IsIgnoreInFilter;
-            _allow4 = !EcsComponentPool<Inc4>.Instance.IsIgnoreInFilter;
+            _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
+            _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
+            _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
+            _allow4 = !EcsComponentType<Inc4>.IsIgnoreInFilter;
             Get1 = _allow1 ? new Inc1[EcsHelpers.FilterEntitiesSize] : null;
             Get2 = _allow2 ? new Inc2[EcsHelpers.FilterEntitiesSize] : null;
             Get3 = _allow3 ? new Inc3[EcsHelpers.FilterEntitiesSize] : null;
             Get4 = _allow4 ? new Inc4[EcsHelpers.FilterEntitiesSize] : null;
             IncludedComponentTypes = new[] {
-                EcsComponentPool<Inc1>.Instance.TypeIndex,
-                EcsComponentPool<Inc2>.Instance.TypeIndex,
-                EcsComponentPool<Inc3>.Instance.TypeIndex,
-                EcsComponentPool<Inc4>.Instance.TypeIndex
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex,
+                EcsComponentType<Inc4>.TypeIndex
             };
         }
 
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void AddEntity (in EcsEntity entity) {
+        public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
             if (Entities.Length == EntitiesCount) {
                 Array.Resize (ref Entities, EntitiesCount << 1);
@@ -564,20 +619,20 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
-                if (allow1 && typeIdx == EcsComponentPool<Inc1>.Instance.TypeIndex) {
-                    Get1[EntitiesCount] = EcsComponentPool<Inc1>.Instance.Items[itemIdx];
+                if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
+                    Get1[EntitiesCount] = (Inc1) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow1 = false;
                 }
-                if (allow2 && typeIdx == EcsComponentPool<Inc2>.Instance.TypeIndex) {
-                    Get2[EntitiesCount] = EcsComponentPool<Inc2>.Instance.Items[itemIdx];
+                if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
+                    Get2[EntitiesCount] = (Inc2) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow2 = false;
                 }
-                if (allow3 && typeIdx == EcsComponentPool<Inc3>.Instance.TypeIndex) {
-                    Get3[EntitiesCount] = EcsComponentPool<Inc3>.Instance.Items[itemIdx];
+                if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
+                    Get3[EntitiesCount] = (Inc3) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow3 = false;
                 }
-                if (allow4 && typeIdx == EcsComponentPool<Inc4>.Instance.TypeIndex) {
-                    Get4[EntitiesCount] = EcsComponentPool<Inc4>.Instance.Items[itemIdx];
+                if (allow4 && typeIdx == EcsComponentType<Inc4>.TypeIndex) {
+                    Get4[EntitiesCount] = (Inc4) entity.Owner.ComponentPools[typeIdx].Items[itemIdx];
                     allow4 = false;
                 }
             }
@@ -585,8 +640,13 @@ namespace Leopotam.Ecs {
             ProcessListeners (true, entity);
         }
 
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override void RemoveEntity (in EcsEntity entity) {
+        public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
             for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
                 if (Entities[i] == entity) {
@@ -606,13 +666,13 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentPool<Exc1>.Instance.TypeIndex, EcsComponentPool<Exc2>.Instance.TypeIndex };
+                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
             }
         }
     }
