@@ -35,6 +35,17 @@ namespace Leopotam.Ecs {
             }
             Items[Count++] = item;
         }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public void EnsureCapacity (int count) {
+            if (Items.Length < count) {
+                var len = Items.Length << 1;
+                while (len <= count) {
+                    len <<= 1;
+                }
+                Array.Resize (ref Items, len);
+            }
+        }
     }
 }
 
