@@ -223,22 +223,27 @@ namespace Leopotam.Ecs {
 #endif
             Filters.Add (filter);
             // add to component dictionaries for fast compatibility scan.
-            for (int i = 0, iMax = filter.IncludedComponentTypes.Length; i < iMax; i++) {
-                if (!FilterByIncludedComponents.TryGetValue (filter.IncludedComponentTypes[i], out var filtersList)) {
+            for (int i = 0, iMax = filter.IncludedTypeIndices.Length; i < iMax; i++) {
+                if (!FilterByIncludedComponents.TryGetValue (filter.IncludedTypeIndices[i], out var filtersList)) {
                     filtersList = new EcsGrowList<EcsFilter> (8);
-                    FilterByIncludedComponents[filter.IncludedComponentTypes[i]] = filtersList;
+                    FilterByIncludedComponents[filter.IncludedTypeIndices[i]] = filtersList;
                 }
                 filtersList.Add (filter);
             }
-            if (filter.ExcludedComponentTypes != null) {
-                for (int i = 0, iMax = filter.ExcludedComponentTypes.Length; i < iMax; i++) {
-                    if (!FilterByExcludedComponents.TryGetValue (filter.ExcludedComponentTypes[i], out var filtersList)) {
+            if (filter.ExcludedTypeIndices != null) {
+                for (int i = 0, iMax = filter.ExcludedTypeIndices.Length; i < iMax; i++) {
+                    if (!FilterByExcludedComponents.TryGetValue (filter.ExcludedTypeIndices[i], out var filtersList)) {
                         filtersList = new EcsGrowList<EcsFilter> (8);
-                        FilterByExcludedComponents[filter.ExcludedComponentTypes[i]] = filtersList;
+                        FilterByExcludedComponents[filter.ExcludedTypeIndices[i]] = filtersList;
                     }
                     filtersList.Add (filter);
                 }
             }
+#if DEBUG
+            for (var ii = 0; ii < DebugListeners.Count; ii++) {
+                DebugListeners[ii].OnFilterCreated (filter);
+            }
+#endif
             return filter;
         }
 
@@ -246,7 +251,6 @@ namespace Leopotam.Ecs {
         /// Informs world that frame ended and one-frame components can be removed.
         /// </summary>
         public void EndFrame () {
-            // FIXME: process one-frame components.
             foreach (var pair in OneFrameFilters) {
                 var typeIdx = pair.Key;
                 var filter = pair.Value;
@@ -479,6 +483,7 @@ namespace Leopotam.Ecs {
     public interface IEcsWorldDebugListener {
         void OnEntityCreated (EcsEntity entity);
         void OnEntityDestroyed (EcsEntity entity);
+        void OnFilterCreated (EcsFilter filter);
 
         // ReSharper disable UnusedParameter.Global
         void OnComponentAdded (EcsEntity entity, object component);

@@ -42,8 +42,11 @@ namespace Leopotam.Ecs {
         protected int ListenersCount;
         // ReSharper restore MemberCanBePrivate.Global
 
-        protected internal int[] IncludedComponentTypes;
-        protected internal int[] ExcludedComponentTypes;
+        protected internal int[] IncludedTypeIndices;
+        protected internal int[] ExcludedTypeIndices;
+
+        public Type[] IncludedTypes;
+        public Type[] ExcludedTypes;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
@@ -107,9 +110,9 @@ namespace Leopotam.Ecs {
         /// <param name="addedRemovedTypeIndex">Optional added (greater 0) or removed (less 0) component. Will be ignored if zero.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         internal bool IsCompatible (in EcsWorld.EcsEntityData entityData, int addedRemovedTypeIndex) {
-            var incIdx = IncludedComponentTypes.Length - 1;
+            var incIdx = IncludedTypeIndices.Length - 1;
             for (; incIdx >= 0; incIdx--) {
-                var typeIdx = IncludedComponentTypes[incIdx];
+                var typeIdx = IncludedTypeIndices[incIdx];
                 var idx = entityData.ComponentsCountX2 - 2;
                 for (; idx >= 0; idx -= 2) {
                     var typeIdx2 = entityData.Components[idx];
@@ -130,9 +133,9 @@ namespace Leopotam.Ecs {
                 return false;
             }
             // check for excluded components.
-            if (ExcludedComponentTypes != null) {
-                for (var excIdx = 0; excIdx < ExcludedComponentTypes.Length; excIdx++) {
-                    var typeIdx = ExcludedComponentTypes[excIdx];
+            if (ExcludedTypeIndices != null) {
+                for (var excIdx = 0; excIdx < ExcludedTypeIndices.Length; excIdx++) {
+                    var typeIdx = ExcludedTypeIndices[excIdx];
                     for (var idx = entityData.ComponentsCountX2 - 2; idx >= 0; idx -= 2) {
                         var typeIdx2 = entityData.Components[idx];
                         if (typeIdx2 == -addedRemovedTypeIndex) {
@@ -207,24 +210,24 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="filter">Filter to compare.</param>
         internal bool AreComponentsSame (EcsFilter filter) {
-            if (IncludedComponentTypes.Length != filter.IncludedComponentTypes.Length) {
+            if (IncludedTypeIndices.Length != filter.IncludedTypeIndices.Length) {
                 return false;
             }
-            for (var i = 0; i < IncludedComponentTypes.Length; i++) {
-                if (Array.IndexOf (filter.IncludedComponentTypes, IncludedComponentTypes[i]) == -1) {
+            for (var i = 0; i < IncludedTypeIndices.Length; i++) {
+                if (Array.IndexOf (filter.IncludedTypeIndices, IncludedTypeIndices[i]) == -1) {
                     return false;
                 }
             }
-            if ((ExcludedComponentTypes == null && filter.ExcludedComponentTypes != null) ||
-                (ExcludedComponentTypes != null && filter.ExcludedComponentTypes == null)) {
+            if ((ExcludedTypeIndices == null && filter.ExcludedTypeIndices != null) ||
+                (ExcludedTypeIndices != null && filter.ExcludedTypeIndices == null)) {
                 return false;
             }
-            if (ExcludedComponentTypes != null) {
-                if (filter.ExcludedComponentTypes == null || ExcludedComponentTypes.Length != filter.ExcludedComponentTypes.Length) {
+            if (ExcludedTypeIndices != null) {
+                if (filter.ExcludedTypeIndices == null || ExcludedTypeIndices.Length != filter.ExcludedTypeIndices.Length) {
                     return false;
                 }
-                for (var i = 0; i < ExcludedComponentTypes.Length; i++) {
-                    if (Array.IndexOf (filter.ExcludedComponentTypes, ExcludedComponentTypes[i]) == -1) {
+                for (var i = 0; i < ExcludedTypeIndices.Length; i++) {
+                    if (Array.IndexOf (filter.ExcludedTypeIndices, ExcludedTypeIndices[i]) == -1) {
                         return false;
                     }
                 }
@@ -300,7 +303,8 @@ namespace Leopotam.Ecs {
         protected EcsFilter () {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             Get1 = _allow1 ? new Inc1[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedComponentTypes = new[] { EcsComponentType<Inc1>.TypeIndex };
+            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex };
+            IncludedTypes = new[] { EcsComponentType<Inc1>.Type };
         }
 
         /// <summary>
@@ -353,13 +357,15 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
             }
         }
     }
@@ -382,7 +388,8 @@ namespace Leopotam.Ecs {
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             Get1 = _allow1 ? new Inc1[EcsHelpers.FilterEntitiesSize] : null;
             Get2 = _allow2 ? new Inc2[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedComponentTypes = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex };
+            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex };
+            IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type };
         }
 
         /// <summary>
@@ -442,13 +449,15 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
             }
         }
     }
@@ -477,11 +486,8 @@ namespace Leopotam.Ecs {
             Get1 = _allow1 ? new Inc1[EcsHelpers.FilterEntitiesSize] : null;
             Get2 = _allow2 ? new Inc2[EcsHelpers.FilterEntitiesSize] : null;
             Get3 = _allow3 ? new Inc3[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedComponentTypes = new[] {
-                EcsComponentType<Inc1>.TypeIndex,
-                EcsComponentType<Inc2>.TypeIndex,
-                EcsComponentType<Inc3>.TypeIndex
-            };
+            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex, EcsComponentType<Inc3>.TypeIndex };
+            IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type, EcsComponentType<Inc3>.Type };
         }
 
         /// <summary>
@@ -548,13 +554,15 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
             }
         }
     }
@@ -587,11 +595,17 @@ namespace Leopotam.Ecs {
             Get2 = _allow2 ? new Inc2[EcsHelpers.FilterEntitiesSize] : null;
             Get3 = _allow3 ? new Inc3[EcsHelpers.FilterEntitiesSize] : null;
             Get4 = _allow4 ? new Inc4[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedComponentTypes = new[] {
+            IncludedTypeIndices = new[] {
                 EcsComponentType<Inc1>.TypeIndex,
                 EcsComponentType<Inc2>.TypeIndex,
                 EcsComponentType<Inc3>.TypeIndex,
                 EcsComponentType<Inc4>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type,
+                EcsComponentType<Inc3>.Type,
+                EcsComponentType<Inc4>.Type
             };
         }
 
@@ -666,13 +680,15 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
             }
         }
 
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : class where Exc2 : class {
             protected Exclude () {
-                ExcludedComponentTypes = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
+                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
             }
         }
     }
