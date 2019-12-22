@@ -157,14 +157,14 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Get all systems. Important: Dont change collection!
+        /// Get all systems. Important: Don't change collection!
         /// </summary>
         public EcsGrowList<IEcsSystem> GetAllSystems () {
             return _allSystems;
         }
 
         /// <summary>
-        /// Gets all run systems. Important: Dont change collection!
+        /// Gets all run systems. Important: Don't change collection!
         /// </summary>
         public EcsGrowList<EcsSystemsRunItem> GetRunSystems () {
             return _runSystems;

@@ -7,6 +7,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
+
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace Leopotam.Ecs {
     /// <summary>
@@ -39,46 +42,59 @@ namespace Leopotam.Ecs {
     [AttributeUsage (AttributeTargets.Field)]
     public sealed class EcsIgnoreNullCheckAttribute : Attribute { }
 
-    static class EcsComponentPools {
-        public static readonly Dictionary<int, IEcsComponentPool> Items = new Dictionary<int, IEcsComponentPool> (512);
-        // started from 1 for correct filters updating (add component on positive and remove on negative).
-        public static int Count = 1;
-    }
+    /// <summary>
+    /// Global descriptor of used component type.
+    /// </summary>
+    /// <typeparam name="T">Component type.</typeparam>
+    public static class EcsComponentType<T> where T : class {
+        // ReSharper disable StaticMemberInGenericType
+        public static readonly int TypeIndex;
+        public static readonly Type Type;
+        public static readonly bool IsAutoReset;
+        public static readonly bool IsIgnoreInFilter;
+        public static readonly bool IsOneFrame;
+        // ReSharper restore StaticMemberInGenericType
 
-    interface IEcsComponentPool {
-        void Recycle (int idx);
-        object GetItem (int idx);
+        static EcsComponentType () {
+            TypeIndex = Interlocked.Increment (ref EcsComponentPool.ComponentTypesCount);
+            Type = typeof (T);
+            IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (Type);
+            IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (Type);
+            IsOneFrame = typeof (IEcsOneFrame).IsAssignableFrom (Type);
+        }
     }
 
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    public sealed class EcsComponentPool<T> : IEcsComponentPool where T : class {
-        public readonly int TypeIndex;
-        public readonly bool IsAutoReset;
-        public readonly bool IsIgnoreInFilter;
-        public readonly bool IsOneFrame;
-        public static readonly EcsComponentPool<T> Instance = new EcsComponentPool<T> ();
-        public T[] Items = new T[128];
-        int[] _reservedItems = new int[128];
-        int _itemsCount;
-        int _reservedItemsCount;
-        Func<T> _customCtor;
+    public sealed class EcsComponentPool {
+        /// <summary>
+        /// Global component type counter.
+        /// First component will be "1" for correct filters updating (add component on positive and remove on negative).
+        /// </summary>
+        internal static int ComponentTypesCount;
 
 #if DEBUG
         readonly List<System.Reflection.FieldInfo> _nullableFields = new List<System.Reflection.FieldInfo> (8);
 #endif
 
-        EcsComponentPool () {
-            TypeIndex = EcsComponentPools.Count++;
-            EcsComponentPools.Items[TypeIndex] = this;
-            IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (typeof (T));
-            IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (typeof (T));
-            IsOneFrame = typeof (IEcsOneFrame).IsAssignableFrom (typeof (T));
+        public object[] Items = new Object[128];
+        
+        Func<object> _customCtor;
+        readonly Type _type;
+        readonly bool _isAutoReset;
+        
+        int[] _reservedItems = new int[128];
+        int _itemsCount;
+        int _reservedItemsCount;
+
+        internal EcsComponentPool (Type cType, bool isAutoReset) {
+            _type = cType;
+            _isAutoReset = isAutoReset;
 #if DEBUG
             // collect all marshal-by-reference fields.
-            var fields = typeof (T).GetFields ();
+            var fields = _type.GetFields ();
             for (var i = 0; i < fields.Length; i++) {
                 var field = fields[i];
                 if (!Attribute.IsDefined (field, typeof (EcsIgnoreNullCheckAttribute))) {
@@ -101,8 +117,9 @@ namespace Leopotam.Ecs {
         /// Sets custom constructor for component instances.
         /// </summary>
         /// <param name="ctor"></param>
-        public void SetCustomCtor (Func<T> ctor) {
+        public void SetCustomCtor (Func<object> ctor) {
 #if DEBUG
+            // ReSharper disable once JoinNullCheckWithUsage
             if (ctor == null) { throw new Exception ("Ctor is null."); }
 #endif
             _customCtor = ctor;
@@ -128,7 +145,7 @@ namespace Leopotam.Ecs {
                 if (_itemsCount == Items.Length) {
                     Array.Resize (ref Items, _itemsCount << 1);
                 }
-                Items[_itemsCount++] = _customCtor != null ? _customCtor () : (T) Activator.CreateInstance (typeof (T));
+                Items[_itemsCount++] = _customCtor != null ? _customCtor () : Activator.CreateInstance (_type);
             }
             return id;
         }
@@ -140,22 +157,22 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public void Recycle (int idx) {
-            if (IsAutoReset) {
+            if (_isAutoReset) {
                 ((IEcsAutoReset) Items[idx]).Reset ();
             }
 #if DEBUG
             // check all marshal-by-reference typed fields for nulls.
-            ref var obj = ref Items[idx];
+            var obj = Items[idx];
             for (int i = 0, iMax = _nullableFields.Count; i < iMax; i++) {
                 if (_nullableFields[i].FieldType.IsValueType) {
                     if (_nullableFields[i].FieldType == typeof (EcsEntity) && ((EcsEntity) _nullableFields[i].GetValue (obj)).Owner != null) {
                         throw new Exception (
-                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not nulled with EcsEntity.Null. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
+                            $"Memory leak for \"{_type.Name}\" component: \"{_nullableFields[i].Name}\" field not null-ed with EcsEntity.Null. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
                     }
                 } else {
                     if (_nullableFields[i].GetValue (obj) != null) {
                         throw new Exception (
-                            $"Memory leak for \"{typeof (T).Name}\" component: \"{_nullableFields[i].Name}\" field not nulled. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
+                            $"Memory leak for \"{_type.Name}\" component: \"{_nullableFields[i].Name}\" field not null-ed. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
                     }
                 }
             }
