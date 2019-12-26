@@ -80,11 +80,11 @@ namespace Leopotam.Ecs {
 #endif
 
         public object[] Items = new Object[128];
-        
+
         Func<object> _customCtor;
         readonly Type _type;
         readonly bool _isAutoReset;
-        
+
         int[] _reservedItems = new int[128];
         int _itemsCount;
         int _reservedItemsCount;
@@ -145,7 +145,12 @@ namespace Leopotam.Ecs {
                 if (_itemsCount == Items.Length) {
                     Array.Resize (ref Items, _itemsCount << 1);
                 }
-                Items[_itemsCount++] = _customCtor != null ? _customCtor () : Activator.CreateInstance (_type);
+                var instance = _customCtor != null ? _customCtor () : Activator.CreateInstance (_type);
+                // reset brand new instance if component implements IEcsAutoReset.
+                if (_isAutoReset) {
+                    ((IEcsAutoReset) instance).Reset ();
+                }
+                Items[_itemsCount++] = instance;
             }
             return id;
         }

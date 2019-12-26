@@ -206,7 +206,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 > **Important!** You should not use `ref` modifier for any filter data outside of foreach-loop over this filter if you want to destroy part of this data (entity or component) - it will break memory integrity.
 
-All components from filter `Include` constraint can be fast accessed through `filter.Get1()`, `filter.Get2()`, etc - in same order as they were used in filter type declaration.
+All components from filter `Include` constraint can be fast accessed through `filter.Get1[]`, `filter.Get2[]`, etc - in same order as they were used in filter type declaration.
 
 If fast access not required (for example, for flag-based components without data), component can implements `IEcsIgnoreInFilter` interface for decrease memory usage and increase performance:
 ```csharp
@@ -305,13 +305,13 @@ systems.SetRunSystemState (idx, false);
 ```
 
 # Examples
-##With sources:
+## With sources:
 * [Snake game](https://github.com/Leopotam/ecs-snake)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
 * [GTA5 custom wounds mod](https://github.com/SH42913/gunshotwound3)
 * [Ecs Hybrid Unity integration](https://github.com/SH42913/leoecshybrid)
 
-##Without sources:
+## Without sources:
 * [Hattori2 game](https://www.instagram.com/hattorigame/)
 * [Natives game](https://alex-kpojb.itch.io/natives-ecs)
 * [PrincessRun android game](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
