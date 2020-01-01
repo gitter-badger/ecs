@@ -20,6 +20,7 @@ namespace Leopotam.Ecs {
     /// <summary>
     /// Marks component type to be auto removed from world.
     /// </summary>
+    [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
     public interface IEcsOneFrame { }
 
     /// <summary>

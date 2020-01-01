@@ -384,7 +384,7 @@ If you want to simplify your code and keep reset-code in one place, you can use 
 class MyComponent : IEcsAutoReset {
     public object LinkToAnotherComponent;
 
-    public void Reset() {
+    public void Reset () {
         // Cleanup all marshal-by-reference fields here.
         LinkToAnotherComponent = null;
     }
@@ -395,11 +395,24 @@ This method will be automatically called after component removing from entity an
 
 ### I use components as events that works only one frame, then remove it at last system in execution sequence. It's boring, how I can automate it?
 
-If you want to remove one-frame components without additional custom code, you can implement `IEcsOneFrame` interface:
+If you want to remove one-frame components without additional custom code, you can register them at `EcsSystems`:
 ```csharp
-class MyComponent : IEcsOneFrame { }
+class MyOneFrameComponent { }
+
+EcsSystems _update;
+
+void Start () {
+    var world = new EcsWorld ();
+    _update = new EcsSystems (world)
+        .Add (new UpdateSystem ())
+        .OneFrame<MyOneFrameComponent> ()
+        .Init ();
+}
+
+void Update () {
+    _update.Run ();
+}
 ```
-> Important: Do not forget to call `EcsWorld.EndFrame()` method once after all `EcsSystems.Run` calls.
 
 > Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 
