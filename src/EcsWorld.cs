@@ -26,6 +26,7 @@ namespace Leopotam.Ecs {
         protected readonly EcsGrowList<EcsFilter> Filters = new EcsGrowList<EcsFilter> (128);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByIncludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByExcludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         protected readonly Dictionary<int, EcsFilter> OneFrameFilters = new Dictionary<int, EcsFilter> (64);
 
         int _usedComponentsCount;
@@ -277,7 +278,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Creates one-frame filter if not exists.
         /// </summary>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         internal void ValidateOneFrameFilter<T> () where T : class {
             var idx = EcsComponentType<T>.TypeIndex;
             if (!OneFrameFilters.ContainsKey (idx)) {

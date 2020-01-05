@@ -53,6 +53,7 @@ namespace Leopotam.Ecs {
         public static readonly Type Type;
         public static readonly bool IsAutoReset;
         public static readonly bool IsIgnoreInFilter;
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         public static readonly bool IsOneFrame;
         // ReSharper restore StaticMemberInGenericType
 
@@ -61,7 +62,9 @@ namespace Leopotam.Ecs {
             Type = typeof (T);
             IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (Type);
             IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (Type);
+#pragma warning disable 618
             IsOneFrame = typeof (IEcsOneFrame).IsAssignableFrom (Type);
+#pragma warning restore 618
         }
     }
 

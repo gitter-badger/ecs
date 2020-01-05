@@ -56,9 +56,11 @@ namespace Leopotam.Ecs {
             }
 #endif
             // create separate filter for one-frame components.
+#pragma warning disable 618
             if (EcsComponentType<T>.IsOneFrame) {
                 Owner.ValidateOneFrameFilter<T> ();
             }
+#pragma warning restore 618
 
             Owner.UpdateFilters (typeIdx, this, entityData);
             return (T) pool.Items[idx];

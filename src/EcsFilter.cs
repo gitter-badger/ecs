@@ -7,6 +7,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
+// ReSharper disable InconsistentNaming
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace Leopotam.Ecs {
