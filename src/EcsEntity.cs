@@ -238,6 +238,7 @@ namespace Leopotam.Ecs {
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsAlive () {
+            if (Owner == null) { return false; }
             ref var entityData = ref Owner.GetEntityData (this);
             return entityData.Gen == Gen && entityData.ComponentsCountX2 >= 0;
         }
