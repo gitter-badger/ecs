@@ -256,7 +256,6 @@ class Startup : MonoBehaviour {
     void Update () {
         // process all dependent systems.
         _systems.Run ();
-        _world.EndFrame ();
     }
 
     void OnDestroy () {
@@ -267,7 +266,6 @@ class Startup : MonoBehaviour {
     }
 }
 ```
-> Important: Do not forget to call `EcsWorld.EndFrame()` method when all `EcsSystems` completed.
 
 `EcsSystems` instance can be used as nested system (any types of `IEcsInitSystem`, `IEcsRunSystem`, ecs behaviours are supported):
 ```csharp
@@ -413,6 +411,8 @@ void Update () {
     _update.Run ();
 }
 ```
+
+> Important: All one-frame components will be removed at the end of `systems.Run()` call automatically.
 
 > Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 
