@@ -284,8 +284,9 @@ namespace Leopotam.Ecs {
                     runItem.System.Run ();
                 }
 #if DEBUG
-                var system = _runSystems.Items[i];
-                World.CheckForLeakedEntities ($"{system.GetType ().Name}.Run ()");
+                if (World.CheckForLeakedEntities (null)) {
+                    throw new Exception ($"Empty entity detected, possible memory leak in {_runSystems.Items[i].GetType ().Name}.Run ()");
+                }
 #endif
             }
             // remove one-frame components.

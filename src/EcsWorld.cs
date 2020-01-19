@@ -305,15 +305,19 @@ namespace Leopotam.Ecs {
         /// Checks exist entities but without components.
         /// </summary>
         /// <param name="errorMsg">Prefix for error message.</param>
-        public void CheckForLeakedEntities (string errorMsg) {
+        public bool CheckForLeakedEntities (string errorMsg) {
             if (_leakedEntities.Count > 0) {
                 for (int i = 0, iMax = _leakedEntities.Count; i < iMax; i++) {
                     if (GetEntityData (_leakedEntities.Items[i]).ComponentsCountX2 == 0) {
-                        throw new Exception ($"{errorMsg}: Empty entity detected, possible memory leak.");
+                        if (errorMsg!= null) {
+                            throw new Exception ($"{errorMsg}: Empty entity detected, possible memory leak.");
+                        }
+                        return true;
                     }
                 }
                 _leakedEntities.Count = 0;
             }
+            return false;
         }
 #endif
 
