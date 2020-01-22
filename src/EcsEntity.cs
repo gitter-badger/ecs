@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2020 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -56,9 +56,11 @@ namespace Leopotam.Ecs {
             }
 #endif
             // create separate filter for one-frame components.
+#pragma warning disable 618
             if (EcsComponentType<T>.IsOneFrame) {
                 Owner.ValidateOneFrameFilter<T> ();
             }
+#pragma warning restore 618
 
             Owner.UpdateFilters (typeIdx, this, entityData);
             return (T) pool.Items[idx];
@@ -236,6 +238,7 @@ namespace Leopotam.Ecs {
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public bool IsAlive () {
+            if (Owner == null) { return false; }
             ref var entityData = ref Owner.GetEntityData (this);
             return entityData.Gen == Gen && entityData.ComponentsCountX2 >= 0;
         }

@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2020 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -26,6 +26,7 @@ namespace Leopotam.Ecs {
         protected readonly EcsGrowList<EcsFilter> Filters = new EcsGrowList<EcsFilter> (128);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByIncludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByExcludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         protected readonly Dictionary<int, EcsFilter> OneFrameFilters = new Dictionary<int, EcsFilter> (64);
 
         int _usedComponentsCount;
@@ -127,56 +128,56 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Creates entity and attaches component.
         /// </summary>
-        /// <typeparam name="C1">Type of component1.</typeparam>
+        /// <typeparam name="T1">Type of component1.</typeparam>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<C1> (out C1 c1) where C1 : class {
+        public EcsEntity NewEntityWith<T1> (out T1 c1) where T1 : class {
             var entity = NewEntity ();
-            c1 = entity.Set<C1> ();
+            c1 = entity.Set<T1> ();
             return entity;
         }
 
         /// <summary>
         /// Creates entity and attaches components.
         /// </summary>
-        /// <typeparam name="C1">Type of component1.</typeparam>
-        /// <typeparam name="C2">Type of component2.</typeparam>
+        /// <typeparam name="T1">Type of component1.</typeparam>
+        /// <typeparam name="T2">Type of component2.</typeparam>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<C1, C2> (out C1 c1, out C2 c2) where C1 : class where C2 : class {
+        public EcsEntity NewEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class where T2 : class {
             var entity = NewEntity ();
-            c1 = entity.Set<C1> ();
-            c2 = entity.Set<C2> ();
+            c1 = entity.Set<T1> ();
+            c2 = entity.Set<T2> ();
             return entity;
         }
 
         /// <summary>
         /// Creates entity and attaches components.
         /// </summary>
-        /// <typeparam name="C1">Type of component1.</typeparam>
-        /// <typeparam name="C2">Type of component2.</typeparam>
-        /// <typeparam name="C3">Type of component3.</typeparam>
+        /// <typeparam name="T1">Type of component1.</typeparam>
+        /// <typeparam name="T2">Type of component2.</typeparam>
+        /// <typeparam name="T3">Type of component3.</typeparam>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<C1, C2, C3> (out C1 c1, out C2 c2, out C3 c3) where C1 : class where C2 : class where C3 : class {
+        public EcsEntity NewEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class where T2 : class where T3 : class {
             var entity = NewEntity ();
-            c1 = entity.Set<C1> ();
-            c2 = entity.Set<C2> ();
-            c3 = entity.Set<C3> ();
+            c1 = entity.Set<T1> ();
+            c2 = entity.Set<T2> ();
+            c3 = entity.Set<T3> ();
             return entity;
         }
 
         /// <summary>
         /// Creates entity and attaches components.
         /// </summary>
-        /// <typeparam name="C1">Type of component1.</typeparam>
-        /// <typeparam name="C2">Type of component2.</typeparam>
-        /// <typeparam name="C3">Type of component3.</typeparam>
-        /// <typeparam name="C4">Type of component4.</typeparam>
+        /// <typeparam name="T1">Type of component1.</typeparam>
+        /// <typeparam name="T2">Type of component2.</typeparam>
+        /// <typeparam name="T3">Type of component3.</typeparam>
+        /// <typeparam name="T4">Type of component4.</typeparam>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<C1, C2, C3, C4> (out C1 c1, out C2 c2, out C3 c3, out C4 c4) where C1 : class where C2 : class where C3 : class where C4 : class {
+        public EcsEntity NewEntityWith<T1, T2, T3, T4> (out T1 c1, out T2 c2, out T3 c3, out T4 c4) where T1 : class where T2 : class where T3 : class where T4 : class {
             var entity = NewEntity ();
-            c1 = entity.Set<C1> ();
-            c2 = entity.Set<C2> ();
-            c3 = entity.Set<C3> ();
-            c4 = entity.Set<C4> ();
+            c1 = entity.Set<T1> ();
+            c2 = entity.Set<T2> ();
+            c3 = entity.Set<T3> ();
+            c4 = entity.Set<T4> ();
             return entity;
         }
 
@@ -250,6 +251,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Informs world that frame ended and one-frame components can be removed.
         /// </summary>
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         public void EndFrame () {
             foreach (var pair in OneFrameFilters) {
                 var typeIdx = pair.Key;
@@ -268,8 +270,7 @@ namespace Leopotam.Ecs {
                 ActiveEntities = EntitiesCount - FreeEntities.Count,
                 ReservedEntities = FreeEntities.Count,
                 Filters = Filters.Count,
-                Components = _usedComponentsCount,
-                OneFrameComponents = OneFrameFilters.Count
+                Components = _usedComponentsCount
             };
             return stats;
         }
@@ -277,7 +278,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Creates one-frame filter if not exists.
         /// </summary>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         internal void ValidateOneFrameFilter<T> () where T : class {
             var idx = EcsComponentType<T>.TypeIndex;
             if (!OneFrameFilters.ContainsKey (idx)) {
@@ -304,15 +305,19 @@ namespace Leopotam.Ecs {
         /// Checks exist entities but without components.
         /// </summary>
         /// <param name="errorMsg">Prefix for error message.</param>
-        public void CheckForLeakedEntities (string errorMsg) {
+        public bool CheckForLeakedEntities (string errorMsg) {
             if (_leakedEntities.Count > 0) {
                 for (int i = 0, iMax = _leakedEntities.Count; i < iMax; i++) {
                     if (GetEntityData (_leakedEntities.Items[i]).ComponentsCountX2 == 0) {
-                        throw new Exception ($"{errorMsg}: Empty entity detected, possible memory leak.");
+                        if (errorMsg!= null) {
+                            throw new Exception ($"{errorMsg}: Empty entity detected, possible memory leak.");
+                        }
+                        return true;
                     }
                 }
                 _leakedEntities.Count = 0;
             }
+            return false;
         }
 #endif
 
@@ -473,6 +478,7 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Amount of one-frame registered components.
         /// </summary>
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         public int OneFrameComponents;
     }
 

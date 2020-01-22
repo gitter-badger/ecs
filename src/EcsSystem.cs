@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2020 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -72,6 +72,7 @@ namespace Leopotam.Ecs {
         readonly EcsGrowList<EcsSystemsRunItem> _runSystems = new EcsGrowList<EcsSystemsRunItem> (64);
         readonly Dictionary<int, int> _namedRunSystems = new Dictionary<int, int> (64);
         readonly Dictionary<Type, object> _injections = new Dictionary<Type, object> (32);
+        readonly Dictionary<Type, EcsFilter> _oneFrames = new Dictionary<Type, EcsFilter> (32);
         bool _injected;
 #if DEBUG
         bool _inited;
@@ -171,6 +172,13 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Gets all one-frame components. Important: Don't change collection!
+        /// </summary>
+        public Dictionary<Type, EcsFilter> GetOneFrames () {
+            return _oneFrames;
+        }
+
+        /// <summary>
         /// Injects instance of object type to all compatible fields of added systems.
         /// </summary>
         /// <param name="obj">Instance.</param>
@@ -209,6 +217,18 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Registers component type as one-frame for auto-removing at end of Run() call.
+        /// </summary>
+        public EcsSystems OneFrame<T> () where T : class {
+#if DEBUG
+            if (_inited) { throw new Exception ("Cant register one-frame after initialization."); }
+            if (_oneFrames.ContainsKey (typeof (T))) { throw new Exception ($"\"{typeof (T).Name}\" already registered as one-frame component."); }
+#endif
+            _oneFrames[typeof (T)] = World.GetFilter (typeof (EcsFilter<T>));
+            return this;
+        }
+
+        /// <summary>
         /// Closes registration for new systems, initialize all registered.
         /// </summary>
         public void Init () {
@@ -243,9 +263,17 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Processes all IEcsRunSystem systems.
+        /// Processes all IEcsRunSystem systems. OneFrame components will be removed automatically.
         /// </summary>
         public void Run () {
+            Run (true);
+        }
+
+        /// <summary>
+        /// Processes all IEcsRunSystem systems.
+        /// </summary>
+        /// <param name="removeOneFrames">Should OneFrame components will be removed or not.</param>
+        public void Run (bool removeOneFrames) {
 #if DEBUG
             if (!_inited) { throw new Exception ($"[{Name ?? "NONAME"}] EcsSystems should be initialized before."); }
             if (_destroyed) { throw new Exception ("Cant touch after destroy."); }
@@ -256,9 +284,18 @@ namespace Leopotam.Ecs {
                     runItem.System.Run ();
                 }
 #if DEBUG
-                var system = _runSystems.Items[i];
-                World.CheckForLeakedEntities ($"{system.GetType ().Name}.Run ()");
+                if (World.CheckForLeakedEntities (null)) {
+                    throw new Exception ($"Empty entity detected, possible memory leak in {_runSystems.Items[i].GetType ().Name}.Run ()");
+                }
 #endif
+            }
+            // remove one-frame components.
+            foreach (var pair in _oneFrames) {
+                var filter = pair.Value;
+                var typeIdx = filter.IncludedTypeIndices[0];
+                foreach (var idx in filter) {
+                    filter.Entities[idx].Unset (typeIdx);
+                }
             }
         }
 
@@ -322,7 +359,7 @@ namespace Leopotam.Ecs {
                 // EcsFilter
 #if DEBUG
                 if (f.FieldType == filterType) {
-                    throw new Exception (string.Format ("Cant use EcsFilter type at \"{0}\" system for dependency injection, use generic version instead", system));
+                    throw new Exception ($"Cant use EcsFilter type at \"{system}\" system for dependency injection, use generic version instead");
                 }
 #endif
                 if (f.FieldType.IsSubclassOf (filterType)) {
@@ -343,7 +380,7 @@ namespace Leopotam.Ecs {
     /// <summary>
     /// IEcsRunSystem instance with active state.
     /// </summary>
-    public class EcsSystemsRunItem {
+    public sealed class EcsSystemsRunItem {
         public bool Active;
         public IEcsRunSystem System;
     }

@@ -206,7 +206,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 > **Important!** You should not use `ref` modifier for any filter data outside of foreach-loop over this filter if you want to destroy part of this data (entity or component) - it will break memory integrity.
 
-All components from filter `Include` constraint can be fast accessed through `filter.Get1()`, `filter.Get2()`, etc - in same order as they were used in filter type declaration.
+All components from filter `Include` constraint can be fast accessed through `filter.Get1[]`, `filter.Get2[]`, etc - in same order as they were used in filter type declaration.
 
 If fast access not required (for example, for flag-based components without data), component can implements `IEcsIgnoreInFilter` interface for decrease memory usage and increase performance:
 ```csharp
@@ -256,7 +256,6 @@ class Startup : MonoBehaviour {
     void Update () {
         // process all dependent systems.
         _systems.Run ();
-        _world.EndFrame ();
     }
 
     void OnDestroy () {
@@ -267,7 +266,6 @@ class Startup : MonoBehaviour {
     }
 }
 ```
-> Important: Do not forget to call `EcsWorld.EndFrame()` method when all `EcsSystems` completed.
 
 `EcsSystems` instance can be used as nested system (any types of `IEcsInitSystem`, `IEcsRunSystem`, ecs behaviours are supported):
 ```csharp
@@ -305,13 +303,13 @@ systems.SetRunSystemState (idx, false);
 ```
 
 # Examples
-##With sources:
+## With sources:
 * [Snake game](https://github.com/Leopotam/ecs-snake)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
 * [GTA5 custom wounds mod](https://github.com/SH42913/gunshotwound3)
 * [Ecs Hybrid Unity integration](https://github.com/SH42913/leoecshybrid)
 
-##Without sources:
+## Without sources:
 * [Hattori2 game](https://www.instagram.com/hattorigame/)
 * [Natives game](https://alex-kpojb.itch.io/natives-ecs)
 * [PrincessRun android game](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
@@ -384,7 +382,7 @@ If you want to simplify your code and keep reset-code in one place, you can use 
 class MyComponent : IEcsAutoReset {
     public object LinkToAnotherComponent;
 
-    public void Reset() {
+    public void Reset () {
         // Cleanup all marshal-by-reference fields here.
         LinkToAnotherComponent = null;
     }
@@ -395,11 +393,26 @@ This method will be automatically called after component removing from entity an
 
 ### I use components as events that works only one frame, then remove it at last system in execution sequence. It's boring, how I can automate it?
 
-If you want to remove one-frame components without additional custom code, you can implement `IEcsOneFrame` interface:
+If you want to remove one-frame components without additional custom code, you can register them at `EcsSystems`:
 ```csharp
-class MyComponent : IEcsOneFrame { }
+class MyOneFrameComponent { }
+
+EcsSystems _update;
+
+void Start () {
+    var world = new EcsWorld ();
+    _update = new EcsSystems (world)
+        .Add (new UpdateSystem ())
+        .OneFrame<MyOneFrameComponent> ()
+        .Init ();
+}
+
+void Update () {
+    _update.Run ();
+}
 ```
-> Important: Do not forget to call `EcsWorld.EndFrame()` method once after all `EcsSystems.Run` calls.
+
+> Important: All one-frame components will be removed at the end of `systems.Run()` call automatically.
 
 > Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 

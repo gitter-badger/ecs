@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2019 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2020 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -20,6 +20,7 @@ namespace Leopotam.Ecs {
     /// <summary>
     /// Marks component type to be auto removed from world.
     /// </summary>
+    [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
     public interface IEcsOneFrame { }
 
     /// <summary>
@@ -52,6 +53,7 @@ namespace Leopotam.Ecs {
         public static readonly Type Type;
         public static readonly bool IsAutoReset;
         public static readonly bool IsIgnoreInFilter;
+        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
         public static readonly bool IsOneFrame;
         // ReSharper restore StaticMemberInGenericType
 
@@ -60,7 +62,9 @@ namespace Leopotam.Ecs {
             Type = typeof (T);
             IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (Type);
             IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (Type);
+#pragma warning disable 618
             IsOneFrame = typeof (IEcsOneFrame).IsAssignableFrom (Type);
+#pragma warning restore 618
         }
     }
 
@@ -80,11 +84,11 @@ namespace Leopotam.Ecs {
 #endif
 
         public object[] Items = new Object[128];
-        
+
         Func<object> _customCtor;
         readonly Type _type;
         readonly bool _isAutoReset;
-        
+
         int[] _reservedItems = new int[128];
         int _itemsCount;
         int _reservedItemsCount;
@@ -145,7 +149,12 @@ namespace Leopotam.Ecs {
                 if (_itemsCount == Items.Length) {
                     Array.Resize (ref Items, _itemsCount << 1);
                 }
-                Items[_itemsCount++] = _customCtor != null ? _customCtor () : Activator.CreateInstance (_type);
+                var instance = _customCtor != null ? _customCtor () : Activator.CreateInstance (_type);
+                // reset brand new instance if component implements IEcsAutoReset.
+                if (_isAutoReset) {
+                    ((IEcsAutoReset) instance).Reset ();
+                }
+                Items[_itemsCount++] = instance;
             }
             return id;
         }
