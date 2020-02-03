@@ -50,18 +50,10 @@ namespace Leopotam.Ecs {
             var idx = pool.New ();
             entityData.Components[entityData.ComponentsCountX2++] = idx;
 #if DEBUG
-            var component = pool.Items[idx];
             for (var ii = 0; ii < Owner.DebugListeners.Count; ii++) {
-                Owner.DebugListeners[ii].OnComponentAdded (this, component);
+                Owner.DebugListeners[ii].OnComponentListChanged (this);
             }
 #endif
-            // create separate filter for one-frame components.
-#pragma warning disable 618
-            if (EcsComponentType<T>.IsOneFrame) {
-                Owner.ValidateOneFrameFilter<T> ();
-            }
-#pragma warning restore 618
-
             Owner.UpdateFilters (typeIdx, this, entityData);
             return (T) pool.Items[idx];
         }
@@ -120,9 +112,6 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
                 if (entityData.Components[i] == typeIndex) {
                     owner.UpdateFilters (-typeIndex, this, entityData);
-#if DEBUG
-                    var removedComponent = owner.ComponentPools[typeIndex].GetItem (entityData.Components[i + 1]);
-#endif
                     owner.ComponentPools[typeIndex].Recycle (entityData.Components[i + 1]);
                     // remove current item and move last component to this gap.
                     entityData.ComponentsCountX2 -= 2;
@@ -132,7 +121,7 @@ namespace Leopotam.Ecs {
                     }
 #if DEBUG
                     for (var ii = 0; ii < Owner.DebugListeners.Count; ii++) {
-                        Owner.DebugListeners[ii].OnComponentRemoved (this, removedComponent);
+                        Owner.DebugListeners[ii].OnComponentListChanged (this);
                     }
 #endif
                     break;
@@ -201,14 +190,11 @@ namespace Leopotam.Ecs {
             // remove components first.
             for (var i = entityData.ComponentsCountX2 - 2; i >= 0; i -= 2) {
                 savedEntity.Owner.UpdateFilters (-entityData.Components[i], savedEntity, entityData);
-#if DEBUG
-                var removedComponent = savedEntity.Owner.ComponentPools[entityData.Components[i]].GetItem (entityData.Components[i + 1]);
-#endif
                 savedEntity.Owner.ComponentPools[entityData.Components[i]].Recycle (entityData.Components[i + 1]);
                 entityData.ComponentsCountX2 -= 2;
 #if DEBUG
                 for (var ii = 0; ii < savedEntity.Owner.DebugListeners.Count; ii++) {
-                    savedEntity.Owner.DebugListeners[ii].OnComponentRemoved (savedEntity, removedComponent);
+                    savedEntity.Owner.DebugListeners[ii].OnComponentListChanged (savedEntity);
                 }
 #endif
             }

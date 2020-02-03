@@ -401,7 +401,9 @@ EcsSystems _update;
 
 void Start () {
     var world = new EcsWorld ();
-    _update = new EcsSystems (world)
+    _update = new EcsSystems (world);
+    _update
+        .Add (new CalculateSystem ())
         .Add (new UpdateSystem ())
         .OneFrame<MyOneFrameComponent> ()
         .Init ();
@@ -412,7 +414,7 @@ void Update () {
 }
 ```
 
-> Important: All one-frame components will be removed at the end of `systems.Run()` call automatically.
+> Important: All one-frame components with specified type will be removed at position in execution flow where this component was registered with OneFrame() call.
 
 > Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 

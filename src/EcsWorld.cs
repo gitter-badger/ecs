@@ -26,9 +26,6 @@ namespace Leopotam.Ecs {
         protected readonly EcsGrowList<EcsFilter> Filters = new EcsGrowList<EcsFilter> (128);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByIncludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByExcludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
-        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
-        protected readonly Dictionary<int, EcsFilter> OneFrameFilters = new Dictionary<int, EcsFilter> (64);
-
         int _usedComponentsCount;
 
         /// <summary>
@@ -249,20 +246,6 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Informs world that frame ended and one-frame components can be removed.
-        /// </summary>
-        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
-        public void EndFrame () {
-            foreach (var pair in OneFrameFilters) {
-                var typeIdx = pair.Key;
-                var filter = pair.Value;
-                foreach (var idx in filter) {
-                    filter.Entities[idx].Unset (typeIdx);
-                }
-            }
-        }
-
-        /// <summary>
         /// Gets stats of internal data.
         /// </summary>
         public EcsWorldStats GetStats () {
@@ -273,17 +256,6 @@ namespace Leopotam.Ecs {
                 Components = _usedComponentsCount
             };
             return stats;
-        }
-
-        /// <summary>
-        /// Creates one-frame filter if not exists.
-        /// </summary>
-        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
-        internal void ValidateOneFrameFilter<T> () where T : class {
-            var idx = EcsComponentType<T>.TypeIndex;
-            if (!OneFrameFilters.ContainsKey (idx)) {
-                OneFrameFilters[idx] = GetFilter (typeof (EcsFilter<T>));
-            }
         }
 
         /// <summary>
@@ -309,7 +281,7 @@ namespace Leopotam.Ecs {
             if (_leakedEntities.Count > 0) {
                 for (int i = 0, iMax = _leakedEntities.Count; i < iMax; i++) {
                     if (GetEntityData (_leakedEntities.Items[i]).ComponentsCountX2 == 0) {
-                        if (errorMsg!= null) {
+                        if (errorMsg != null) {
                             throw new Exception ($"{errorMsg}: Empty entity detected, possible memory leak.");
                         }
                         return true;
@@ -474,12 +446,6 @@ namespace Leopotam.Ecs {
         /// Amount of registered component types.
         /// </summary>
         public int Components;
-
-        /// <summary>
-        /// Amount of one-frame registered components.
-        /// </summary>
-        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
-        public int OneFrameComponents;
     }
 
 #if DEBUG
@@ -490,13 +456,7 @@ namespace Leopotam.Ecs {
         void OnEntityCreated (EcsEntity entity);
         void OnEntityDestroyed (EcsEntity entity);
         void OnFilterCreated (EcsFilter filter);
-
-        // ReSharper disable UnusedParameter.Global
-        void OnComponentAdded (EcsEntity entity, object component);
-
-        void OnComponentRemoved (EcsEntity entity, object component);
-        // ReSharper restore UnusedParameter.Global
-
+        void OnComponentListChanged (EcsEntity entity);
         void OnWorldDestroyed ();
     }
 #endif

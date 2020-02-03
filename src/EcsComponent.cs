@@ -18,12 +18,6 @@ namespace Leopotam.Ecs {
     public interface IEcsIgnoreInFilter { }
 
     /// <summary>
-    /// Marks component type to be auto removed from world.
-    /// </summary>
-    [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
-    public interface IEcsOneFrame { }
-
-    /// <summary>
     /// Marks component type as resettable with custom logic.
     /// </summary>
     public interface IEcsAutoReset {
@@ -53,8 +47,6 @@ namespace Leopotam.Ecs {
         public static readonly Type Type;
         public static readonly bool IsAutoReset;
         public static readonly bool IsIgnoreInFilter;
-        [Obsolete ("Use EcsSystems.OneFrame() for register one-frame components and Run() for processing and cleanup.")]
-        public static readonly bool IsOneFrame;
         // ReSharper restore StaticMemberInGenericType
 
         static EcsComponentType () {
@@ -62,9 +54,6 @@ namespace Leopotam.Ecs {
             Type = typeof (T);
             IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (Type);
             IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (Type);
-#pragma warning disable 618
-            IsOneFrame = typeof (IEcsOneFrame).IsAssignableFrom (Type);
-#pragma warning restore 618
         }
     }
 
