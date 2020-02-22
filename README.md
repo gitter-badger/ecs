@@ -22,25 +22,8 @@ By default last released version will be used. If you need trunk / developing ve
 "com.leopotam.ecs": "https://github.com/Leopotam/ecs.git#develop",
 ```
 
-## As unity module from npm registry (Experimental)
-This repository can be installed as unity module from external npm registry with support of different versions. In this way new block should be added to `Packages/manifest.json` right after opening `{` bracket:
-```
-  "scopedRegistries": [
-    {
-      "name": "Leopotam",
-      "url": "https://npm.leopotam.com",
-      "scopes": [
-        "com.leopotam"
-      ]
-    }
-  ],
-```
-After this operation registry can be installed from list of packages from standard unity module manager.
-> **Important!** Url can be changed later, check actual url at `README`.
-
 ## As source
 If you can't / don't want to use unity modules, code can be downloaded as sources archive of required release from [Releases page](`https://github.com/Leopotam/ecs/releases`).
-
 
 # Main parts of ecs
 
