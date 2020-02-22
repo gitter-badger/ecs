@@ -22,25 +22,8 @@ By default last released version will be used. If you need trunk / developing ve
 "com.leopotam.ecs": "https://github.com/Leopotam/ecs.git#develop",
 ```
 
-## As unity module from npm registry (Experimental)
-This repository can be installed as unity module from external npm registry with support of different versions. In this way new block should be added to `Packages/manifest.json` right after opening `{` bracket:
-```
-  "scopedRegistries": [
-    {
-      "name": "Leopotam",
-      "url": "https://npm.leopotam.com",
-      "scopes": [
-        "com.leopotam"
-      ]
-    }
-  ],
-```
-After this operation registry can be installed from list of packages from standard unity module manager.
-> **Important!** Url can be changed later, check actual url at `README`.
-
 ## As source
 If you can't / don't want to use unity modules, code can be downloaded as sources archive of required release from [Releases page](`https://github.com/Leopotam/ecs/releases`).
-
 
 # Main parts of ecs
 
@@ -401,7 +384,9 @@ EcsSystems _update;
 
 void Start () {
     var world = new EcsWorld ();
-    _update = new EcsSystems (world)
+    _update = new EcsSystems (world);
+    _update
+        .Add (new CalculateSystem ())
         .Add (new UpdateSystem ())
         .OneFrame<MyOneFrameComponent> ()
         .Init ();
@@ -412,7 +397,7 @@ void Update () {
 }
 ```
 
-> Important: All one-frame components will be removed at the end of `systems.Run()` call automatically.
+> Important: All one-frame components with specified type will be removed at position in execution flow where this component was registered with OneFrame() call.
 
 > Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 
