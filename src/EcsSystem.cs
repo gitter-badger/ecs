@@ -54,7 +54,7 @@ namespace Leopotam.Ecs {
     /// Debug interface for systems events processing.
     /// </summary>
     public interface IEcsSystemsDebugListener {
-        void OnSystemsDestroyed ();
+        void OnSystemsDestroyed (EcsSystems systems);
     }
 #endif
 
@@ -301,7 +301,7 @@ namespace Leopotam.Ecs {
             }
 #if DEBUG
             for (int i = 0, iMax = _debugListeners.Count; i < iMax; i++) {
-                _debugListeners[i].OnSystemsDestroyed ();
+                _debugListeners[i].OnSystemsDestroyed (this);
             }
 #endif
         }

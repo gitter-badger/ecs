@@ -294,6 +294,7 @@ systems.SetRunSystemState (idx, false);
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
 * [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
 * [Multi-threading support](https://github.com/Leopotam/ecs-threads)
+* [Service locator](https://github.com/Leopotam/globals)
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License

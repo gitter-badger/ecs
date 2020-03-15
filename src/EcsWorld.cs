@@ -89,7 +89,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
             _isDestroyed = true;
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
-                DebugListeners[i].OnWorldDestroyed ();
+                DebugListeners[i].OnWorldDestroyed (this);
             }
 #endif
         }
@@ -132,17 +132,22 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Restores EcsEntity from internal id. For internal use only!
+        /// Restores EcsEntity from internal id and gen. For internal use only!
         /// </summary>
         /// <param name="id">Internal id.</param>
+        /// <param name="gen">Generation. If less than 0 - will be filled from current generation value.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity RestoreEntityFromInternalId (int id) {
+        public EcsEntity RestoreEntityFromInternalId (int id, int gen = -1) {
             EcsEntity entity;
             entity.Owner = this;
             entity.Id = id;
-            entity.Gen = 0;
-            ref var entityData = ref GetEntityData (entity);
-            entity.Gen = entityData.Gen;
+            if (gen < 0) {
+                entity.Gen = 0;
+                ref var entityData = ref GetEntityData (entity);
+                entity.Gen = entityData.Gen;
+            } else {
+                entity.Gen = (ushort) gen;
+            }
             return entity;
         }
 
@@ -410,7 +415,7 @@ namespace Leopotam.Ecs {
         void OnEntityDestroyed (EcsEntity entity);
         void OnFilterCreated (EcsFilter filter);
         void OnComponentListChanged (EcsEntity entity);
-        void OnWorldDestroyed ();
+        void OnWorldDestroyed (EcsWorld world);
     }
 #endif
 }

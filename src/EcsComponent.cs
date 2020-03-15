@@ -17,7 +17,7 @@ namespace Leopotam.Ecs {
     public interface IEcsIgnoreInFilter { }
 
     /// <summary>
-    /// Marks component to be checked for AutoReset behaviour.
+    /// Marks component to be checked for AutoReset behaviour. Checks works in DEBUG mode only.
     /// </summary>
     [System.Diagnostics.Conditional ("DEBUG")]
     [AttributeUsage (AttributeTargets.Struct)]
