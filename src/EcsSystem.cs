@@ -358,7 +358,7 @@ namespace Leopotam.Ecs {
 
         void IEcsRunSystem.Run () {
             foreach (var idx in _oneFrames) {
-                _oneFrames.Entities[idx].Unset<T> ();
+                _oneFrames.GetEntity (idx).Unset<T> ();
             }
         }
     }

@@ -271,7 +271,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = false;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = true;
                                     break;
                                 }
@@ -288,7 +288,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = true;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = false;
                                     break;
                                 }
@@ -307,7 +307,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = true;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = false;
                                     break;
                                 }
@@ -324,7 +324,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = false;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = true;
                                     break;
                                 }

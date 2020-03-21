@@ -30,7 +30,7 @@ namespace Leopotam.Ecs {
     [UnityEngine.Scripting.Preserve]
 #endif
     public abstract class EcsFilter {
-        public EcsEntity[] Entities = new EcsEntity[EcsHelpers.FilterEntitiesSize];
+        protected EcsEntity[] Entities = new EcsEntity[EcsHelpers.FilterEntitiesSize];
         protected int EntitiesCount;
 
         int _lockCount;
@@ -52,6 +52,14 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
             return new Enumerator (this);
+        }
+
+        /// <summary>
+        /// Gets entity by index.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public ref EcsEntity GetEntity (in int idx) {
+            return ref Entities[idx];
         }
 
         /// <summary>

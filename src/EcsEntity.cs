@@ -199,6 +199,13 @@ namespace Leopotam.Ecs {
         public static int GetInternalId (in this EcsEntity entity) {
             return entity.Id;
         }
+        
+        /// <summary>
+        /// Gets internal generation.
+        /// </summary>
+        public static int GetInternalGen (in this EcsEntity entity) {
+            return entity.Gen;
+        }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static EcsComponentRef<T> Ref<T> (in this EcsEntity entity) where T : struct {
