@@ -54,7 +54,7 @@ namespace Leopotam.Ecs {
     /// Debug interface for systems events processing.
     /// </summary>
     public interface IEcsSystemsDebugListener {
-        void OnSystemsDestroyed ();
+        void OnSystemsDestroyed (EcsSystems systems);
     }
 #endif
 
@@ -209,9 +209,9 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Registers component type as one-frame for auto-removing at end of Run() call.
+        /// Registers component type as one-frame for auto-removing at this point in execution sequence.
         /// </summary>
-        public EcsSystems OneFrame<T> () where T : class {
+        public EcsSystems OneFrame<T> () where T : struct {
             Add (new RemoveOneFrame<T> ());
             return this;
         }
@@ -301,7 +301,7 @@ namespace Leopotam.Ecs {
             }
 #if DEBUG
             for (int i = 0, iMax = _debugListeners.Count; i < iMax; i++) {
-                _debugListeners[i].OnSystemsDestroyed ();
+                _debugListeners[i].OnSystemsDestroyed (this);
             }
 #endif
         }
@@ -353,12 +353,12 @@ namespace Leopotam.Ecs {
     /// System for removing OneFrame component.
     /// </summary>
     /// <typeparam name="T">OneFrame component type.</typeparam>
-    sealed class RemoveOneFrame<T> : IEcsRunSystem where T : class {
+    sealed class RemoveOneFrame<T> : IEcsRunSystem where T : struct {
         readonly EcsFilter<T> _oneFrames = null;
 
         void IEcsRunSystem.Run () {
             foreach (var idx in _oneFrames) {
-                _oneFrames.Entities[idx].Unset<T> ();
+                _oneFrames.GetEntity (idx).Unset<T> ();
             }
         }
     }

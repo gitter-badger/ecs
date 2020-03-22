@@ -5,7 +5,6 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -18,11 +17,11 @@ namespace Leopotam.Ecs {
     public interface IEcsIgnoreInFilter { }
 
     /// <summary>
-    /// Marks component type as resettable with custom logic.
+    /// Marks component to be checked for AutoReset behaviour. Checks works in DEBUG mode only.
     /// </summary>
-    public interface IEcsAutoReset {
-        void Reset ();
-    }
+    [System.Diagnostics.Conditional ("DEBUG")]
+    [AttributeUsage (AttributeTargets.Struct)]
+    public sealed class EcsAutoResetCheckAttribute : Attribute { }
 
     /// <summary>
     /// Marks field of IEcsSystem class to be ignored during dependency injection.
@@ -30,30 +29,88 @@ namespace Leopotam.Ecs {
     public sealed class EcsIgnoreInjectAttribute : Attribute { }
 
     /// <summary>
-    /// Marks field of component to be not checked for null on component removing.
-    /// Works only in DEBUG mode!
-    /// </summary>
-    [System.Diagnostics.Conditional ("DEBUG")]
-    [AttributeUsage (AttributeTargets.Field)]
-    public sealed class EcsIgnoreNullCheckAttribute : Attribute { }
-
-    /// <summary>
     /// Global descriptor of used component type.
     /// </summary>
     /// <typeparam name="T">Component type.</typeparam>
-    public static class EcsComponentType<T> where T : class {
+    public static class EcsComponentType<T> where T : struct {
         // ReSharper disable StaticMemberInGenericType
         public static readonly int TypeIndex;
         public static readonly Type Type;
-        public static readonly bool IsAutoReset;
         public static readonly bool IsIgnoreInFilter;
+#if DEBUG
+        internal static readonly bool NeedCheckAutoReset;
+#endif
         // ReSharper restore StaticMemberInGenericType
 
         static EcsComponentType () {
             TypeIndex = Interlocked.Increment (ref EcsComponentPool.ComponentTypesCount);
             Type = typeof (T);
-            IsAutoReset = typeof (IEcsAutoReset).IsAssignableFrom (Type);
             IsIgnoreInFilter = typeof (IEcsIgnoreInFilter).IsAssignableFrom (Type);
+#if DEBUG
+            NeedCheckAutoReset = Attribute.IsDefined (typeof (T), typeof (EcsAutoResetCheckAttribute));
+#endif
+        }
+    }
+
+    public sealed class EcsComponentPool {
+        /// <summary>
+        /// Global component type counter.
+        /// First component will be "1" for correct filters updating (add component on positive and remove on negative).
+        /// </summary>
+        internal static int ComponentTypesCount;
+    }
+
+    public interface IEcsComponentPool {
+        Type ItemType { get; }
+        object GetItem (int idx);
+        void Recycle (int idx);
+    }
+
+    /// <summary>
+    /// Helper for save reference to component. 
+    /// </summary>
+    /// <typeparam name="T">Type of component.</typeparam>
+    public struct EcsComponentRef<T> where T : struct {
+        internal EcsComponentPool<T> Pool;
+        internal int Idx;
+
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public ref T Unref () {
+            return ref Pool.Items[Idx];
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool operator == (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
+            return lhs.Idx == rhs.Idx && lhs.Pool == rhs.Pool;
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool operator != (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
+            return lhs.Idx != rhs.Idx || lhs.Pool != rhs.Pool;
+        }
+
+        public override bool Equals (object obj) {
+            return obj is EcsComponentRef<T> other && Equals (other);
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode () {
+            // ReSharper disable NonReadonlyMemberInGetHashCode
+            return Idx;
+            // ReSharper restore NonReadonlyMemberInGetHashCode
+        }
+
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public bool IsNull () {
+            return Pool != null;
         }
     }
 
@@ -61,61 +118,30 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
-    public sealed class EcsComponentPool {
+    public sealed class EcsComponentPool<T> : IEcsComponentPool where T : struct {
         /// <summary>
-        /// Global component type counter.
-        /// First component will be "1" for correct filters updating (add component on positive and remove on negative).
+        /// Description of custom AutoReset handler.
         /// </summary>
-        internal static int ComponentTypesCount;
+        public delegate void AutoResetHandler (ref T component);
 
-#if DEBUG
-        readonly List<System.Reflection.FieldInfo> _nullableFields = new List<System.Reflection.FieldInfo> (8);
-#endif
-
-        public object[] Items = new Object[128];
-
-        Func<object> _customCtor;
-        readonly Type _type;
-        readonly bool _isAutoReset;
-
+        public Type ItemType { get; }
+        public T[] Items = new T[128];
         int[] _reservedItems = new int[128];
         int _itemsCount;
         int _reservedItemsCount;
+        AutoResetHandler _autoReset = null;
+        internal static T Default = default;
 
-        internal EcsComponentPool (Type cType, bool isAutoReset) {
-            _type = cType;
-            _isAutoReset = isAutoReset;
-#if DEBUG
-            // collect all marshal-by-reference fields.
-            var fields = _type.GetFields ();
-            for (var i = 0; i < fields.Length; i++) {
-                var field = fields[i];
-                if (!Attribute.IsDefined (field, typeof (EcsIgnoreNullCheckAttribute))) {
-                    var type = field.FieldType;
-                    var underlyingType = Nullable.GetUnderlyingType (type);
-                    if (!type.IsValueType || (underlyingType != null && !underlyingType.IsValueType)) {
-                        if (type != typeof (string)) {
-                            _nullableFields.Add (field);
-                        }
-                    }
-                    if (type == typeof (EcsEntity)) {
-                        _nullableFields.Add (field);
-                    }
-                }
-            }
-#endif
+        internal EcsComponentPool () {
+            ItemType = typeof (T);
         }
 
         /// <summary>
-        /// Sets custom constructor for component instances.
+        /// Sets custom AutoReset behaviour handler. If null - disable custom behaviour and use default.
         /// </summary>
-        /// <param name="ctor"></param>
-        public void SetCustomCtor (Func<object> ctor) {
-#if DEBUG
-            // ReSharper disable once JoinNullCheckWithUsage
-            if (ctor == null) { throw new Exception ("Ctor is null."); }
-#endif
-            _customCtor = ctor;
+        /// <param name="cb">Handler.</param>
+        public void SetAutoReset (AutoResetHandler cb) {
+            _autoReset = cb;
         }
 
         /// <summary>
@@ -138,47 +164,44 @@ namespace Leopotam.Ecs {
                 if (_itemsCount == Items.Length) {
                     Array.Resize (ref Items, _itemsCount << 1);
                 }
-                var instance = _customCtor != null ? _customCtor () : Activator.CreateInstance (_type);
-                // reset brand new instance if component implements IEcsAutoReset.
-                if (_isAutoReset) {
-                    ((IEcsAutoReset) instance).Reset ();
-                }
-                Items[_itemsCount++] = instance;
+#if DEBUG
+                if (EcsComponentType<T>.NeedCheckAutoReset && _autoReset == null) { throw new Exception ($"AutoReset handler for component \"{ItemType.Name}\" should be initialized first."); }
+#endif
+                // reset brand new instance if custom AutoReset was registered.
+                _autoReset?.Invoke (ref Items[_itemsCount]);
+                _itemsCount++;
             }
             return id;
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public object GetItem (int idx) {
-            return Items[idx];
+        public ref T GetItem (int idx) {
+            return ref Items[idx];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public void Recycle (int idx) {
-            if (_isAutoReset) {
-                ((IEcsAutoReset) Items[idx]).Reset ();
+            if (_autoReset != null) {
+                _autoReset (ref Items[idx]);
+            } else {
+                Items[idx] = default;
             }
-#if DEBUG
-            // check all marshal-by-reference typed fields for nulls.
-            var obj = Items[idx];
-            for (int i = 0, iMax = _nullableFields.Count; i < iMax; i++) {
-                if (_nullableFields[i].FieldType.IsValueType) {
-                    if (_nullableFields[i].FieldType == typeof (EcsEntity) && ((EcsEntity) _nullableFields[i].GetValue (obj)).Owner != null) {
-                        throw new Exception (
-                            $"Memory leak for \"{_type.Name}\" component: \"{_nullableFields[i].Name}\" field not null-ed with EcsEntity.Null. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
-                    }
-                } else {
-                    if (_nullableFields[i].GetValue (obj) != null) {
-                        throw new Exception (
-                            $"Memory leak for \"{_type.Name}\" component: \"{_nullableFields[i].Name}\" field not null-ed. If you are sure that it's not - mark field with [EcsIgnoreNullCheck] attribute.");
-                    }
-                }
-            }
-#endif
             if (_reservedItemsCount == _reservedItems.Length) {
                 Array.Resize (ref _reservedItems, _reservedItemsCount << 1);
             }
             _reservedItems[_reservedItemsCount++] = idx;
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public EcsComponentRef<T> Ref (int idx) {
+            EcsComponentRef<T> componentRef;
+            componentRef.Pool = this;
+            componentRef.Idx = idx;
+            return componentRef;
+        }
+
+        object IEcsComponentPool.GetItem (int idx) {
+            return Items[idx];
         }
     }
 }

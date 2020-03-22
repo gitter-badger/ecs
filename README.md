@@ -3,12 +3,13 @@
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
+> **Important! It's "structs-based" version, if you search "classes-based" version - check [classes-based branch](https://github.com/Leopotam/ecs/tree/classes-based)!**
+
 > C#7.3 or above required for this framework.
 
 > Tested on unity 2019.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
 > **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
-
 
 # Installation
 
@@ -30,7 +31,7 @@ If you can't / don't want to use unity modules, code can be downloaded as source
 ## Component
 Container for user data without / with small logic inside. Can be used any user class without any additional inheritance:
 ```csharp
-class WeaponComponent {
+struct WeaponComponent {
     public int Ammo;
     public string GunName;
 }
@@ -38,20 +39,12 @@ class WeaponComponent {
 
 > **Important!** Dont forget to manually init all fields of new added component. Default value initializers will not work due all components can be reused automatically multiple times through builtin pooling mechanism (no destroying / creating new instance for each request for performance reason).
 
-> **Important!** Dont forget to cleanup reference links to instances of any classes before removing components from entity, otherwise it can lead to memory leaks.
->
-> By default all `marshal-by-reference` typed fields of component (classes in common case) will be checked for null on removing attempt in `DEBUG`-mode. If you know that you have object instance that should be not null (preinited collections for example) - `[EcsIgnoreNullCheck]` attribute can be used for disabling these checks.
-
 ## Entity
 Сontainer for components. Implemented as `EcsEntity` for wrapping internal identifiers:
 ```csharp
 EcsEntity entity = _world.NewEntity ();
-Component1 c1 = entity.Set<Component1> ();
-Component2 c2 = entity.Set<Component2> ();
-```
-There are some helpers to simplify creation of entity with multiple components:
-```csharp
-EcsEntity entity = _world.NewEntityWith<Component1, Component2> (out Component1 c1, out Component2 c2);
+ref Component1 c1 = ref entity.Set<Component1> ();
+ref Component2 c2 = ref entity.Set<Component2> ();
 ```
 
 > **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Unset()` call.
@@ -116,7 +109,7 @@ Each system will be scanned for compatible fields (can contains all of them or n
 If you want to use multiple `EcsSystems` you can find strange behaviour with DI:
 
 ```csharp
-class Component1 { }
+struct Component1 { }
 
 class System1 : IEcsInitSystem {
     EcsWorld _world = null;
@@ -169,19 +162,16 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     EcsFilter<WeaponComponent>.Exclude<HealthComponent> _filter = null;
 
     public void Init () {
-        // new C# syntax can be used if component instance not required right now.
-        _world.NewEntityWith<WeaponComponent> (out _);
+        _world.NewEntity ().Set<WeaponComponent> ();
     }
 
     public void Run () {
         foreach (var i in _filter) {
             // entity that contains WeaponComponent.
-            // Performance hint: use 'ref' prefixes for disable copying entity structure.
-            // Important: dont use `ref` on filter data outside of foreach-loop over this filter.
             ref var entity = ref _filter.Entities[i];
 
             // Get1 will return link to attached "WeaponComponent".
-            var weapon = _filter.Get1[i];
+            ref var weapon = ref _filter.Get1 (i);
             weapon.Ammo = System.Math.Max (0, weapon.Ammo - 1);
         }
     }
@@ -189,13 +179,13 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 > **Important!** You should not use `ref` modifier for any filter data outside of foreach-loop over this filter if you want to destroy part of this data (entity or component) - it will break memory integrity.
 
-All components from filter `Include` constraint can be fast accessed through `filter.Get1[]`, `filter.Get2[]`, etc - in same order as they were used in filter type declaration.
+All components from filter `Include` constraint can be fast accessed through `filter.Get1()`, `filter.Get2()`, etc - in same order as they were used in filter type declaration.
 
 If fast access not required (for example, for flag-based components without data), component can implements `IEcsIgnoreInFilter` interface for decrease memory usage and increase performance:
 ```csharp
-class Component1 { }
+struct Component1 { }
 
-class Component2 : IEcsIgnoreInFilter { }
+struct Component2 : IEcsIgnoreInFilter { }
 
 class TestSystem : IEcsRunSystem {
     EcsFilter<Component1, Component2> _filter = null;
@@ -203,10 +193,10 @@ class TestSystem : IEcsRunSystem {
     public void Run () {
         foreach (var i in _filter) {
             // its valid code.
-            var component1 = _filter.Get1[i];
+            ref var component1 = ref _filter.Get1 (i);
 
-            // its invalid code due to cache for _filter.Get2[] is null for memory / performance reasons.
-            var component2 = _filter.Get2[i];
+            // its invalid code due to cache for _filter.Get2() is null for memory / performance reasons.
+            ref var component2 = ref _filter.Get2 (i);
         }
     }
 }
@@ -288,30 +278,30 @@ systems.SetRunSystemState (idx, false);
 # Examples
 ## With sources:
 * [Snake game](https://github.com/Leopotam/ecs-snake)
-* [Pacman game](https://github.com/SH42913/pacmanecs)
-* [GTA5 custom wounds mod](https://github.com/SH42913/gunshotwound3)
-* [Ecs Hybrid Unity integration](https://github.com/SH42913/leoecshybrid)
+* [Pacman game (powered by classes-based version)](https://github.com/SH42913/pacmanecs)
+* [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
+* [Ecs Hybrid Unity integration (powered by classes-based version)](https://github.com/SH42913/leoecshybrid)
 
 ## Without sources:
-* [Hattori2 game](https://www.instagram.com/hattorigame/)
-* [Natives game](https://alex-kpojb.itch.io/natives-ecs)
-* [PrincessRun android game](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
-* [TowerRunner Revenge android game](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
-* [HypnoTap android game](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
-* [Elves-vs-Dwarfs game](https://globalgamejam.org/2019/games/elves-vs-dwarfs)
+* [Hattori2 game (powered by classes-based version)](https://www.instagram.com/hattorigame/)
+* [Natives game (powered by classes-based version)](https://alex-kpojb.itch.io/natives-ecs)
+* [PrincessRun android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
+* [TowerRunner Revenge android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
+* [HypnoTap android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
+* [Elves-vs-Dwarfs game (powered by classes-based version)](https://globalgamejam.org/2019/games/elves-vs-dwarfs)
 
 # Extensions
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
 * [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
 * [Multi-threading support](https://github.com/Leopotam/ecs-threads)
-* [Reactive systems](https://github.com/Leopotam/ecs-reactive)
+* [Service locator](https://github.com/Leopotam/globals)
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
 The software released under the terms of the [MIT license](./LICENSE.md). Enjoy.
 
 # Donate
-Its free opensource software, but you can buy me a coffee:
+Its free open source software, but you can buy me a coffee:
 
 <a href="https://www.buymeacoffee.com/leopotam" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
 
@@ -358,27 +348,34 @@ EcsFilter<C2> _filter2 = null;
 
 Current implementation of foreach-loop fast enough (custom enumerator, no memory allocation), small performance differences can be found on 10k items and more. Current version doesnt support for-loop iterations anymore.
 
+
 ### I copy&paste my reset components code again and again. How I can do it in other manner?
 
-If you want to simplify your code and keep reset-code in one place, you can use `IEcsAutoReset` interface for components:
+If you want to simplify your code and keep reset/init code at one place, you can setup custom handler to process cleanup / initialization for component:
 ```csharp
-class MyComponent : IEcsAutoReset {
+[EcsAutoResetCheck]
+struct MyComponent {
+    public int Id;
     public object LinkToAnotherComponent;
 
-    public void Reset () {
-        // Cleanup all marshal-by-reference fields here.
-        LinkToAnotherComponent = null;
+    public static void CustomReset (ref MyComponent c) {
+        c.Id = 2;
+        c.LinkToAnotherComponent = null;
     }
 }
+...
+world.GetPool<MyComponent> ().SetAutoReset (MyComponent.CustomReset);
 ```
-This method will be automatically called after component removing from entity and before recycling to component pool.
+This method will be automatically called for brand new component instance and after component removing from entity and before recycling to component pool.
+> Important: With custom `AutoReset` behaviour there are no any additional checks for reference-type fields, you should provide correct cleanup/init behaviour without possible memory leaks.
 
+> Important: Attribute `[EcsAutoResetCheck]` can be useful for mark components that should have custom `AutoReset` behaviour. This attribute works in `DEBUG` mode only.  
 
 ### I use components as events that works only one frame, then remove it at last system in execution sequence. It's boring, how I can automate it?
 
 If you want to remove one-frame components without additional custom code, you can register them at `EcsSystems`:
 ```csharp
-class MyOneFrameComponent { }
+struct MyOneFrameComponent { }
 
 EcsSystems _update;
 
@@ -398,8 +395,6 @@ void Update () {
 ```
 
 > Important: All one-frame components with specified type will be removed at position in execution flow where this component was registered with OneFrame() call.
-
-> Important: Do not forget that if one-frame component contains `marshal-by-reference` typed fields - this component should implements `IEcsAutoReset` interface.
 
 ### I need more than 4 components in filter, how i can do it?
 

@@ -6,6 +6,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -26,13 +28,20 @@ namespace Leopotam.Ecs {
         protected readonly EcsGrowList<EcsFilter> Filters = new EcsGrowList<EcsFilter> (128);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByIncludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
         protected readonly Dictionary<int, EcsGrowList<EcsFilter>> FilterByExcludedComponents = new Dictionary<int, EcsGrowList<EcsFilter>> (64);
+        // ReSharper restore MemberCanBePrivate.Global
+
         int _usedComponentsCount;
+
+        readonly object[] _filterCtor;
+
+        public EcsWorld () {
+            _filterCtor = new object[] { this };
+        }
 
         /// <summary>
         /// Component pools cache.
         /// </summary>
-        // ReSharper restore MemberCanBePrivate.Global
-        public EcsComponentPool[] ComponentPools = new EcsComponentPool[512];
+        public IEcsComponentPool[] ComponentPools = new IEcsComponentPool[512];
 #if DEBUG
         internal readonly List<IEcsWorldDebugListener> DebugListeners = new List<IEcsWorldDebugListener> (4);
         readonly EcsGrowList<EcsEntity> _leakedEntities = new EcsGrowList<EcsEntity> (256);
@@ -80,7 +89,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
             _isDestroyed = true;
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
-                DebugListeners[i].OnWorldDestroyed ();
+                DebugListeners[i].OnWorldDestroyed (this);
             }
 #endif
         }
@@ -123,73 +132,22 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Creates entity and attaches component.
-        /// </summary>
-        /// <typeparam name="T1">Type of component1.</typeparam>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<T1> (out T1 c1) where T1 : class {
-            var entity = NewEntity ();
-            c1 = entity.Set<T1> ();
-            return entity;
-        }
-
-        /// <summary>
-        /// Creates entity and attaches components.
-        /// </summary>
-        /// <typeparam name="T1">Type of component1.</typeparam>
-        /// <typeparam name="T2">Type of component2.</typeparam>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<T1, T2> (out T1 c1, out T2 c2) where T1 : class where T2 : class {
-            var entity = NewEntity ();
-            c1 = entity.Set<T1> ();
-            c2 = entity.Set<T2> ();
-            return entity;
-        }
-
-        /// <summary>
-        /// Creates entity and attaches components.
-        /// </summary>
-        /// <typeparam name="T1">Type of component1.</typeparam>
-        /// <typeparam name="T2">Type of component2.</typeparam>
-        /// <typeparam name="T3">Type of component3.</typeparam>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<T1, T2, T3> (out T1 c1, out T2 c2, out T3 c3) where T1 : class where T2 : class where T3 : class {
-            var entity = NewEntity ();
-            c1 = entity.Set<T1> ();
-            c2 = entity.Set<T2> ();
-            c3 = entity.Set<T3> ();
-            return entity;
-        }
-
-        /// <summary>
-        /// Creates entity and attaches components.
-        /// </summary>
-        /// <typeparam name="T1">Type of component1.</typeparam>
-        /// <typeparam name="T2">Type of component2.</typeparam>
-        /// <typeparam name="T3">Type of component3.</typeparam>
-        /// <typeparam name="T4">Type of component4.</typeparam>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity NewEntityWith<T1, T2, T3, T4> (out T1 c1, out T2 c2, out T3 c3, out T4 c4) where T1 : class where T2 : class where T3 : class where T4 : class {
-            var entity = NewEntity ();
-            c1 = entity.Set<T1> ();
-            c2 = entity.Set<T2> ();
-            c3 = entity.Set<T3> ();
-            c4 = entity.Set<T4> ();
-            return entity;
-        }
-
-        /// <summary>
-        /// Restores EcsEntity from internal id. For internal use only!
+        /// Restores EcsEntity from internal id and gen. For internal use only!
         /// </summary>
         /// <param name="id">Internal id.</param>
+        /// <param name="gen">Generation. If less than 0 - will be filled from current generation value.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsEntity RestoreEntityFromInternalId (int id) {
+        public EcsEntity RestoreEntityFromInternalId (int id, int gen = -1) {
             EcsEntity entity;
             entity.Owner = this;
             entity.Id = id;
-            entity.Gen = 0;
-            ref var entityData = ref GetEntityData (entity);
-            entity.Gen = entityData.Gen;
+            if (gen < 0) {
+                entity.Gen = 0;
+                ref var entityData = ref GetEntityData (entity);
+                entity.Gen = entityData.Gen;
+            } else {
+                entity.Gen = (ushort) gen;
+            }
             return entity;
         }
 
@@ -210,7 +168,7 @@ namespace Leopotam.Ecs {
                 }
             }
             // create new filter.
-            var filter = (EcsFilter) Activator.CreateInstance (filterType, true);
+            var filter = (EcsFilter) Activator.CreateInstance (filterType, BindingFlags.NonPublic | BindingFlags.Instance, null, _filterCtor, CultureInfo.InvariantCulture);
 #if DEBUG
             for (var filterIdx = 0; filterIdx < Filters.Count; filterIdx++) {
                 if (filter.AreComponentsSame (Filters.Items[filterIdx])) {
@@ -313,7 +271,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = false;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = true;
                                     break;
                                 }
@@ -330,7 +288,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = true;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = false;
                                     break;
                                 }
@@ -349,7 +307,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = true;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = false;
                                     break;
                                 }
@@ -366,7 +324,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
                             var isValid = false;
                             foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].Entities[idx].Id == entity.Id) {
+                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
                                     isValid = true;
                                     break;
                                 }
@@ -404,7 +362,7 @@ namespace Leopotam.Ecs {
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentPool GetPool<T> () where T : class {
+        public EcsComponentPool<T> GetPool<T> () where T : struct {
             var typeIdx = EcsComponentType<T>.TypeIndex;
             if (ComponentPools.Length < typeIdx) {
                 var len = ComponentPools.Length << 1;
@@ -413,9 +371,9 @@ namespace Leopotam.Ecs {
                 }
                 Array.Resize (ref ComponentPools, len);
             }
-            var pool = ComponentPools[typeIdx];
+            var pool = (EcsComponentPool<T>) ComponentPools[typeIdx];
             if (pool == null) {
-                pool = new EcsComponentPool (EcsComponentType<T>.Type, EcsComponentType<T>.IsAutoReset);
+                pool = new EcsComponentPool<T> ();
                 ComponentPools[typeIdx] = pool;
                 _usedComponentsCount++;
             }
@@ -457,7 +415,7 @@ namespace Leopotam.Ecs {
         void OnEntityDestroyed (EcsEntity entity);
         void OnFilterCreated (EcsFilter filter);
         void OnComponentListChanged (EcsEntity entity);
-        void OnWorldDestroyed ();
+        void OnWorldDestroyed (EcsWorld world);
     }
 #endif
 }
