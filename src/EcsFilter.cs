@@ -30,24 +30,28 @@ namespace Leopotam.Ecs {
     [UnityEngine.Scripting.Preserve]
 #endif
     public abstract class EcsFilter {
-        protected EcsEntity[] Entities = new EcsEntity[EcsHelpers.FilterEntitiesSize];
+        protected EcsEntity[] Entities;
         protected int EntitiesCount;
+        protected int LockCount;
+        protected readonly int EntitiesCacheSize;
 
-        int _lockCount;
-
-        DelayedOp[] _delayedOps = new DelayedOp[EcsHelpers.FilterEntitiesSize];
+        DelayedOp[] _delayedOps;
         int _delayedOpsCount;
 
-        // ReSharper disable MemberCanBePrivate.Global
         protected IEcsFilterListener[] Listeners = new IEcsFilterListener[4];
         protected int ListenersCount;
-        // ReSharper restore MemberCanBePrivate.Global
 
         protected internal int[] IncludedTypeIndices;
         protected internal int[] ExcludedTypeIndices;
 
         public Type[] IncludedTypes;
         public Type[] ExcludedTypes;
+
+        protected EcsFilter (EcsWorld world) {
+            EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
+            Entities = new EcsEntity[EntitiesCacheSize];
+            _delayedOps = new DelayedOp[EntitiesCacheSize];
+        }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
@@ -161,7 +165,7 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected bool AddDelayedOp (bool isAdd, in EcsEntity entity) {
-            if (_lockCount <= 0) {
+            if (LockCount <= 0) {
                 return false;
             }
             if (_delayedOps.Length == _delayedOpsCount) {
@@ -188,18 +192,18 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         void Lock () {
-            _lockCount++;
+            LockCount++;
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         void Unlock () {
 #if DEBUG
-            if (_lockCount <= 0) {
+            if (LockCount <= 0) {
                 throw new Exception ($"Invalid lock-unlock balance for \"{GetType ().Name}\".");
             }
 #endif
-            _lockCount--;
-            if (_lockCount == 0 && _delayedOpsCount > 0) {
+            LockCount--;
+            if (LockCount == 0 && _delayedOpsCount > 0) {
                 // process delayed operations.
                 for (int i = 0, iMax = _delayedOpsCount; i < iMax; i++) {
                     ref var op = ref _delayedOps[i];
@@ -325,6 +329,9 @@ namespace Leopotam.Ecs {
         /// Optimizes filtered data for fast access.
         /// </summary>
         public void Optimize () {
+#if DEBUG
+            if (LockCount > 0) { throw new Exception ("Can't optimize locked filter."); }
+#endif
             OptimizeSort (0, EntitiesCount - 1);
         }
 
@@ -358,10 +365,10 @@ namespace Leopotam.Ecs {
             return i;
         }
 
-        protected EcsFilter (EcsWorld world) {
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
+            _Get1 = _allow1 ? new int[EntitiesCacheSize] : null;
             IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex };
             IncludedTypes = new[] { EcsComponentType<Inc1>.Type };
         }
@@ -466,13 +473,13 @@ namespace Leopotam.Ecs {
             return _pool2.Ref (_Get2[idx]);
         }
 
-        protected EcsFilter (EcsWorld world) {
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
             _pool2 = world.GetPool<Inc2> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get2 = _allow2 ? new int[EcsHelpers.FilterEntitiesSize] : null;
+            _Get1 = _allow1 ? new int[EntitiesCacheSize] : null;
+            _Get2 = _allow2 ? new int[EntitiesCacheSize] : null;
             IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex };
             IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type };
         }
@@ -597,18 +604,26 @@ namespace Leopotam.Ecs {
             return _pool3.Ref (_Get3[idx]);
         }
 
-        protected EcsFilter (EcsWorld world) {
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
             _pool2 = world.GetPool<Inc2> ();
             _pool3 = world.GetPool<Inc3> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get2 = _allow2 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get3 = _allow3 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex, EcsComponentType<Inc3>.TypeIndex };
-            IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type, EcsComponentType<Inc3>.Type };
+            _Get1 = _allow1 ? new int[EntitiesCacheSize] : null;
+            _Get2 = _allow2 ? new int[EntitiesCacheSize] : null;
+            _Get3 = _allow3 ? new int[EntitiesCacheSize] : null;
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type,
+                EcsComponentType<Inc3>.Type
+            };
         }
 
         /// <summary>
@@ -751,7 +766,7 @@ namespace Leopotam.Ecs {
             return _pool4.Ref (_Get4[idx]);
         }
 
-        protected EcsFilter (EcsWorld world) {
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
@@ -760,12 +775,22 @@ namespace Leopotam.Ecs {
             _pool2 = world.GetPool<Inc2> ();
             _pool3 = world.GetPool<Inc3> ();
             _pool4 = world.GetPool<Inc4> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get2 = _allow2 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get3 = _allow3 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get4 = _allow4 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex, EcsComponentType<Inc3>.TypeIndex, EcsComponentType<Inc4>.TypeIndex };
-            IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type, EcsComponentType<Inc3>.Type, EcsComponentType<Inc4>.Type };
+            _Get1 = _allow1 ? new int[EntitiesCacheSize] : null;
+            _Get2 = _allow2 ? new int[EntitiesCacheSize] : null;
+            _Get3 = _allow3 ? new int[EntitiesCacheSize] : null;
+            _Get4 = _allow4 ? new int[EntitiesCacheSize] : null;
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex,
+                EcsComponentType<Inc4>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type,
+                EcsComponentType<Inc3>.Type,
+                EcsComponentType<Inc4>.Type
+            };
         }
 
         /// <summary>

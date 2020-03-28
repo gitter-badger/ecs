@@ -8,12 +8,6 @@ using System;
 using System.Runtime.CompilerServices;
 
 namespace Leopotam.Ecs {
-    static class EcsHelpers {
-        const int EntityComponentsCount = 8;
-        public const int FilterEntitiesSize = 256;
-        public const int EntityComponentsCountX2 = EntityComponentsCount * 2;
-    }
-
     /// <summary>
     /// Fast List replacement for growing only collections.
     /// </summary>

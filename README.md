@@ -396,6 +396,26 @@ void Update () {
 
 > Important: All one-frame components with specified type will be removed at position in execution flow where this component was registered with OneFrame() call.
 
+### I need more control on default cache size of internal structures, how I can do it?
+
+You can set custom cache sizes with `EcsWorldConfig` instance:
+```csharp
+var config = new EcsWorldConfig() {
+    // World.Entities default cache size.
+    WorldEntitiesCacheSize = 1024,
+    // World.Filters default cache size.
+    WorldFiltersCacheSize = 128,
+    // World.ComponentPools default cache size.
+    WorldComponentPoolsCacheSize = 512,
+    // Entity.Components default cache size (not doubled).
+    EntityComponentsCacheSize = 8,
+    // Filter.Entities default cache size.
+    FilterEntitiesCacheSize = 256,
+};
+var world = new EcsWorld(config);
+...
+```
+
 ### I need more than 4 components in filter, how i can do it?
 
 Check `EcsFilter<Inc1, Inc2, Inc3, Inc4>` type source, copy&paste it to your project and add additional components support in same manner.
