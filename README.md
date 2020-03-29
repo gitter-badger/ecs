@@ -418,4 +418,4 @@ var world = new EcsWorld(config);
 
 ### I need more than 4 components in filter, how i can do it?
 
-Check `EcsFilter<Inc1, Inc2, Inc3, Inc4>` type source, copy&paste it to your project and add additional components support in same manner.
+You can use [EcsFilter autogen-tool](https://leopotam.github.io/ecs/filter-gen.html) and replace `EcsFilter.cs` file with brand new generated content.
