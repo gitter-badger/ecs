@@ -37,9 +37,26 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Creates new ecs-world instance.
         /// </summary>
-        /// <param name="config">Optional config for default cache sizes. If null - default values will be used.</param>
-        public EcsWorld (EcsWorldConfig config = null) {
-            Config = config ?? new EcsWorldConfig ();
+        /// <param name="config">Optional config for default cache sizes. On zero or negative value - default value will be used.</param>
+        public EcsWorld (EcsWorldConfig config = default) {
+            var finalConfig = new EcsWorldConfig {
+                EntityComponentsCacheSize = config.EntityComponentsCacheSize <= 0
+                    ? EcsWorldConfig.DefaultEntityComponentsCacheSize
+                    : config.EntityComponentsCacheSize,
+                FilterEntitiesCacheSize = config.FilterEntitiesCacheSize <= 0
+                    ? EcsWorldConfig.DefaultFilterEntitiesCacheSize
+                    : config.FilterEntitiesCacheSize,
+                WorldEntitiesCacheSize = config.WorldEntitiesCacheSize <= 0
+                    ? EcsWorldConfig.DefaultWorldEntitiesCacheSize
+                    : config.WorldEntitiesCacheSize,
+                WorldFiltersCacheSize = config.WorldFiltersCacheSize <= 0
+                    ? EcsWorldConfig.DefaultWorldFiltersCacheSize
+                    : config.WorldFiltersCacheSize,
+                WorldComponentPoolsCacheSize = config.WorldComponentPoolsCacheSize <= 0
+                    ? EcsWorldConfig.DefaultWorldComponentPoolsCacheSize
+                    : config.WorldComponentPoolsCacheSize
+            };
+            Config = finalConfig;
             Entities = new EcsEntityData[Config.WorldEntitiesCacheSize];
             FreeEntities = new EcsGrowList<int> (Config.WorldEntitiesCacheSize);
             Filters = new EcsGrowList<EcsFilter> (Config.WorldFiltersCacheSize);
@@ -420,27 +437,47 @@ namespace Leopotam.Ecs {
     /// <summary>
     /// World config to setup default caches.
     /// </summary>
-    public sealed class EcsWorldConfig {
+    public struct EcsWorldConfig {
+        /// <summary>
+        /// World.Entities cache size.
+        /// </summary>
+        public int WorldEntitiesCacheSize;
+        /// <summary>
+        /// World.Filters cache size.
+        /// </summary>
+        public int WorldFiltersCacheSize;
+        /// <summary>
+        /// World.ComponentPools cache size.
+        /// </summary>
+        public int WorldComponentPoolsCacheSize;
+        /// <summary>
+        /// Entity.Components cache size (not doubled).
+        /// </summary>
+        public int EntityComponentsCacheSize;
+        /// <summary>
+        /// Filter.Entities cache size.
+        /// </summary>
+        public int FilterEntitiesCacheSize;
         /// <summary>
         /// World.Entities default cache size.
         /// </summary>
-        public int WorldEntitiesCacheSize = 1024;
+        public const int DefaultWorldEntitiesCacheSize = 1024;
         /// <summary>
         /// World.Filters default cache size.
         /// </summary>
-        public int WorldFiltersCacheSize = 128;
+        public const int DefaultWorldFiltersCacheSize = 128;
         /// <summary>
         /// World.ComponentPools default cache size.
         /// </summary>
-        public int WorldComponentPoolsCacheSize = 512;
+        public const int DefaultWorldComponentPoolsCacheSize = 512;
         /// <summary>
         /// Entity.Components default cache size (not doubled).
         /// </summary>
-        public int EntityComponentsCacheSize = 8;
+        public const int DefaultEntityComponentsCacheSize = 8;
         /// <summary>
         /// Filter.Entities default cache size.
         /// </summary>
-        public int FilterEntitiesCacheSize = 256;
+        public const int DefaultFilterEntitiesCacheSize = 256;
     }
 
 #if DEBUG
