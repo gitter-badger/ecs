@@ -46,7 +46,9 @@ namespace Leopotam.Ecs {
 
         public Type[] IncludedTypes;
         public Type[] ExcludedTypes;
-
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter (EcsWorld world) {
             EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
             Entities = new EcsEntity[EntitiesCacheSize];
@@ -366,7 +368,9 @@ namespace Leopotam.Ecs {
             Entities[i] = pivotE;
             return i;
         }
-
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
@@ -430,6 +434,9 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1>
             where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex
@@ -443,6 +450,9 @@ namespace Leopotam.Ecs {
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1>
             where Exc1 : struct
             where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex,
@@ -494,7 +504,9 @@ namespace Leopotam.Ecs {
         public EcsComponentRef<Inc2> Get2Ref (int idx) {
             return _pool2.Ref (_get2[idx]);
         }
-
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
@@ -570,6 +582,9 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2>
             where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex
@@ -583,6 +598,9 @@ namespace Leopotam.Ecs {
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2>
             where Exc1 : struct
             where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex,
@@ -648,7 +666,9 @@ namespace Leopotam.Ecs {
         public EcsComponentRef<Inc3> Get3Ref (int idx) {
             return _pool3.Ref (_get3[idx]);
         }
-
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
@@ -736,6 +756,9 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3>
             where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex
@@ -749,6 +772,9 @@ namespace Leopotam.Ecs {
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3>
             where Exc1 : struct
             where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex,
@@ -828,7 +854,9 @@ namespace Leopotam.Ecs {
         public EcsComponentRef<Inc4> Get4Ref (int idx) {
             return _pool4.Ref (_get4[idx]);
         }
-
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
@@ -928,6 +956,9 @@ namespace Leopotam.Ecs {
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4>
             where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex
@@ -941,6 +972,9 @@ namespace Leopotam.Ecs {
         public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3, Inc4>
             where Exc1 : struct
             where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
                     EcsComponentType<Exc1>.TypeIndex,
