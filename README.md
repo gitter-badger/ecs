@@ -309,6 +309,12 @@ Its free open source software, but you can buy me a coffee:
 
 # FAQ
 
+### Structs-based, classes-based versions? Which better and why?
+
+Classes-based version is stable, but not longer under active development - except bug fixes (can be found at ``classes-based` branch).
+
+Structs-based only one version that under active development. It should be faster than classed-based version, simpler in component-cleanup and you can switch to `unity-ecs` easier later (if you want). This framework will be under development even after `unity-ecs` release.
+
 ### I want to know - is component already added to entity and get it / add new one otherwise, how I can do it?
 
 There are no `entity.Get<T>` method to request component data due to `ref` to struct cant return null in case when component was not added before.
