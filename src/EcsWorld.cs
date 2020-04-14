@@ -183,7 +183,8 @@ namespace Leopotam.Ecs {
         /// Request exist filter or create new one. For internal use only!
         /// </summary>
         /// <param name="filterType">Filter type.</param>
-        public EcsFilter GetFilter (Type filterType) {
+        /// <param name="createIfNotExists">Create filter if not exists.</param>
+        public EcsFilter GetFilter (Type filterType, bool createIfNotExists = true) {
 #if DEBUG
             if (filterType == null) { throw new Exception ("FilterType is null."); }
             if (!filterType.IsSubclassOf (typeof (EcsFilter))) { throw new Exception ($"Invalid filter type: {filterType}."); }
@@ -194,6 +195,9 @@ namespace Leopotam.Ecs {
                 if (Filters.Items[i].GetType () == filterType) {
                     return Filters.Items[i];
                 }
+            }
+            if (!createIfNotExists) {
+                return null;
             }
             // create new filter.
             var filter = (EcsFilter) Activator.CreateInstance (filterType, BindingFlags.NonPublic | BindingFlags.Instance, null, _filterCtor, CultureInfo.InvariantCulture);
