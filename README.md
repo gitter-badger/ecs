@@ -280,9 +280,8 @@ systems.SetRunSystemState (idx, false);
 ## With sources:
 * [Snake game](https://github.com/Leopotam/ecs-snake)
 * [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
-* [Pacman game (powered by classes-based version)](https://github.com/SH42913/pacmanecs)
+* [Pacman game](https://github.com/SH42913/pacmanecs)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
-* [Ecs Hybrid Unity integration (powered by classes-based version)](https://github.com/SH42913/leoecshybrid)
 
 ## Without sources:
 * [Hattori2 game (powered by classes-based version)](https://www.instagram.com/hattorigame/)
