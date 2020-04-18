@@ -53,7 +53,7 @@ entity.Destroy();
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem`, `IEcsDestroySystem`, `IEcsRunSystem` (or other supported) interfaces:
 ```csharp
-class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsPreDestroySystem {
+class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsPostDestroySystem {
     public void PreInit () {
         // Will be called once during EcsSystems.Init() call and before IEcsInitSystem.Init.
     }
@@ -66,7 +66,7 @@ class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsP
         // Will be called once during EcsSystems.Destroy() call.
     }
 
-    public void AfterDestroy () {
+    public void PostDestroy () {
         // Will be called once during EcsSystems.Destroy() call and after IEcsDestroySystem.Destroy.
     }
 }
