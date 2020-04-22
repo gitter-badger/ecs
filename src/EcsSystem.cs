@@ -29,10 +29,10 @@ namespace Leopotam.Ecs {
     }
 
     /// <summary>
-    /// Interface for AfterDestroy systems. AfterDestroy() will be called after Destroy().
+    /// Interface for PostDestroy systems. PostDestroy() will be called after Destroy().
     /// </summary>
-    public interface IEcsAfterDestroySystem : IEcsSystem {
-        void AfterDestroy ();
+    public interface IEcsPostDestroySystem : IEcsSystem {
+        void PostDestroy ();
     }
 
     /// <summary>
@@ -289,13 +289,13 @@ namespace Leopotam.Ecs {
 #endif
                 }
             }
-            // IEcsAfterDestroySystem processing.
+            // IEcsPostDestroySystem processing.
             for (var i = _allSystems.Count - 1; i >= 0; i--) {
                 var system = _allSystems.Items[i];
-                if (system is IEcsAfterDestroySystem) {
-                    ((IEcsAfterDestroySystem) system).AfterDestroy ();
+                if (system is IEcsPostDestroySystem) {
+                    ((IEcsPostDestroySystem) system).PostDestroy ();
 #if DEBUG
-                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.AfterDestroy ()");
+                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.PostDestroy ()");
 #endif
                 }
             }

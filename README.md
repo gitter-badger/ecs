@@ -45,6 +45,7 @@ struct WeaponComponent {
 EcsEntity entity = _world.NewEntity ();
 ref Component1 c1 = ref entity.Set<Component1> ();
 ref Component2 c2 = ref entity.Set<Component2> ();
+entity.Destroy();
 ```
 
 > **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Unset()` call.
@@ -52,7 +53,7 @@ ref Component2 c2 = ref entity.Set<Component2> ();
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem`, `IEcsDestroySystem`, `IEcsRunSystem` (or other supported) interfaces:
 ```csharp
-class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsPreDestroySystem {
+class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsPostDestroySystem {
     public void PreInit () {
         // Will be called once during EcsSystems.Init() call and before IEcsInitSystem.Init.
     }
@@ -65,7 +66,7 @@ class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsP
         // Will be called once during EcsSystems.Destroy() call.
     }
 
-    public void AfterDestroy () {
+    public void PostDestroy () {
         // Will be called once during EcsSystems.Destroy() call and after IEcsDestroySystem.Destroy.
     }
 }
@@ -168,7 +169,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     public void Run () {
         foreach (var i in _filter) {
             // entity that contains WeaponComponent.
-            ref var entity = ref _filter.Entities[i];
+            ref var entity = ref _filter.GetEntity (i);
 
             // Get1 will return link to attached "WeaponComponent".
             ref var weapon = ref _filter.Get1 (i);
@@ -278,9 +279,9 @@ systems.SetRunSystemState (idx, false);
 # Examples
 ## With sources:
 * [Snake game](https://github.com/Leopotam/ecs-snake)
-* [Pacman game (powered by classes-based version)](https://github.com/SH42913/pacmanecs)
+* [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
+* [Pacman game](https://github.com/SH42913/pacmanecs)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
-* [Ecs Hybrid Unity integration (powered by classes-based version)](https://github.com/SH42913/leoecshybrid)
 
 ## Without sources:
 * [Hattori2 game (powered by classes-based version)](https://www.instagram.com/hattorigame/)
@@ -306,6 +307,20 @@ Its free open source software, but you can buy me a coffee:
 <a href="https://www.buymeacoffee.com/leopotam" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
 
 # FAQ
+
+### Structs-based, classes-based versions? Which better and why?
+
+Classes-based version is stable, but not longer under active development - except bug fixes (can be found at ``classes-based` branch).
+
+Structs-based only one version that under active development. It should be faster than classed-based version, simpler in component-cleanup and you can switch to `unity-ecs` easier later (if you want). This framework will be under development even after `unity-ecs` release.
+
+### I want to know - is component already added to entity and get it / add new one otherwise, how I can do it?
+
+There are no `entity.Get<T>` method to request component data due to `ref` to struct cant return null in case when component was not added before.
+
+If you dont care about fact is component already added and you just want to be sure that entity contains it - just call `entity.Set<T>` - it will return already exist component or add brand new one if not.
+
+If you want to know that component exist or not (to use it in custom logic later) - use `entity.Has<T>` method that will return fact that component was added before.  
 
 ### I want to process one system at MonoBehaviour.Update() and another - at MonoBehaviour.FixedUpdate(). How I can do it?
 
@@ -396,6 +411,26 @@ void Update () {
 
 > Important: All one-frame components with specified type will be removed at position in execution flow where this component was registered with OneFrame() call.
 
+### I need more control on default cache size of internal structures, how I can do it?
+
+You can set custom cache sizes with `EcsWorldConfig` instance:
+```csharp
+var config = new EcsWorldConfig() {
+    // World.Entities default cache size.
+    WorldEntitiesCacheSize = 1024,
+    // World.Filters default cache size.
+    WorldFiltersCacheSize = 128,
+    // World.ComponentPools default cache size.
+    WorldComponentPoolsCacheSize = 512,
+    // Entity.Components default cache size (not doubled).
+    EntityComponentsCacheSize = 8,
+    // Filter.Entities default cache size.
+    FilterEntitiesCacheSize = 256,
+};
+var world = new EcsWorld(config);
+...
+```
+
 ### I need more than 4 components in filter, how i can do it?
 
-Check `EcsFilter<Inc1, Inc2, Inc3, Inc4>` type source, copy&paste it to your project and add additional components support in same manner.
+You can use [EcsFilter autogen-tool](https://leopotam.github.io/ecs/filter-gen.html) and replace `EcsFilter.cs` file with brand new generated content.

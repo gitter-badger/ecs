@@ -30,24 +30,30 @@ namespace Leopotam.Ecs {
     [UnityEngine.Scripting.Preserve]
 #endif
     public abstract class EcsFilter {
-        protected EcsEntity[] Entities = new EcsEntity[EcsHelpers.FilterEntitiesSize];
+        protected EcsEntity[] Entities;
         protected int EntitiesCount;
+        protected int LockCount;
+        protected readonly int EntitiesCacheSize;
 
-        int _lockCount;
-
-        DelayedOp[] _delayedOps = new DelayedOp[EcsHelpers.FilterEntitiesSize];
+        DelayedOp[] _delayedOps;
         int _delayedOpsCount;
 
-        // ReSharper disable MemberCanBePrivate.Global
         protected IEcsFilterListener[] Listeners = new IEcsFilterListener[4];
         protected int ListenersCount;
-        // ReSharper restore MemberCanBePrivate.Global
 
         protected internal int[] IncludedTypeIndices;
         protected internal int[] ExcludedTypeIndices;
 
         public Type[] IncludedTypes;
         public Type[] ExcludedTypes;
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsFilter (EcsWorld world) {
+            EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
+            Entities = new EcsEntity[EntitiesCacheSize];
+            _delayedOps = new DelayedOp[EntitiesCacheSize];
+        }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
@@ -161,7 +167,7 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected bool AddDelayedOp (bool isAdd, in EcsEntity entity) {
-            if (_lockCount <= 0) {
+            if (LockCount <= 0) {
                 return false;
             }
             if (_delayedOps.Length == _delayedOpsCount) {
@@ -188,18 +194,18 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         void Lock () {
-            _lockCount++;
+            LockCount++;
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         void Unlock () {
 #if DEBUG
-            if (_lockCount <= 0) {
+            if (LockCount <= 0) {
                 throw new Exception ($"Invalid lock-unlock balance for \"{GetType ().Name}\".");
             }
 #endif
-            _lockCount--;
-            if (_lockCount == 0 && _delayedOpsCount > 0) {
+            LockCount--;
+            if (LockCount == 0 && _delayedOpsCount > 0) {
                 // process delayed operations.
                 for (int i = 0, iMax = _delayedOpsCount; i < iMax; i++) {
                     ref var op = ref _delayedOps[i];
@@ -305,26 +311,31 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1> : EcsFilter where Inc1 : struct {
-        int[] _Get1;
+    public class EcsFilter<Inc1> : EcsFilter
+        where Inc1 : struct {
+        int[] _get1;
+
         readonly bool _allow1;
 
         readonly EcsComponentPool<Inc1> _pool1;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (int idx) {
-            return ref _pool1.Items[_Get1[idx]];
+            return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc1> Get1Ref (int idx) {
-            return _pool1.Ref (_Get1[idx]);
+            return _pool1.Ref (_get1[idx]);
         }
 
         /// <summary>
         /// Optimizes filtered data for fast access.
         /// </summary>
         public void Optimize () {
+#if DEBUG
+            if (LockCount > 0) { throw new Exception ("Can't optimize locked filter."); }
+#endif
             OptimizeSort (0, EntitiesCount - 1);
         }
 
@@ -337,33 +348,39 @@ namespace Leopotam.Ecs {
         }
 
         int OptimizeSortPartition (int left, int right) {
-            var pivot = _Get1[right];
+            var pivot = _get1[right];
             var pivotE = Entities[right];
             var i = left;
             for (var j = left; j < right; j++) {
-                if (_Get1[j] <= pivot) {
-                    var c = _Get1[j];
-                    _Get1[j] = _Get1[i];
-                    _Get1[i] = c;
+                if (_get1[j] <= pivot) {
+                    var c = _get1[j];
+                    _get1[j] = _get1[i];
+                    _get1[i] = c;
                     var e = Entities[j];
                     Entities[j] = Entities[i];
                     Entities[i] = e;
                     i++;
                 }
             }
-            _Get1[right] = _Get1[i];
-            _Get1[i] = pivot;
+            _get1[right] = _get1[i];
+            _get1[i] = pivot;
             Entities[right] = Entities[i];
             Entities[i] = pivotE;
             return i;
         }
-
-        protected EcsFilter (EcsWorld world) {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex };
-            IncludedTypes = new[] { EcsComponentType<Inc1>.Type };
+            _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type
+            };
         }
 
         /// <summary>
@@ -377,7 +394,7 @@ namespace Leopotam.Ecs {
             if (Entities.Length == EntitiesCount) {
                 var newSize = EntitiesCount << 1;
                 Array.Resize (ref Entities, newSize);
-                if (_allow1) { Array.Resize (ref _Get1, newSize); }
+                if (_allow1) { Array.Resize (ref _get1, newSize); }
             }
             // inlined and optimized World.GetComponent() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
@@ -386,7 +403,7 @@ namespace Leopotam.Ecs {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
-                    _Get1[EntitiesCount] = itemIdx;
+                    _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                 }
             }
@@ -407,7 +424,7 @@ namespace Leopotam.Ecs {
                     EntitiesCount--;
                     if (i < EntitiesCount) {
                         Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _Get1[i] = _Get1[EntitiesCount]; }
+                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
                     }
                     ProcessListeners (false, entity);
                     break;
@@ -415,17 +432,36 @@ namespace Leopotam.Ecs {
             }
         }
 
-        public class Exclude<Exc1> : EcsFilter<Inc1> where Exc1 : struct {
+        public class Exclude<Exc1> : EcsFilter<Inc1>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
             }
         }
 
-        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1> where Exc1 : struct where Exc2 : struct {
+        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
             }
         }
     }
@@ -437,9 +473,12 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2> : EcsFilter where Inc1 : struct where Inc2 : struct {
-        int[] _Get1;
-        int[] _Get2;
+    public class EcsFilter<Inc1, Inc2> : EcsFilter
+        where Inc1 : struct
+        where Inc2 : struct {
+        int[] _get1;
+        int[] _get2;
+
         readonly bool _allow1;
         readonly bool _allow2;
 
@@ -448,33 +487,41 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (int idx) {
-            return ref _pool1.Items[_Get1[idx]];
+            return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (int idx) {
-            return ref _pool2.Items[_Get2[idx]];
+            return ref _pool2.Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc1> Get1Ref (int idx) {
-            return _pool1.Ref (_Get1[idx]);
+            return _pool1.Ref (_get1[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc2> Get2Ref (int idx) {
-            return _pool2.Ref (_Get2[idx]);
+            return _pool2.Ref (_get2[idx]);
         }
-
-        protected EcsFilter (EcsWorld world) {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
             _pool2 = world.GetPool<Inc2> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get2 = _allow2 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex };
-            IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type };
+            _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
+            _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type
+            };
         }
 
         /// <summary>
@@ -488,8 +535,8 @@ namespace Leopotam.Ecs {
             if (Entities.Length == EntitiesCount) {
                 var newSize = EntitiesCount << 1;
                 Array.Resize (ref Entities, newSize);
-                if (_allow1) { Array.Resize (ref _Get1, newSize); }
-                if (_allow2) { Array.Resize (ref _Get2, newSize); }
+                if (_allow1) { Array.Resize (ref _get1, newSize); }
+                if (_allow2) { Array.Resize (ref _get2, newSize); }
             }
             // inlined and optimized World.GetComponent() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
@@ -499,11 +546,11 @@ namespace Leopotam.Ecs {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
-                    _Get1[EntitiesCount] = itemIdx;
+                    _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
-                    _Get2[EntitiesCount] = itemIdx;
+                    _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
                 }
             }
@@ -524,8 +571,8 @@ namespace Leopotam.Ecs {
                     EntitiesCount--;
                     if (i < EntitiesCount) {
                         Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _Get1[i] = _Get1[EntitiesCount]; }
-                        if (_allow2) { _Get2[i] = _Get2[EntitiesCount]; }
+                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
+                        if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
                     }
                     ProcessListeners (false, entity);
                     break;
@@ -533,17 +580,36 @@ namespace Leopotam.Ecs {
             }
         }
 
-        public class Exclude<Exc1> : EcsFilter<Inc1, Inc2> where Exc1 : struct {
+        public class Exclude<Exc1> : EcsFilter<Inc1, Inc2>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
             }
         }
 
-        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2> where Exc1 : struct where Exc2 : struct {
+        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
             }
         }
     }
@@ -555,10 +621,14 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter where Inc1 : struct where Inc2 : struct where Inc3 : struct {
-        int[] _Get1;
-        int[] _Get2;
-        int[] _Get3;
+    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter
+        where Inc1 : struct
+        where Inc2 : struct
+        where Inc3 : struct {
+        int[] _get1;
+        int[] _get2;
+        int[] _get3;
+
         readonly bool _allow1;
         readonly bool _allow2;
         readonly bool _allow3;
@@ -569,46 +639,56 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (int idx) {
-            return ref _pool1.Items[_Get1[idx]];
+            return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (int idx) {
-            return ref _pool2.Items[_Get2[idx]];
+            return ref _pool2.Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc3 Get3 (int idx) {
-            return ref _pool3.Items[_Get3[idx]];
+            return ref _pool3.Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc1> Get1Ref (int idx) {
-            return _pool1.Ref (_Get1[idx]);
+            return _pool1.Ref (_get1[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc2> Get2Ref (int idx) {
-            return _pool2.Ref (_Get2[idx]);
+            return _pool2.Ref (_get2[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc3> Get3Ref (int idx) {
-            return _pool3.Ref (_Get3[idx]);
+            return _pool3.Ref (_get3[idx]);
         }
-
-        protected EcsFilter (EcsWorld world) {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
             _pool2 = world.GetPool<Inc2> ();
             _pool3 = world.GetPool<Inc3> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get2 = _allow2 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get3 = _allow3 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex, EcsComponentType<Inc3>.TypeIndex };
-            IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type, EcsComponentType<Inc3>.Type };
+            _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
+            _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
+            _get3 = _allow3 ? new int[EntitiesCacheSize] : null;
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type,
+                EcsComponentType<Inc3>.Type
+            };
         }
 
         /// <summary>
@@ -622,9 +702,9 @@ namespace Leopotam.Ecs {
             if (Entities.Length == EntitiesCount) {
                 var newSize = EntitiesCount << 1;
                 Array.Resize (ref Entities, newSize);
-                if (_allow1) { Array.Resize (ref _Get1, newSize); }
-                if (_allow2) { Array.Resize (ref _Get2, newSize); }
-                if (_allow3) { Array.Resize (ref _Get3, newSize); }
+                if (_allow1) { Array.Resize (ref _get1, newSize); }
+                if (_allow2) { Array.Resize (ref _get2, newSize); }
+                if (_allow3) { Array.Resize (ref _get3, newSize); }
             }
             // inlined and optimized World.GetComponent() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
@@ -635,15 +715,15 @@ namespace Leopotam.Ecs {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
-                    _Get1[EntitiesCount] = itemIdx;
+                    _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
-                    _Get2[EntitiesCount] = itemIdx;
+                    _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
-                    _Get3[EntitiesCount] = itemIdx;
+                    _get3[EntitiesCount] = itemIdx;
                     allow3 = false;
                 }
             }
@@ -664,9 +744,9 @@ namespace Leopotam.Ecs {
                     EntitiesCount--;
                     if (i < EntitiesCount) {
                         Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _Get1[i] = _Get1[EntitiesCount]; }
-                        if (_allow2) { _Get2[i] = _Get2[EntitiesCount]; }
-                        if (_allow3) { _Get3[i] = _Get3[EntitiesCount]; }
+                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
+                        if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
+                        if (_allow3) { _get3[i] = _get3[EntitiesCount]; }
                     }
                     ProcessListeners (false, entity);
                     break;
@@ -674,17 +754,36 @@ namespace Leopotam.Ecs {
             }
         }
 
-        public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : struct {
+        public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
             }
         }
 
-        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3> where Exc1 : struct where Exc2 : struct {
+        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
             }
         }
     }
@@ -696,11 +795,16 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter where Inc1 : struct where Inc2 : struct where Inc3 : struct where Inc4 : struct {
-        int[] _Get1;
-        int[] _Get2;
-        int[] _Get3;
-        int[] _Get4;
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter
+        where Inc1 : struct
+        where Inc2 : struct
+        where Inc3 : struct
+        where Inc4 : struct {
+        int[] _get1;
+        int[] _get2;
+        int[] _get3;
+        int[] _get4;
+
         readonly bool _allow1;
         readonly bool _allow2;
         readonly bool _allow3;
@@ -713,45 +817,47 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (int idx) {
-            return ref _pool1.Items[_Get1[idx]];
+            return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (int idx) {
-            return ref _pool2.Items[_Get2[idx]];
+            return ref _pool2.Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc3 Get3 (int idx) {
-            return ref _pool3.Items[_Get3[idx]];
+            return ref _pool3.Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc4 Get4 (int idx) {
-            return ref _pool4.Items[_Get4[idx]];
+            return ref _pool4.Items[_get4[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc1> Get1Ref (int idx) {
-            return _pool1.Ref (_Get1[idx]);
+            return _pool1.Ref (_get1[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc2> Get2Ref (int idx) {
-            return _pool2.Ref (_Get2[idx]);
+            return _pool2.Ref (_get2[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc3> Get3Ref (int idx) {
-            return _pool3.Ref (_Get3[idx]);
+            return _pool3.Ref (_get3[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsComponentRef<Inc4> Get4Ref (int idx) {
-            return _pool4.Ref (_Get4[idx]);
+            return _pool4.Ref (_get4[idx]);
         }
-
-        protected EcsFilter (EcsWorld world) {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
@@ -760,12 +866,22 @@ namespace Leopotam.Ecs {
             _pool2 = world.GetPool<Inc2> ();
             _pool3 = world.GetPool<Inc3> ();
             _pool4 = world.GetPool<Inc4> ();
-            _Get1 = _allow1 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get2 = _allow2 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get3 = _allow3 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            _Get4 = _allow4 ? new int[EcsHelpers.FilterEntitiesSize] : null;
-            IncludedTypeIndices = new[] { EcsComponentType<Inc1>.TypeIndex, EcsComponentType<Inc2>.TypeIndex, EcsComponentType<Inc3>.TypeIndex, EcsComponentType<Inc4>.TypeIndex };
-            IncludedTypes = new[] { EcsComponentType<Inc1>.Type, EcsComponentType<Inc2>.Type, EcsComponentType<Inc3>.Type, EcsComponentType<Inc4>.Type };
+            _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
+            _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
+            _get3 = _allow3 ? new int[EntitiesCacheSize] : null;
+            _get4 = _allow4 ? new int[EntitiesCacheSize] : null;
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex,
+                EcsComponentType<Inc4>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type,
+                EcsComponentType<Inc3>.Type,
+                EcsComponentType<Inc4>.Type
+            };
         }
 
         /// <summary>
@@ -779,10 +895,10 @@ namespace Leopotam.Ecs {
             if (Entities.Length == EntitiesCount) {
                 var newSize = EntitiesCount << 1;
                 Array.Resize (ref Entities, newSize);
-                if (_allow1) { Array.Resize (ref _Get1, newSize); }
-                if (_allow2) { Array.Resize (ref _Get2, newSize); }
-                if (_allow3) { Array.Resize (ref _Get3, newSize); }
-                if (_allow4) { Array.Resize (ref _Get4, newSize); }
+                if (_allow1) { Array.Resize (ref _get1, newSize); }
+                if (_allow2) { Array.Resize (ref _get2, newSize); }
+                if (_allow3) { Array.Resize (ref _get3, newSize); }
+                if (_allow4) { Array.Resize (ref _get4, newSize); }
             }
             // inlined and optimized World.GetComponent() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
@@ -794,19 +910,19 @@ namespace Leopotam.Ecs {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
-                    _Get1[EntitiesCount] = itemIdx;
+                    _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
-                    _Get2[EntitiesCount] = itemIdx;
+                    _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
-                    _Get3[EntitiesCount] = itemIdx;
+                    _get3[EntitiesCount] = itemIdx;
                     allow3 = false;
                 }
                 if (allow4 && typeIdx == EcsComponentType<Inc4>.TypeIndex) {
-                    _Get4[EntitiesCount] = itemIdx;
+                    _get4[EntitiesCount] = itemIdx;
                     allow4 = false;
                 }
             }
@@ -827,10 +943,10 @@ namespace Leopotam.Ecs {
                     EntitiesCount--;
                     if (i < EntitiesCount) {
                         Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _Get1[i] = _Get1[EntitiesCount]; }
-                        if (_allow2) { _Get2[i] = _Get2[EntitiesCount]; }
-                        if (_allow3) { _Get3[i] = _Get3[EntitiesCount]; }
-                        if (_allow4) { _Get4[i] = _Get4[EntitiesCount]; }
+                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
+                        if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
+                        if (_allow3) { _get3[i] = _get3[EntitiesCount]; }
+                        if (_allow4) { _get4[i] = _get4[EntitiesCount]; }
                     }
                     ProcessListeners (false, entity);
                     break;
@@ -838,17 +954,36 @@ namespace Leopotam.Ecs {
             }
         }
 
-        public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : struct {
+        public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
             }
         }
 
-        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3, Inc4> where Exc1 : struct where Exc2 : struct {
+        public class Exclude<Exc1, Exc2> : EcsFilter<Inc1, Inc2, Inc3, Inc4>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
-                ExcludedTypeIndices = new[] { EcsComponentType<Exc1>.TypeIndex, EcsComponentType<Exc2>.TypeIndex };
-                ExcludedTypes = new[] { EcsComponentType<Exc1>.Type, EcsComponentType<Exc2>.Type };
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
             }
         }
     }
