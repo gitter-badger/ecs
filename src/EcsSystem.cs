@@ -121,7 +121,15 @@ namespace Leopotam.Ecs {
 #endif
             _allSystems.Add (system);
             if (system is IEcsRunSystem) {
+                if (namedRunSystem == null && system is EcsSystems ecsSystems) {
+                    namedRunSystem = ecsSystems.Name;
+                }
                 if (namedRunSystem != null) {
+#if DEBUG
+                    if (_namedRunSystems.ContainsKey (namedRunSystem.GetHashCode ())) {
+                        throw new Exception ($"Cant add named system - \"{namedRunSystem}\" name already exists.");
+                    }
+#endif
                     _namedRunSystems[namedRunSystem.GetHashCode ()] = _runSystems.Count;
                 }
                 _runSystems.Add (new EcsSystemsRunItem () { Active = true, System = (IEcsRunSystem) system });
