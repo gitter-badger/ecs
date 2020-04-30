@@ -74,7 +74,7 @@ namespace Leopotam.Ecs {
         readonly Dictionary<Type, object> _injections = new Dictionary<Type, object> (32);
         bool _injected;
 #if DEBUG
-        bool _inited;
+        bool _initialized;
         bool _destroyed;
         readonly List<IEcsSystemsDebugListener> _debugListeners = new List<IEcsSystemsDebugListener> (4);
 
@@ -115,7 +115,7 @@ namespace Leopotam.Ecs {
         public EcsSystems Add (IEcsSystem system, string namedRunSystem = null) {
 #if DEBUG
             if (system == null) { throw new Exception ("System is null."); }
-            if (_inited) { throw new Exception ("Cant add system after initialization."); }
+            if (_initialized) { throw new Exception ("Cant add system after initialization."); }
             if (_destroyed) { throw new Exception ("Cant touch after destroy."); }
             if (!string.IsNullOrEmpty (namedRunSystem) && !(system is IEcsRunSystem)) { throw new Exception ("Cant name non-IEcsRunSystem."); }
 #endif
@@ -132,7 +132,7 @@ namespace Leopotam.Ecs {
 #endif
                     _namedRunSystems[namedRunSystem.GetHashCode ()] = _runSystems.Count;
                 }
-                _runSystems.Add (new EcsSystemsRunItem () { Active = true, System = (IEcsRunSystem) system });
+                _runSystems.Add (new EcsSystemsRunItem { Active = true, System = (IEcsRunSystem) system });
             }
             return this;
         }
@@ -184,7 +184,7 @@ namespace Leopotam.Ecs {
         /// <param name="obj">Instance.</param>
         public EcsSystems Inject<T> (T obj) {
 #if DEBUG
-            if (_inited) { throw new Exception ("Cant inject after initialization."); }
+            if (_initialized) { throw new Exception ("Cant inject after initialization."); }
 #endif
             _injections[typeof (T)] = obj;
             return this;
@@ -196,14 +196,13 @@ namespace Leopotam.Ecs {
         /// </summary>
         public EcsSystems ProcessInjects () {
 #if DEBUG
-            if (_inited) { throw new Exception ("Cant inject after initialization."); }
+            if (_initialized) { throw new Exception ("Cant inject after initialization."); }
             if (_destroyed) { throw new Exception ("Cant touch after destroy."); }
 #endif
             if (!_injected) {
                 _injected = true;
                 for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
-                    var nestedSystems = _allSystems.Items[i] as EcsSystems;
-                    if (nestedSystems != null) {
+                    if (_allSystems.Items[i] is EcsSystems nestedSystems) {
                         foreach (var pair in _injections) {
                             nestedSystems._injections[pair.Key] = pair.Value;
                         }
@@ -229,32 +228,32 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void Init () {
 #if DEBUG
-            if (_inited) { throw new Exception ("Already inited."); }
+            if (_initialized) { throw new Exception ("Already initialized."); }
             if (_destroyed) { throw new Exception ("Cant touch after destroy."); }
 #endif
             ProcessInjects ();
             // IEcsPreInitSystem processing.
             for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
                 var system = _allSystems.Items[i];
-                if (system is IEcsPreInitSystem) {
-                    ((IEcsPreInitSystem) system).PreInit ();
+                if (system is IEcsPreInitSystem preInitSystem) {
+                    preInitSystem.PreInit ();
 #if DEBUG
-                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.PreInit()");
+                    World.CheckForLeakedEntities ($"{preInitSystem.GetType ().Name}.PreInit()");
 #endif
                 }
             }
             // IEcsInitSystem processing.
             for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
                 var system = _allSystems.Items[i];
-                if (system is IEcsInitSystem) {
-                    ((IEcsInitSystem) system).Init ();
+                if (system is IEcsInitSystem initSystem) {
+                    initSystem.Init ();
 #if DEBUG
-                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.Init()");
+                    World.CheckForLeakedEntities ($"{initSystem.GetType ().Name}.Init()");
 #endif
                 }
             }
 #if DEBUG
-            _inited = true;
+            _initialized = true;
 #endif
         }
 
@@ -263,7 +262,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public void Run () {
 #if DEBUG
-            if (!_inited) { throw new Exception ($"[{Name ?? "NONAME"}] EcsSystems should be initialized before."); }
+            if (!_initialized) { throw new Exception ($"[{Name ?? "NONAME"}] EcsSystems should be initialized before."); }
             if (_destroyed) { throw new Exception ("Cant touch after destroy."); }
 #endif
             for (int i = 0, iMax = _runSystems.Count; i < iMax; i++) {
@@ -290,20 +289,20 @@ namespace Leopotam.Ecs {
             // IEcsDestroySystem processing.
             for (var i = _allSystems.Count - 1; i >= 0; i--) {
                 var system = _allSystems.Items[i];
-                if (system is IEcsDestroySystem) {
-                    ((IEcsDestroySystem) system).Destroy ();
+                if (system is IEcsDestroySystem destroySystem) {
+                    destroySystem.Destroy ();
 #if DEBUG
-                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.Destroy ()");
+                    World.CheckForLeakedEntities ($"{destroySystem.GetType ().Name}.Destroy ()");
 #endif
                 }
             }
             // IEcsPostDestroySystem processing.
             for (var i = _allSystems.Count - 1; i >= 0; i--) {
                 var system = _allSystems.Items[i];
-                if (system is IEcsPostDestroySystem) {
-                    ((IEcsPostDestroySystem) system).PostDestroy ();
+                if (system is IEcsPostDestroySystem postDestroySystem) {
+                    postDestroySystem.PostDestroy ();
 #if DEBUG
-                    World.CheckForLeakedEntities ($"{system.GetType ().Name}.PostDestroy ()");
+                    World.CheckForLeakedEntities ($"{postDestroySystem.GetType ().Name}.PostDestroy ()");
 #endif
                 }
             }
@@ -366,7 +365,7 @@ namespace Leopotam.Ecs {
 
         void IEcsRunSystem.Run () {
             foreach (var idx in _oneFrames) {
-                _oneFrames.GetEntity (idx).Unset<T> ();
+                _oneFrames.GetEntity (idx).Del<T> ();
             }
         }
     }

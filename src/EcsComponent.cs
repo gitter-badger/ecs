@@ -129,8 +129,7 @@ namespace Leopotam.Ecs {
         int[] _reservedItems = new int[128];
         int _itemsCount;
         int _reservedItemsCount;
-        AutoResetHandler _autoReset = null;
-        internal static T Default = default;
+        AutoResetHandler _autoReset;
 
         internal EcsComponentPool () {
             ItemType = typeof (T);

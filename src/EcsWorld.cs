@@ -152,8 +152,8 @@ namespace Leopotam.Ecs {
             }
 #if DEBUG
             _leakedEntities.Add (entity);
-            for (var ii = 0; ii < DebugListeners.Count; ii++) {
-                DebugListeners[ii].OnEntityCreated (entity);
+            foreach (var debugListener in DebugListeners) {
+                debugListener.OnEntityCreated (entity);
             }
 #endif
             return entity;
@@ -228,8 +228,8 @@ namespace Leopotam.Ecs {
                 }
             }
 #if DEBUG
-            for (var ii = 0; ii < DebugListeners.Count; ii++) {
-                DebugListeners[ii].OnFilterCreated (filter);
+            foreach (var debugListener in DebugListeners) {
+                debugListener.OnFilterCreated (filter);
             }
 #endif
             return filter;

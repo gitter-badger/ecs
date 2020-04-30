@@ -66,7 +66,21 @@ namespace Leopotam.Ecs {
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        [Obsolete ("Use Get() instead, this method will be removed after 2020.6.22 release.")]
         public static ref T Set<T> (in this EcsEntity entity) where T : struct {
+            return ref Get<T> (entity);
+        }
+
+        /// <summary>
+        /// Returns exist component on entity or adds new one otherwise.
+        /// </summary>
+        /// <typeparam name="T">Type of component.</typeparam>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static ref T Get<T> (in this EcsEntity entity) where T : struct {
             ref var entityData = ref entity.Owner.GetEntityData (entity);
 #if DEBUG
             if (entityData.Gen != entity.Gen) { throw new Exception ("Cant add component to destroyed entity."); }
@@ -129,7 +143,21 @@ namespace Leopotam.Ecs {
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        [Obsolete ("Use Del() instead, this method will be removed after 2020.6.22 release.")]
         public static void Unset<T> (in this EcsEntity entity) where T : struct {
+            Del<T> (entity);
+        }
+
+        /// <summary>
+        /// Removes component from entity.
+        /// </summary>
+        /// <typeparam name="T">Type of component.</typeparam>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static void Del<T> (in this EcsEntity entity) where T : struct {
             var typeIndex = EcsComponentType<T>.TypeIndex;
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             // save copy to local var for protect from cleanup fields outside.
@@ -199,7 +227,7 @@ namespace Leopotam.Ecs {
         public static int GetInternalId (in this EcsEntity entity) {
             return entity.Id;
         }
-        
+
         /// <summary>
         /// Gets internal generation.
         /// </summary>
