@@ -396,7 +396,7 @@ namespace Leopotam.Ecs {
                 Array.Resize (ref Entities, newSize);
                 if (_allow1) { Array.Resize (ref _get1, newSize); }
             }
-            // inlined and optimized World.GetComponent() call.
+            // inlined and optimized EcsEntity.Get() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             var allow1 = _allow1;
             for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
@@ -538,7 +538,7 @@ namespace Leopotam.Ecs {
                 if (_allow1) { Array.Resize (ref _get1, newSize); }
                 if (_allow2) { Array.Resize (ref _get2, newSize); }
             }
-            // inlined and optimized World.GetComponent() call.
+            // inlined and optimized EcsEntity.Get() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             var allow1 = _allow1;
             var allow2 = _allow2;
@@ -706,7 +706,7 @@ namespace Leopotam.Ecs {
                 if (_allow2) { Array.Resize (ref _get2, newSize); }
                 if (_allow3) { Array.Resize (ref _get3, newSize); }
             }
-            // inlined and optimized World.GetComponent() call.
+            // inlined and optimized EcsEntity.Get() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             var allow1 = _allow1;
             var allow2 = _allow2;
@@ -900,7 +900,7 @@ namespace Leopotam.Ecs {
                 if (_allow3) { Array.Resize (ref _get3, newSize); }
                 if (_allow4) { Array.Resize (ref _get4, newSize); }
             }
-            // inlined and optimized World.GetComponent() call.
+            // inlined and optimized EcsEntity.Get() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             var allow1 = _allow1;
             var allow2 = _allow2;
