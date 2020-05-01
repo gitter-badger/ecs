@@ -37,18 +37,26 @@ struct WeaponComponent {
 }
 ```
 
-> **Important!** Dont forget to manually init all fields of new added component. Default value initializers will not work due all components can be reused automatically multiple times through builtin pooling mechanism (no destroying / creating new instance for each request for performance reason).
+> **Important!** Dont forget to manually init all fields of new added component.
 
 ## Entity
 Сontainer for components. Implemented as `EcsEntity` for wrapping internal identifiers:
 ```csharp
+// Creates new entity in world context.
 EcsEntity entity = _world.NewEntity ();
-ref Component1 c1 = ref entity.Set<Component1> ();
-ref Component2 c2 = ref entity.Set<Component2> ();
+// Get() returns component on entity. If component not exists - it will be added.
+ref Component1 c1 = ref entity.Get<Component1> ();
+ref Component2 c2 = ref entity.Get<Component2> ();
+// Del() removes component from entity.
+entity.Del<Component2> ();
+// Component can be replaced with new instance of component. If component not exist - it will be added.
+var weapon = new WeaponComponent() { Ammo = 10, GunName = "Handgun" };
+entity.Replace(weapon);
+// any entity can be destroyed. 
 entity.Destroy();
 ```
 
-> **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Unset()` call.
+> **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Del()` call.
 
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem`, `IEcsDestroySystem`, `IEcsRunSystem` (or other supported) interfaces:
@@ -116,7 +124,7 @@ class System1 : IEcsInitSystem {
     EcsWorld _world = null;
 
     public void Init () {
-        _world.NewEntity ().Set<Component1> ();
+        _world.NewEntity ().Get<Component1> ();
     } 
 }
 
@@ -163,7 +171,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     EcsFilter<WeaponComponent>.Exclude<HealthComponent> _filter = null;
 
     public void Init () {
-        _world.NewEntity ().Set<WeaponComponent> ();
+        _world.NewEntity ().Get<WeaponComponent> ();
     }
 
     public void Run () {
@@ -318,7 +326,7 @@ Structs-based only one version that under active development. It should be faste
 
 There are no `entity.Get<T>` method to request component data due to `ref` to struct cant return null in case when component was not added before.
 
-If you dont care about fact is component already added and you just want to be sure that entity contains it - just call `entity.Set<T>` - it will return already exist component or add brand new one if not.
+If you dont care about fact is component already added and you just want to be sure that entity contains it - just call `entity.Get<T>` - it will return already exist component or add brand new one if not.
 
 If you want to know that component exist or not (to use it in custom logic later) - use `entity.Has<T>` method that will return fact that component was added before.  
 

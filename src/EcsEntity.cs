@@ -72,6 +72,21 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Replaces or adds new one component to entity.
+        /// </summary>
+        /// <typeparam name="T">Type of component.</typeparam>
+        /// <param name="entity">Entity.</param>
+        /// <param name="item">New value of component.</param>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static void Replace<T> (in this EcsEntity entity, in T item) where T : struct {
+            Get<T> (entity) = item;
+        }
+
+        /// <summary>
         /// Returns exist component on entity or adds new one otherwise.
         /// </summary>
         /// <typeparam name="T">Type of component.</typeparam>
