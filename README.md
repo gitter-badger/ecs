@@ -143,7 +143,7 @@ systems2.Add (new System2 ());
 systems1.Init ();
 systems2.Init ();
 ```
-You will get "0" at console. Problem is that DI starts at `Init` method inside each `EcsSystems`. It means that any new `EcsFilter` instance (with lazy initialization) will be correctly injected only at current `EcsSystems`. 
+You will get "0" at console. Problem is that DI starts at `Init()` method inside each `EcsSystems`. It means that any new `EcsFilter` instance (with lazy initialization) will be correctly injected only at current `EcsSystems`. 
 
 To fix this behaviour startup code should be modified in this way:
 
@@ -188,7 +188,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 > **Important!** You should not use `ref` modifier for any filter data outside of foreach-loop over this filter if you want to destroy part of this data (entity or component) - it will break memory integrity.
 
-All components from filter `Include` constraint can be fast accessed through `filter.Get1()`, `filter.Get2()`, etc - in same order as they were used in filter type declaration.
+All components from filter `Include` constraint can be fast accessed through `EcsFilter.Get1()`, `EcsFilter.Get2()`, etc - in same order as they were used in filter type declaration.
 
 If fast access not required (for example, for flag-based components without data), component can implements `IEcsIgnoreInFilter` interface for decrease memory usage and increase performance:
 ```csharp
@@ -324,11 +324,9 @@ Structs-based only one version that under active development. It should be faste
 
 ### I want to know - is component already added to entity and get it / add new one otherwise, how I can do it?
 
-There are no `entity.Get<T>` method to request component data due to `ref` to struct cant return null in case when component was not added before.
+If you dont care about fact is component already added and you just want to be sure that entity contains it - just call `EcsEntity.Get<T>` - it will return already exist component or add brand new one if not.
 
-If you dont care about fact is component already added and you just want to be sure that entity contains it - just call `entity.Get<T>` - it will return already exist component or add brand new one if not.
-
-If you want to know that component exist or not (to use it in custom logic later) - use `entity.Has<T>` method that will return fact that component was added before.  
+If you want to know that component exist or not (to use it in custom logic later) - use `EcsEntity.Has<T>` method that will return fact that component was added before.  
 
 ### I want to process one system at MonoBehaviour.Update() and another - at MonoBehaviour.FixedUpdate(). How I can do it?
 
