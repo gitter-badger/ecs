@@ -50,10 +50,13 @@ ref Component2 c2 = ref entity.Get<Component2> ();
 // Del() removes component from entity.
 entity.Del<Component2> ();
 // Component can be replaced with new instance of component. If component not exist - it will be added.
-var weapon = new WeaponComponent() { Ammo = 10, GunName = "Handgun" };
-entity.Replace(weapon);
+var weapon = new WeaponComponent () { Ammo = 10, GunName = "Handgun" };
+entity.Replace (weapon);
+// With Replace() you can chain component's creation:
+var entity2 = world.NewEntity ();
+entity2.Replace (new Component1 { Id = 10 }).Replace (new Component2 { Name = "Username" });
 // any entity can be destroyed. 
-entity.Destroy();
+entity.Destroy ();
 ```
 
 > **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Del()` call.
