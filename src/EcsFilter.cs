@@ -320,12 +320,12 @@ namespace Leopotam.Ecs {
         readonly EcsComponentPool<Inc1> _pool1;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc1 Get1 (int idx) {
+        public ref Inc1 Get1 (in int idx) {
             return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc1> Get1Ref (int idx) {
+        public EcsComponentRef<Inc1> Get1Ref (in int idx) {
             return _pool1.Ref (_get1[idx]);
         }
 
@@ -486,22 +486,22 @@ namespace Leopotam.Ecs {
         readonly EcsComponentPool<Inc2> _pool2;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc1 Get1 (int idx) {
+        public ref Inc1 Get1 (in int idx) {
             return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc2 Get2 (int idx) {
+        public ref Inc2 Get2 (in int idx) {
             return ref _pool2.Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc1> Get1Ref (int idx) {
+        public EcsComponentRef<Inc1> Get1Ref (in int idx) {
             return _pool1.Ref (_get1[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc2> Get2Ref (int idx) {
+        public EcsComponentRef<Inc2> Get2Ref (in int idx) {
             return _pool2.Ref (_get2[idx]);
         }
 #if UNITY_2019_1_OR_NEWER
@@ -638,32 +638,32 @@ namespace Leopotam.Ecs {
         readonly EcsComponentPool<Inc3> _pool3;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc1 Get1 (int idx) {
+        public ref Inc1 Get1 (in int idx) {
             return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc2 Get2 (int idx) {
+        public ref Inc2 Get2 (in int idx) {
             return ref _pool2.Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc3 Get3 (int idx) {
+        public ref Inc3 Get3 (in int idx) {
             return ref _pool3.Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc1> Get1Ref (int idx) {
+        public EcsComponentRef<Inc1> Get1Ref (in int idx) {
             return _pool1.Ref (_get1[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc2> Get2Ref (int idx) {
+        public EcsComponentRef<Inc2> Get2Ref (in int idx) {
             return _pool2.Ref (_get2[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc3> Get3Ref (int idx) {
+        public EcsComponentRef<Inc3> Get3Ref (in int idx) {
             return _pool3.Ref (_get3[idx]);
         }
 #if UNITY_2019_1_OR_NEWER
@@ -816,42 +816,42 @@ namespace Leopotam.Ecs {
         readonly EcsComponentPool<Inc4> _pool4;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc1 Get1 (int idx) {
+        public ref Inc1 Get1 (in int idx) {
             return ref _pool1.Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc2 Get2 (int idx) {
+        public ref Inc2 Get2 (in int idx) {
             return ref _pool2.Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc3 Get3 (int idx) {
+        public ref Inc3 Get3 (in int idx) {
             return ref _pool3.Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc4 Get4 (int idx) {
+        public ref Inc4 Get4 (in int idx) {
             return ref _pool4.Items[_get4[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc1> Get1Ref (int idx) {
+        public EcsComponentRef<Inc1> Get1Ref (in int idx) {
             return _pool1.Ref (_get1[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc2> Get2Ref (int idx) {
+        public EcsComponentRef<Inc2> Get2Ref (in int idx) {
             return _pool2.Ref (_get2[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc3> Get3Ref (int idx) {
+        public EcsComponentRef<Inc3> Get3Ref (in int idx) {
             return _pool3.Ref (_get3[idx]);
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc4> Get4Ref (int idx) {
+        public EcsComponentRef<Inc4> Get4Ref (in int idx) {
             return _pool4.Ref (_get4[idx]);
         }
 #if UNITY_2019_1_OR_NEWER
