@@ -9,7 +9,7 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 
 > Tested on unity 2019.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
-> **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
+> **Important!** Don't forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
 # Installation
 
@@ -29,7 +29,7 @@ If you can't / don't want to use unity modules, code can be downloaded as source
 # Main parts of ecs
 
 ## Component
-Container for user data without / with small logic inside. Can be used any user class without any additional inheritance:
+Container for user data without / with small logic inside:
 ```csharp
 struct WeaponComponent {
     public int Ammo;
@@ -37,7 +37,7 @@ struct WeaponComponent {
 }
 ```
 
-> **Important!** Dont forget to manually init all fields of new added component.
+> **Important!** Don't forget to manually init all fields for each new component - they will be reset to default values on recycling to pool.
 
 ## Entity
 Сontainer for components. Implemented as `EcsEntity` for wrapping internal identifiers:
@@ -256,17 +256,17 @@ class Startup : MonoBehaviour {
 ```csharp
 // initialization.
 var nestedSystems = new EcsSystems (_world).Add (new NestedSystem ());
-// dont call nestedSystems.Init() here, rootSystems will do it automatically.
+// don't call nestedSystems.Init() here, rootSystems will do it automatically.
 
 var rootSystems = new EcsSystems (_world).Add (nestedSystems);
 rootSystems.Init ();
 
 // update loop.
-// dont call nestedSystems.Run() here, rootSystems will do it automatically.
+// don't call nestedSystems.Run() here, rootSystems will do it automatically.
 rootSystems.Run ();
 
 // destroying.
-// dont call nestedSystems.Destroy() here, rootSystems will do it automatically.
+// don't call nestedSystems.Destroy() here, rootSystems will do it automatically.
 rootSystems.Destroy ();
 ```
 
@@ -327,7 +327,7 @@ Structs-based only one version that under active development. It should be faste
 
 ### I want to know - is component already added to entity and get it / add new one otherwise, how I can do it?
 
-If you dont care about fact is component already added and you just want to be sure that entity contains it - just call `EcsEntity.Get<T>` - it will return already exist component or add brand new one if not.
+If you don't care about fact is component already added and you just want to be sure that entity contains it - just call `EcsEntity.Get<T>` - it will return already exist component or add brand new one if not.
 
 If you want to know that component exist or not (to use it in custom logic later) - use `EcsEntity.Has<T>` method that will return fact that component was added before.  
 
