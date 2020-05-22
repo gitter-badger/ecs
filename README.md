@@ -9,7 +9,7 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 
 > Tested on unity 2019.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
 
-> **Important!** Dont forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
+> **Important!** Don't forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
 # Installation
 
@@ -29,7 +29,7 @@ If you can't / don't want to use unity modules, code can be downloaded as source
 # Main parts of ecs
 
 ## Component
-Container for user data without / with small logic inside. Can be used any user class without any additional inheritance:
+Container for user data without / with small logic inside:
 ```csharp
 struct WeaponComponent {
     public int Ammo;
@@ -37,18 +37,29 @@ struct WeaponComponent {
 }
 ```
 
-> **Important!** Dont forget to manually init all fields of new added component. Default value initializers will not work due all components can be reused automatically multiple times through builtin pooling mechanism (no destroying / creating new instance for each request for performance reason).
+> **Important!** Don't forget to manually init all fields for each new component - they will be reset to default values on recycling to pool.
 
 ## Entity
 Сontainer for components. Implemented as `EcsEntity` for wrapping internal identifiers:
 ```csharp
+// Creates new entity in world context.
 EcsEntity entity = _world.NewEntity ();
-ref Component1 c1 = ref entity.Set<Component1> ();
-ref Component2 c2 = ref entity.Set<Component2> ();
-entity.Destroy();
+// Get() returns component on entity. If component not exists - it will be added.
+ref Component1 c1 = ref entity.Get<Component1> ();
+ref Component2 c2 = ref entity.Get<Component2> ();
+// Del() removes component from entity.
+entity.Del<Component2> ();
+// Component can be replaced with new instance of component. If component not exist - it will be added.
+var weapon = new WeaponComponent () { Ammo = 10, GunName = "Handgun" };
+entity.Replace (weapon);
+// With Replace() you can chain component's creation:
+var entity2 = world.NewEntity ();
+entity2.Replace (new Component1 { Id = 10 }).Replace (new Component2 { Name = "Username" });
+// any entity can be destroyed. 
+entity.Destroy ();
 ```
 
-> **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Unset()` call.
+> **Important!** Entities without components on them will be automatically removed on last `EcsEntity.Del()` call.
 
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem`, `IEcsDestroySystem`, `IEcsRunSystem` (or other supported) interfaces:
@@ -116,7 +127,7 @@ class System1 : IEcsInitSystem {
     EcsWorld _world = null;
 
     public void Init () {
-        _world.NewEntity ().Set<Component1> ();
+        _world.NewEntity ().Get<Component1> ();
     } 
 }
 
@@ -135,7 +146,7 @@ systems2.Add (new System2 ());
 systems1.Init ();
 systems2.Init ();
 ```
-You will get "0" at console. Problem is that DI starts at `Init` method inside each `EcsSystems`. It means that any new `EcsFilter` instance (with lazy initialization) will be correctly injected only at current `EcsSystems`. 
+You will get "0" at console. Problem is that DI starts at `Init()` method inside each `EcsSystems`. It means that any new `EcsFilter` instance (with lazy initialization) will be correctly injected only at current `EcsSystems`. 
 
 To fix this behaviour startup code should be modified in this way:
 
@@ -163,7 +174,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
     EcsFilter<WeaponComponent>.Exclude<HealthComponent> _filter = null;
 
     public void Init () {
-        _world.NewEntity ().Set<WeaponComponent> ();
+        _world.NewEntity ().Get<WeaponComponent> ();
     }
 
     public void Run () {
@@ -180,7 +191,7 @@ class WeaponSystem : IEcsInitSystem, IEcsRunSystem {
 ```
 > **Important!** You should not use `ref` modifier for any filter data outside of foreach-loop over this filter if you want to destroy part of this data (entity or component) - it will break memory integrity.
 
-All components from filter `Include` constraint can be fast accessed through `filter.Get1()`, `filter.Get2()`, etc - in same order as they were used in filter type declaration.
+All components from filter `Include` constraint can be fast accessed through `EcsFilter.Get1()`, `EcsFilter.Get2()`, etc - in same order as they were used in filter type declaration.
 
 If fast access not required (for example, for flag-based components without data), component can implements `IEcsIgnoreInFilter` interface for decrease memory usage and increase performance:
 ```csharp
@@ -245,17 +256,17 @@ class Startup : MonoBehaviour {
 ```csharp
 // initialization.
 var nestedSystems = new EcsSystems (_world).Add (new NestedSystem ());
-// dont call nestedSystems.Init() here, rootSystems will do it automatically.
+// don't call nestedSystems.Init() here, rootSystems will do it automatically.
 
 var rootSystems = new EcsSystems (_world).Add (nestedSystems);
 rootSystems.Init ();
 
 // update loop.
-// dont call nestedSystems.Run() here, rootSystems will do it automatically.
+// don't call nestedSystems.Run() here, rootSystems will do it automatically.
 rootSystems.Run ();
 
 // destroying.
-// dont call nestedSystems.Destroy() here, rootSystems will do it automatically.
+// don't call nestedSystems.Destroy() here, rootSystems will do it automatically.
 rootSystems.Destroy ();
 ```
 
@@ -316,11 +327,9 @@ Structs-based only one version that under active development. It should be faste
 
 ### I want to know - is component already added to entity and get it / add new one otherwise, how I can do it?
 
-There are no `entity.Get<T>` method to request component data due to `ref` to struct cant return null in case when component was not added before.
+If you don't care about fact is component already added and you just want to be sure that entity contains it - just call `EcsEntity.Get<T>` - it will return already exist component or add brand new one if not.
 
-If you dont care about fact is component already added and you just want to be sure that entity contains it - just call `entity.Set<T>` - it will return already exist component or add brand new one if not.
-
-If you want to know that component exist or not (to use it in custom logic later) - use `entity.Has<T>` method that will return fact that component was added before.  
+If you want to know that component exist or not (to use it in custom logic later) - use `EcsEntity.Has<T>` method that will return fact that component was added before.  
 
 ### I want to process one system at MonoBehaviour.Update() and another - at MonoBehaviour.FixedUpdate(). How I can do it?
 
