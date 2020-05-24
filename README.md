@@ -294,13 +294,13 @@ systems.SetRunSystemState (idx, false);
 * [Pacman game](https://github.com/SH42913/pacmanecs)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
-## Without sources:
-* [Hattori2 game (powered by classes-based version)](https://www.instagram.com/hattorigame/)
-* [Natives game (powered by classes-based version)](https://alex-kpojb.itch.io/natives-ecs)
-* [PrincessRun android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
-* [TowerRunner Revenge android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
-* [HypnoTap android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
-* [Elves-vs-Dwarfs game (powered by classes-based version)](https://globalgamejam.org/2019/games/elves-vs-dwarfs)
+## Released games:
+* ["Natives" game](https://alex-kpojb.itch.io/natives-ecs)
+* ["PrincessRun" game](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
+* ["TowerRunner Revenge" game](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
+* ["HypnoTap" game](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
+* ["I Am Arrow" game](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
+* ["Cheek Clapper: BIG FACTS!" game](https://play.google.com/store/apps/details?id=com.BigMoodGames.FactPuncherFight)
 
 # Extensions
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
