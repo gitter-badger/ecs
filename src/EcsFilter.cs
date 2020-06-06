@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace Leopotam.Ecs {
+#if LEOECS_FILTER_EVENTS
     /// <summary>
     /// Common interface for all filter listeners.
     /// </summary>
@@ -18,7 +19,7 @@ namespace Leopotam.Ecs {
         void OnEntityAdded (in EcsEntity entity);
         void OnEntityRemoved (in EcsEntity entity);
     }
-
+#endif
     /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
@@ -37,10 +38,10 @@ namespace Leopotam.Ecs {
 
         DelayedOp[] _delayedOps;
         int _delayedOpsCount;
-
+#if LEOECS_FILTER_EVENTS
         protected IEcsFilterListener[] Listeners = new IEcsFilterListener[4];
         protected int ListenersCount;
-
+#endif
         protected internal int[] IncludedTypeIndices;
         protected internal int[] ExcludedTypeIndices;
 
@@ -83,7 +84,7 @@ namespace Leopotam.Ecs {
         public bool IsEmpty () {
             return EntitiesCount == 0;
         }
-
+#if LEOECS_FILTER_EVENTS
         /// <summary>
         /// Subscribes listener to filter events.
         /// </summary>
@@ -117,7 +118,7 @@ namespace Leopotam.Ecs {
                 }
             }
         }
-
+#endif
         /// <summary>
         /// Is filter compatible with components on entity with optional added / removed component.
         /// </summary>
@@ -178,7 +179,7 @@ namespace Leopotam.Ecs {
             op.Entity = entity;
             return true;
         }
-
+#if LEOECS_FILTER_EVENTS
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected void ProcessListeners (bool isAdd, in EcsEntity entity) {
             if (isAdd) {
@@ -191,7 +192,7 @@ namespace Leopotam.Ecs {
                 }
             }
         }
-
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         void Lock () {
             LockCount++;
@@ -408,7 +409,9 @@ namespace Leopotam.Ecs {
                 }
             }
             Entities[EntitiesCount++] = entity;
+#if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
+#endif
         }
 
         /// <summary>
@@ -426,7 +429,9 @@ namespace Leopotam.Ecs {
                         Entities[i] = Entities[EntitiesCount];
                         if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
                     }
+#if LEOECS_FILTER_EVENTS
                     ProcessListeners (false, entity);
+#endif
                     break;
                 }
             }
@@ -555,7 +560,9 @@ namespace Leopotam.Ecs {
                 }
             }
             Entities[EntitiesCount++] = entity;
+#if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
+#endif
         }
 
         /// <summary>
@@ -574,7 +581,9 @@ namespace Leopotam.Ecs {
                         if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
                         if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
                     }
+#if LEOECS_FILTER_EVENTS
                     ProcessListeners (false, entity);
+#endif
                     break;
                 }
             }
@@ -728,7 +737,9 @@ namespace Leopotam.Ecs {
                 }
             }
             Entities[EntitiesCount++] = entity;
+#if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
+#endif
         }
 
         /// <summary>
@@ -748,7 +759,9 @@ namespace Leopotam.Ecs {
                         if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
                         if (_allow3) { _get3[i] = _get3[EntitiesCount]; }
                     }
+#if LEOECS_FILTER_EVENTS
                     ProcessListeners (false, entity);
+#endif
                     break;
                 }
             }
@@ -927,7 +940,9 @@ namespace Leopotam.Ecs {
                 }
             }
             Entities[EntitiesCount++] = entity;
+#if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
+#endif
         }
 
         /// <summary>
@@ -948,7 +963,9 @@ namespace Leopotam.Ecs {
                         if (_allow3) { _get3[i] = _get3[EntitiesCount]; }
                         if (_allow4) { _get4[i] = _get4[EntitiesCount]; }
                     }
+#if LEOECS_FILTER_EVENTS
                     ProcessListeners (false, entity);
+#endif
                     break;
                 }
             }
