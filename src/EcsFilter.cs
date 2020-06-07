@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 // ReSharper disable InconsistentNaming
@@ -32,6 +33,7 @@ namespace Leopotam.Ecs {
 #endif
     public abstract class EcsFilter {
         protected EcsEntity[] Entities;
+        protected readonly Dictionary<int, int> EntitiesMap;
         protected int EntitiesCount;
         protected int LockCount;
         protected readonly int EntitiesCacheSize;
@@ -48,14 +50,19 @@ namespace Leopotam.Ecs {
         public Type[] IncludedTypes;
         public Type[] ExcludedTypes;
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+        [UnityEngine.Scripting.Preserve]
 #endif
         protected EcsFilter (EcsWorld world) {
             EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
             Entities = new EcsEntity[EntitiesCacheSize];
+            EntitiesMap = new Dictionary<int, int> (EntitiesCacheSize);
             _delayedOps = new DelayedOp[EntitiesCacheSize];
         }
-
+#if DEBUG
+        public Dictionary<int, int> GetInternalEntitiesMap () {
+            return EntitiesMap;
+        }
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
             return new Enumerator (this);
@@ -370,7 +377,7 @@ namespace Leopotam.Ecs {
             return i;
         }
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+        [UnityEngine.Scripting.Preserve]
 #endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
@@ -408,6 +415,7 @@ namespace Leopotam.Ecs {
                     allow1 = false;
                 }
             }
+            EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
             Entities[EntitiesCount++] = entity;
 #if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
@@ -422,25 +430,24 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
-            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
-                if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    if (i < EntitiesCount) {
-                        Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
-                    }
-#if LEOECS_FILTER_EVENTS
-                    ProcessListeners (false, entity);
-#endif
-                    break;
-                }
+            var entityId = entity.GetInternalId ();
+            var idx = EntitiesMap[entityId];
+            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesCount--;
+            if (idx < EntitiesCount) {
+                Entities[idx] = Entities[EntitiesCount];
+                EntitiesMap[Entities[idx].GetInternalId ()] = idx;
+                if (_allow1) { _get1[idx] = _get1[EntitiesCount]; }
             }
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
         }
 
         public class Exclude<Exc1> : EcsFilter<Inc1>
             where Exc1 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
@@ -456,7 +463,7 @@ namespace Leopotam.Ecs {
             where Exc1 : struct
             where Exc2 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
@@ -510,7 +517,7 @@ namespace Leopotam.Ecs {
             return _pool2.Ref (_get2[idx]);
         }
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+        [UnityEngine.Scripting.Preserve]
 #endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
@@ -559,6 +566,7 @@ namespace Leopotam.Ecs {
                     allow2 = false;
                 }
             }
+            EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
             Entities[EntitiesCount++] = entity;
 #if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
@@ -573,26 +581,25 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
-            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
-                if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    if (i < EntitiesCount) {
-                        Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
-                        if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
-                    }
-#if LEOECS_FILTER_EVENTS
-                    ProcessListeners (false, entity);
-#endif
-                    break;
-                }
+            var entityId = entity.GetInternalId ();
+            var idx = EntitiesMap[entityId];
+            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesCount--;
+            if (idx < EntitiesCount) {
+                Entities[idx] = Entities[EntitiesCount];
+                EntitiesMap[Entities[idx].GetInternalId ()] = idx;
+                if (_allow1) { _get1[idx] = _get1[EntitiesCount]; }
+                if (_allow2) { _get2[idx] = _get2[EntitiesCount]; }
             }
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
         }
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2>
             where Exc1 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
@@ -608,7 +615,7 @@ namespace Leopotam.Ecs {
             where Exc1 : struct
             where Exc2 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
@@ -676,7 +683,7 @@ namespace Leopotam.Ecs {
             return _pool3.Ref (_get3[idx]);
         }
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+        [UnityEngine.Scripting.Preserve]
 #endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
@@ -736,6 +743,7 @@ namespace Leopotam.Ecs {
                     allow3 = false;
                 }
             }
+            EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
             Entities[EntitiesCount++] = entity;
 #if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
@@ -750,27 +758,26 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
-            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
-                if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    if (i < EntitiesCount) {
-                        Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
-                        if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
-                        if (_allow3) { _get3[i] = _get3[EntitiesCount]; }
-                    }
-#if LEOECS_FILTER_EVENTS
-                    ProcessListeners (false, entity);
-#endif
-                    break;
-                }
+            var entityId = entity.GetInternalId ();
+            var idx = EntitiesMap[entityId];
+            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesCount--;
+            if (idx < EntitiesCount) {
+                Entities[idx] = Entities[EntitiesCount];
+                EntitiesMap[Entities[idx].GetInternalId ()] = idx;
+                if (_allow1) { _get1[idx] = _get1[EntitiesCount]; }
+                if (_allow2) { _get2[idx] = _get2[EntitiesCount]; }
+                if (_allow3) { _get3[idx] = _get3[EntitiesCount]; }
             }
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
         }
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3>
             where Exc1 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
@@ -786,7 +793,7 @@ namespace Leopotam.Ecs {
             where Exc1 : struct
             where Exc2 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
@@ -868,7 +875,7 @@ namespace Leopotam.Ecs {
             return _pool4.Ref (_get4[idx]);
         }
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+        [UnityEngine.Scripting.Preserve]
 #endif
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
@@ -939,6 +946,7 @@ namespace Leopotam.Ecs {
                     allow4 = false;
                 }
             }
+            EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
             Entities[EntitiesCount++] = entity;
 #if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
@@ -953,28 +961,27 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
-            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
-                if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    if (i < EntitiesCount) {
-                        Entities[i] = Entities[EntitiesCount];
-                        if (_allow1) { _get1[i] = _get1[EntitiesCount]; }
-                        if (_allow2) { _get2[i] = _get2[EntitiesCount]; }
-                        if (_allow3) { _get3[i] = _get3[EntitiesCount]; }
-                        if (_allow4) { _get4[i] = _get4[EntitiesCount]; }
-                    }
-#if LEOECS_FILTER_EVENTS
-                    ProcessListeners (false, entity);
-#endif
-                    break;
-                }
+            var entityId = entity.GetInternalId ();
+            var idx = EntitiesMap[entityId];
+            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesCount--;
+            if (idx < EntitiesCount) {
+                Entities[idx] = Entities[EntitiesCount];
+                EntitiesMap[Entities[idx].GetInternalId ()] = idx;
+                if (_allow1) { _get1[idx] = _get1[EntitiesCount]; }
+                if (_allow2) { _get2[idx] = _get2[EntitiesCount]; }
+                if (_allow3) { _get3[idx] = _get3[EntitiesCount]; }
+                if (_allow4) { _get4[idx] = _get4[EntitiesCount]; }
             }
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
         }
 
         public class Exclude<Exc1> : EcsFilter<Inc1, Inc2, Inc3, Inc4>
             where Exc1 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
@@ -990,7 +997,7 @@ namespace Leopotam.Ecs {
             where Exc1 : struct
             where Exc2 : struct {
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {

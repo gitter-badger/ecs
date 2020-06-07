@@ -18,11 +18,17 @@ namespace Leopotam.Ecs {
 
         public static readonly EcsEntity Null = new EcsEntity ();
 
+#if DEBUG
+        [Obsolete ("Use entity.AreEquals() instead for performance reasons.")]
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator == (in EcsEntity lhs, in EcsEntity rhs) {
             return lhs.Id == rhs.Id && lhs.Gen == rhs.Gen;
         }
 
+#if DEBUG
+        [Obsolete ("Use entity.AreEquals() instead for performance reasons.")]
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator != (in EcsEntity lhs, in EcsEntity rhs) {
             return lhs.Id != rhs.Id || lhs.Gen != rhs.Gen;
@@ -240,8 +246,25 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Gets internal identifier.
         /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static int GetInternalId (in this EcsEntity entity) {
             return entity.Id;
+        }
+
+        /// <summary>
+        /// Compares entities. 
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool AreEquals (in this EcsEntity lhs, in EcsEntity rhs) {
+            return lhs.Id == rhs.Id && lhs.Gen == rhs.Gen;
+        }
+
+        /// <summary>
+        /// Compares internal Ids without Gens check. Use carefully! 
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool AreIdEquals (in this EcsEntity lhs, in EcsEntity rhs) {
+            return lhs.Id == rhs.Id;
         }
 
         /// <summary>

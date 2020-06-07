@@ -301,14 +301,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
-                            var isValid = false;
-                            foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
-                                    isValid = true;
-                                    break;
-                                }
-                            }
-                            if (!isValid) { throw new Exception ("Entity not in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
+                            if (filterIdx == int.MaxValue) { throw new Exception ("Entity not in filter."); }
 #endif
                             filters.Items[i].OnRemoveEntity (entity);
                         }
@@ -318,14 +312,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, typeIdx)) {
 #if DEBUG
-                            var isValid = true;
-                            foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
-                                    isValid = false;
-                                    break;
-                                }
-                            }
-                            if (!isValid) { throw new Exception ("Entity already in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
+                            if (filterIdx != int.MaxValue) { throw new Exception ("Entity already in filter."); }
 #endif
                             filters.Items[i].OnAddEntity (entity);
                         }
@@ -337,14 +325,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
-                            var isValid = true;
-                            foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
-                                    isValid = false;
-                                    break;
-                                }
-                            }
-                            if (!isValid) { throw new Exception ("Entity already in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
+                            if (filterIdx != int.MaxValue) { throw new Exception ("Entity already in filter."); }
 #endif
                             filters.Items[i].OnAddEntity (entity);
                         }
@@ -354,14 +336,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, -typeIdx)) {
 #if DEBUG
-                            var isValid = false;
-                            foreach (var idx in filters.Items[i]) {
-                                if (filters.Items[i].GetEntity (idx).Id == entity.Id) {
-                                    isValid = true;
-                                    break;
-                                }
-                            }
-                            if (!isValid) { throw new Exception ("Entity not in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
+                            if (filterIdx == int.MaxValue) { throw new Exception ("Entity not in filter."); }
 #endif
                             filters.Items[i].OnRemoveEntity (entity);
                         }
