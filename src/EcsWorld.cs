@@ -301,8 +301,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
-                            if (filterIdx == int.MaxValue) { throw new Exception ("Entity not in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
+                            if (filterIdx < 0) { throw new Exception ("Entity not in filter."); }
 #endif
                             filters.Items[i].OnRemoveEntity (entity);
                         }
@@ -312,8 +312,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, typeIdx)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
-                            if (filterIdx != int.MaxValue) { throw new Exception ("Entity already in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
+                            if (filterIdx >= 0) { throw new Exception ("Entity already in filter."); }
 #endif
                             filters.Items[i].OnAddEntity (entity);
                         }
@@ -325,8 +325,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
-                            if (filterIdx != int.MaxValue) { throw new Exception ("Entity already in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
+                            if (filterIdx >= 0) { throw new Exception ("Entity already in filter."); }
 #endif
                             filters.Items[i].OnAddEntity (entity);
                         }
@@ -336,8 +336,8 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, -typeIdx)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = int.MaxValue; }
-                            if (filterIdx == int.MaxValue) { throw new Exception ("Entity not in filter."); }
+                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
+                            if (filterIdx < 0) { throw new Exception ("Entity not in filter."); }
 #endif
                             filters.Items[i].OnRemoveEntity (entity);
                         }

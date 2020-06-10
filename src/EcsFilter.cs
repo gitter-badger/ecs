@@ -432,7 +432,7 @@ namespace Leopotam.Ecs {
             if (AddDelayedOp (false, entity)) { return; }
             var entityId = entity.GetInternalId ();
             var idx = EntitiesMap[entityId];
-            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesMap.Remove (entityId);
             EntitiesCount--;
             if (idx < EntitiesCount) {
                 Entities[idx] = Entities[EntitiesCount];
@@ -583,7 +583,7 @@ namespace Leopotam.Ecs {
             if (AddDelayedOp (false, entity)) { return; }
             var entityId = entity.GetInternalId ();
             var idx = EntitiesMap[entityId];
-            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesMap.Remove (entityId);
             EntitiesCount--;
             if (idx < EntitiesCount) {
                 Entities[idx] = Entities[EntitiesCount];
@@ -760,7 +760,7 @@ namespace Leopotam.Ecs {
             if (AddDelayedOp (false, entity)) { return; }
             var entityId = entity.GetInternalId ();
             var idx = EntitiesMap[entityId];
-            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesMap.Remove (entityId);
             EntitiesCount--;
             if (idx < EntitiesCount) {
                 Entities[idx] = Entities[EntitiesCount];
@@ -963,7 +963,7 @@ namespace Leopotam.Ecs {
             if (AddDelayedOp (false, entity)) { return; }
             var entityId = entity.GetInternalId ();
             var idx = EntitiesMap[entityId];
-            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesMap.Remove (entityId);
             EntitiesCount--;
             if (idx < EntitiesCount) {
                 Entities[idx] = Entities[EntitiesCount];
