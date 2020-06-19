@@ -364,7 +364,7 @@ namespace Leopotam.Ecs {
         readonly EcsFilter<T> _oneFrames = null;
 
         void IEcsRunSystem.Run () {
-            foreach (var idx in _oneFrames) {
+            for (var idx = _oneFrames.GetEntitiesCount() - 1; idx >= 0; idx--) {
                 _oneFrames.GetEntity (idx).Del<T> ();
             }
         }
