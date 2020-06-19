@@ -340,7 +340,7 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Is entity alive.
+        /// Is entity alive. If world was destroyed - false will be returned.
         /// </summary>
 #if ENABLE_IL2CPP
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
@@ -348,9 +348,21 @@ namespace Leopotam.Ecs {
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool IsAlive (in this EcsEntity entity) {
-            if (entity.Owner == null) { return false; }
+            if (!IsWorldAlive (entity)) { return false; }
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             return entityData.Gen == entity.Gen && entityData.ComponentsCountX2 >= 0;
+        }
+
+        /// <summary>
+        /// Is world alive.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool IsWorldAlive (in this EcsEntity entity) {
+            return entity.Owner != null && entity.Owner.IsAlive ();
         }
 
         /// <summary>

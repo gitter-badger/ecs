@@ -70,10 +70,11 @@ namespace Leopotam.Ecs {
         /// Component pools cache.
         /// </summary>
         public IEcsComponentPool[] ComponentPools;
+
+        protected bool IsDestroyed;
 #if DEBUG
         internal readonly List<IEcsWorldDebugListener> DebugListeners = new List<IEcsWorldDebugListener> (4);
         readonly EcsGrowList<EcsEntity> _leakedEntities = new EcsGrowList<EcsEntity> (256);
-        bool _isDestroyed;
         bool _inDestroying;
 
         /// <summary>
@@ -100,7 +101,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         public virtual void Destroy () {
 #if DEBUG
-            if (_isDestroyed || _inDestroying) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed || _inDestroying) { throw new Exception ("EcsWorld already destroyed."); }
             _inDestroying = true;
             CheckForLeakedEntities ("Destroy");
 #endif
@@ -114,12 +115,20 @@ namespace Leopotam.Ecs {
                     entity.Destroy ();
                 }
             }
+            IsDestroyed = true;
 #if DEBUG
-            _isDestroyed = true;
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
                 DebugListeners[i].OnWorldDestroyed (this);
             }
 #endif
+        }
+
+        /// <summary>
+        /// Is world not destroyed.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public bool IsAlive () {
+            return !IsDestroyed;
         }
 
         /// <summary>
@@ -128,7 +137,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public EcsEntity NewEntity () {
 #if DEBUG
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             EcsEntity entity;
             entity.Owner = this;
@@ -188,7 +197,7 @@ namespace Leopotam.Ecs {
 #if DEBUG
             if (filterType == null) { throw new Exception ("FilterType is null."); }
             if (!filterType.IsSubclassOf (typeof (EcsFilter))) { throw new Exception ($"Invalid filter type: {filterType}."); }
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             // check already exist filters.
             for (int i = 0, iMax = Filters.Count; i < iMax; i++) {
@@ -292,7 +301,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected internal void UpdateFilters (int typeIdx, in EcsEntity entity, in EcsEntityData entityData) {
 #if DEBUG
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
 #endif
             EcsGrowList<EcsFilter> filters;
             if (typeIdx < 0) {
@@ -353,7 +362,7 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref EcsEntityData GetEntityData (in EcsEntity entity) {
 #if DEBUG
-            if (_isDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
+            if (IsDestroyed) { throw new Exception ("EcsWorld already destroyed."); }
             if (entity.Id < 0 || entity.Id > EntitiesCount) { throw new Exception ($"Invalid entity {entity.Id}"); }
 #endif
             return ref Entities[entity.Id];
