@@ -292,15 +292,17 @@ systems.SetRunSystemState (idx, false);
 * [Snake game](https://github.com/Leopotam/ecs-snake)
 * [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
+* [SpaceInvaders (Guns&Bullets variation)](https://github.com/GoodCatGames/SpaceInvadersEcs)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
 ## Released games:
-* ["Natives" game](https://alex-kpojb.itch.io/natives-ecs)
+* [Nasty Bird](https://play.google.com/store/apps/details?id=magic.bird.fly)
+* ["I Am Arrow" game](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
+* ["HypnoTap" game](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
 * ["PrincessRun" game](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
 * ["TowerRunner Revenge" game](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
-* ["HypnoTap" game](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
-* ["I Am Arrow" game](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
 * ["Cheek Clapper: BIG FACTS!" game](https://play.google.com/store/apps/details?id=com.BigMoodGames.FactPuncherFight)
+* ["Natives" game](https://alex-kpojb.itch.io/natives-ecs)
 
 # Extensions
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
