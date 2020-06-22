@@ -18,11 +18,17 @@ namespace Leopotam.Ecs {
 
         public static readonly EcsEntity Null = new EcsEntity ();
 
+#if DEBUG
+        [Obsolete ("Use entity.AreEquals() instead for performance reasons.")]
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator == (in EcsEntity lhs, in EcsEntity rhs) {
             return lhs.Id == rhs.Id && lhs.Gen == rhs.Gen;
         }
 
+#if DEBUG
+        [Obsolete ("Use entity.AreEquals() instead for performance reasons.")]
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator != (in EcsEntity lhs, in EcsEntity rhs) {
             return lhs.Id != rhs.Id || lhs.Gen != rhs.Gen;
@@ -240,8 +246,25 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Gets internal identifier.
         /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static int GetInternalId (in this EcsEntity entity) {
             return entity.Id;
+        }
+
+        /// <summary>
+        /// Compares entities. 
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool AreEquals (in this EcsEntity lhs, in EcsEntity rhs) {
+            return lhs.Id == rhs.Id && lhs.Gen == rhs.Gen;
+        }
+
+        /// <summary>
+        /// Compares internal Ids without Gens check. Use carefully! 
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool AreIdEquals (in this EcsEntity lhs, in EcsEntity rhs) {
+            return lhs.Id == rhs.Id;
         }
 
         /// <summary>
@@ -317,7 +340,7 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Is entity alive.
+        /// Is entity alive. If world was destroyed - false will be returned.
         /// </summary>
 #if ENABLE_IL2CPP
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
@@ -325,9 +348,21 @@ namespace Leopotam.Ecs {
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool IsAlive (in this EcsEntity entity) {
-            if (entity.Owner == null) { return false; }
+            if (!IsWorldAlive (entity)) { return false; }
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             return entityData.Gen == entity.Gen && entityData.ComponentsCountX2 >= 0;
+        }
+
+        /// <summary>
+        /// Is world alive.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool IsWorldAlive (in this EcsEntity entity) {
+            return entity.Owner != null && entity.Owner.IsAlive ();
         }
 
         /// <summary>

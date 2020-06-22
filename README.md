@@ -292,15 +292,17 @@ systems.SetRunSystemState (idx, false);
 * [Snake game](https://github.com/Leopotam/ecs-snake)
 * [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
+* [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
-## Without sources:
-* [Hattori2 game (powered by classes-based version)](https://www.instagram.com/hattorigame/)
-* [Natives game (powered by classes-based version)](https://alex-kpojb.itch.io/natives-ecs)
-* [PrincessRun android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
-* [TowerRunner Revenge android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
-* [HypnoTap android game (powered by classes-based version)](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
-* [Elves-vs-Dwarfs game (powered by classes-based version)](https://globalgamejam.org/2019/games/elves-vs-dwarfs)
+## Released games:
+* ["Nasty Bird"](https://play.google.com/store/apps/details?id=magic.bird.fly)
+* ["I Am Arrow"](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
+* ["HypnoTap"](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
+* ["PrincessRun"](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
+* ["TowerRunner Revenge"](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
+* ["Cheek Clapper: BIG FACTS!"](https://play.google.com/store/apps/details?id=com.BigMoodGames.FactPuncherFight)
+* ["Natives"](https://alex-kpojb.itch.io/natives-ecs)
 
 # Extensions
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
@@ -443,3 +445,31 @@ var world = new EcsWorld(config);
 ### I need more than 4 components in filter, how i can do it?
 
 You can use [EcsFilter autogen-tool](https://leopotam.github.io/ecs/filter-gen.html) and replace `EcsFilter.cs` file with brand new generated content.
+
+### I want to add some reactive behaviour on filter items change, how I can do it?
+
+You can use `LEOECS_FILTER_EVENTS` definition to enable custom event listeners support on filters:
+```charp
+class CustomListener: IEcsFilterListener {
+    public void OnEntityAdded (in EcsEntity entity) {
+        // reaction on compatible entity was added to filter.
+    }
+    
+    public void OnEntityRemoved (in EcsEntity entity) {
+        // reaction on noncompatible entity was removed from filter.
+    }
+}
+
+class MySystem : IEcsInitSystem, IEcsDestroySystem {
+    readonly EcsFilter<Component1> _filter = null;
+    readonly CustomListener _listener = new CustomListener ();
+    public void Init () {
+        // subscribe listener to filter events.
+        _filter.AddListener (_listener);
+    }
+    public void Destroy () {
+        // unsubscribe listener to filter events.
+        _filter.RemoveListener (_listener);
+    }
+}
+``` 
