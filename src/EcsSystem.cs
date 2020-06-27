@@ -183,14 +183,15 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="obj">Instance.</param>
         /// <param name="overridenType">Overriden type, if null - typeof(obj) will be used.</param>
-        public EcsSystems Inject<T> (T obj, Type overridenType = null) {
-            if (overridenType == null) {
-                overridenType = typeof (T);
-            }
+        public EcsSystems Inject (object obj, Type overridenType = null) {
 #if DEBUG
             if (_initialized) { throw new Exception ("Cant inject after initialization."); }
-            if (!overridenType.IsAssignableFrom (typeof (T))) { throw new Exception ("Invalid overriden type."); }
+            if (obj == null) { throw new Exception ("Cant inject null instance."); }
+            if (overridenType != null && !overridenType.IsInstanceOfType (obj)) { throw new Exception ("Invalid overriden type."); }
 #endif
+            if (overridenType == null) {
+                overridenType = obj.GetType ();
+            }
             _injections[overridenType] = obj;
             return this;
         }
