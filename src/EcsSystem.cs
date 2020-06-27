@@ -191,7 +191,7 @@ namespace Leopotam.Ecs {
             if (_initialized) { throw new Exception ("Cant inject after initialization."); }
             if (!overridenType.IsAssignableFrom (typeof (T))) { throw new Exception ("Invalid overriden type."); }
 #endif
-            _injections[typeof (T)] = obj;
+            _injections[overridenType] = obj;
             return this;
         }
 
