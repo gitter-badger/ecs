@@ -225,11 +225,72 @@ namespace Leopotam.Ecs {
                 owner.UpdateFilters (typeIdx, dstEntity, dstData);
             }
 #if DEBUG
-            for (var ii = 0; ii < entity.Owner.DebugListeners.Count; ii++) {
+            for (var ii = 0; ii < owner.DebugListeners.Count; ii++) {
                 owner.DebugListeners[ii].OnComponentListChanged (entity);
             }
 #endif
             return dstEntity;
+        }
+
+        /// <summary>
+        /// Adds copies of source entity components
+        /// on target entity (overwrite exists) and
+        /// removes source entity.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static void MoveTo (in this EcsEntity source, in EcsEntity target) {
+#if DEBUG
+            if (!source.IsAlive ()) { throw new Exception ("Cant move from invalid entity."); }
+            if (!target.IsAlive ()) { throw new Exception ("Cant move to invalid entity."); }
+            if (source.Owner != target.Owner) { throw new Exception ("Cant move data between worlds."); }
+            if (source.AreEquals (target)) { throw new Exception ("Source and target entities are same."); }
+            var componentsListChanged = false;
+#endif
+            var owner = source.Owner;
+            ref var srcData = ref owner.GetEntityData (source);
+            ref var dstData = ref owner.GetEntityData (target);
+            if (dstData.Components.Length < srcData.ComponentsCountX2) {
+                dstData.Components = new int[srcData.Components.Length];
+            }
+            for (int i = 0, iiMax = srcData.ComponentsCountX2; i < iiMax; i += 2) {
+                var typeIdx = srcData.Components[i];
+                var pool = owner.ComponentPools[typeIdx];
+                var j = dstData.ComponentsCountX2 - 2;
+                // search exist component on target.
+                for (; j >= 0; j -= 2) {
+                    if (dstData.Components[j] == typeIdx) { break; }
+                }
+                if (j >= 0) {
+                    // found, copy data.
+                    pool.CopyData (srcData.Components[i + 1], dstData.Components[j + 1]);
+                } else {
+                    // add new one.
+                    if (dstData.Components.Length == dstData.ComponentsCountX2) {
+                        Array.Resize (ref dstData.Components, dstData.ComponentsCountX2 << 1);
+                    }
+                    dstData.Components[dstData.ComponentsCountX2] = typeIdx;
+                    var idx = pool.New ();
+                    dstData.Components[dstData.ComponentsCountX2 + 1] = idx;
+                    dstData.ComponentsCountX2 += 2;
+                    pool.CopyData (srcData.Components[i + 1], idx);
+                    owner.UpdateFilters (typeIdx, target, dstData);
+#if DEBUG
+                    componentsListChanged = true;
+#endif
+                }
+            }
+#if DEBUG
+            if (componentsListChanged) {
+                for (var ii = 0; ii < owner.DebugListeners.Count; ii++) {
+                    owner.DebugListeners[ii].OnComponentListChanged (target);
+                }
+            }
+#endif
+            source.Destroy ();
         }
 
         /// <summary>
