@@ -64,20 +64,6 @@ namespace Leopotam.Ecs {
 #endif
     public static class EcsEntityExtensions {
         /// <summary>
-        /// Attaches or finds already attached component to entity.
-        /// </summary>
-        /// <typeparam name="T">Type of component.</typeparam>
-#if ENABLE_IL2CPP
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
-#endif
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        [Obsolete ("Use Get() instead, this method will be removed after 2020.6.22 release.")]
-        public static ref T Set<T> (in this EcsEntity entity) where T : struct {
-            return ref Get<T> (entity);
-        }
-
-        /// <summary>
         /// Replaces or adds new one component to entity.
         /// </summary>
         /// <typeparam name="T">Type of component.</typeparam>
@@ -165,20 +151,6 @@ namespace Leopotam.Ecs {
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        [Obsolete ("Use Del() instead, this method will be removed after 2020.6.22 release.")]
-        public static void Unset<T> (in this EcsEntity entity) where T : struct {
-            Del<T> (entity);
-        }
-
-        /// <summary>
-        /// Removes component from entity.
-        /// </summary>
-        /// <typeparam name="T">Type of component.</typeparam>
-#if ENABLE_IL2CPP
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
-#endif
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static void Del<T> (in this EcsEntity entity) where T : struct {
             var typeIndex = EcsComponentType<T>.TypeIndex;
             ref var entityData = ref entity.Owner.GetEntityData (entity);
@@ -217,6 +189,47 @@ namespace Leopotam.Ecs {
                 }
 #endif
             }
+        }
+
+        /// <summary>
+        /// Creates copy of entity with all components.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static EcsEntity Copy (in this EcsEntity entity) {
+            var owner = entity.Owner;
+#if DEBUG
+            if (owner == null) { throw new Exception ("Cant copy invalid entity."); }
+#endif
+            ref var srcData = ref owner.GetEntityData (entity);
+#if DEBUG
+            if (srcData.Gen != entity.Gen) { throw new Exception ("Cant copy destroyed entity."); }
+#endif
+            var dstEntity = owner.NewEntity ();
+            ref var dstData = ref owner.GetEntityData (dstEntity);
+            if (dstData.Components.Length < srcData.ComponentsCountX2) {
+                dstData.Components = new int[srcData.Components.Length];
+            }
+            dstData.ComponentsCountX2 = 0;
+            for (int i = 0, iiMax = srcData.ComponentsCountX2; i < iiMax; i += 2) {
+                var typeIdx = srcData.Components[i];
+                var pool = owner.ComponentPools[typeIdx];
+                var dstItemIdx = pool.New ();
+                dstData.Components[i] = typeIdx;
+                dstData.Components[i + 1] = dstItemIdx;
+                pool.CopyData (srcData.Components[i + 1], dstItemIdx);
+                dstData.ComponentsCountX2 += 2;
+                entity.Owner.UpdateFilters (typeIdx, dstEntity, dstData);
+            }
+#if DEBUG
+            for (var ii = 0; ii < entity.Owner.DebugListeners.Count; ii++) {
+                entity.Owner.DebugListeners[ii].OnComponentListChanged (entity);
+            }
+#endif
+            return dstEntity;
         }
 
         /// <summary>

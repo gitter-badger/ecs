@@ -64,6 +64,8 @@ namespace Leopotam.Ecs {
         Type ItemType { get; }
         object GetItem (int idx);
         void Recycle (int idx);
+        int New ();
+        void CopyData (int srcIdx, int dstIdx);
     }
 
     /// <summary>
@@ -164,7 +166,9 @@ namespace Leopotam.Ecs {
                     Array.Resize (ref Items, _itemsCount << 1);
                 }
 #if DEBUG
-                if (EcsComponentType<T>.NeedCheckAutoReset && _autoReset == null) { throw new Exception ($"AutoReset handler for component \"{ItemType.Name}\" should be initialized first."); }
+                if (EcsComponentType<T>.NeedCheckAutoReset && _autoReset == null) {
+                    throw new Exception ($"AutoReset handler for component \"{ItemType.Name}\" should be initialized first.");
+                }
 #endif
                 // reset brand new instance if custom AutoReset was registered.
                 _autoReset?.Invoke (ref Items[_itemsCount]);
@@ -189,6 +193,11 @@ namespace Leopotam.Ecs {
                 Array.Resize (ref _reservedItems, _reservedItemsCount << 1);
             }
             _reservedItems[_reservedItemsCount++] = idx;
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public void CopyData (int srcIdx, int dstIdx) {
+            Items[dstIdx] = Items[srcIdx];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
