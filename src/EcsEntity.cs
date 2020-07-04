@@ -222,11 +222,11 @@ namespace Leopotam.Ecs {
                 dstData.Components[i + 1] = dstItemIdx;
                 pool.CopyData (srcData.Components[i + 1], dstItemIdx);
                 dstData.ComponentsCountX2 += 2;
-                entity.Owner.UpdateFilters (typeIdx, dstEntity, dstData);
+                owner.UpdateFilters (typeIdx, dstEntity, dstData);
             }
 #if DEBUG
             for (var ii = 0; ii < entity.Owner.DebugListeners.Count; ii++) {
-                entity.Owner.DebugListeners[ii].OnComponentListChanged (entity);
+                owner.DebugListeners[ii].OnComponentListChanged (entity);
             }
 #endif
             return dstEntity;
