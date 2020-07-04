@@ -57,6 +57,9 @@ var entity2 = world.NewEntity ();
 entity2.Replace (new Component1 { Id = 10 }).Replace (new Component2 { Name = "Username" });
 // Any entity can be copied with all components:
 var entity2Copy = entity2.Copy ();
+// Any entity can be merged / "moved" to another entity (source will be destroyed):
+var newEntity = world.NewEntity ();
+entity2Copy.MoveTo (newEntity); // all components from entity2Copy moved to newEntity, entity2Copy destroyed.
 // any entity can be destroyed. 
 entity.Destroy ();
 ```
