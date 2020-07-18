@@ -59,6 +59,7 @@ namespace Leopotam.Ecs {
     public static class EcsEntityExtensions {
         /// <summary>
         /// Replaces or adds new one component to entity.
+        /// Slower than Get() direct call.
         /// </summary>
         /// <typeparam name="T">Type of component.</typeparam>
         /// <param name="entity">Entity.</param>
@@ -68,9 +69,9 @@ namespace Leopotam.Ecs {
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static ref EcsEntity Replace<T> (ref this EcsEntity entity, in T item) where T : struct {
+        public static EcsEntity Replace<T> (in this EcsEntity entity, in T item) where T : struct {
             Get<T> (entity) = item;
-            return ref entity;
+            return entity;
         }
 
         /// <summary>
