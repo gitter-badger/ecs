@@ -182,11 +182,17 @@ namespace Leopotam.Ecs {
         /// Injects instance of object type to all compatible fields of added systems.
         /// </summary>
         /// <param name="obj">Instance.</param>
-        public EcsSystems Inject<T> (T obj) {
+        /// <param name="overridenType">Overriden type, if null - typeof(obj) will be used.</param>
+        public EcsSystems Inject (object obj, Type overridenType = null) {
 #if DEBUG
             if (_initialized) { throw new Exception ("Cant inject after initialization."); }
+            if (obj == null) { throw new Exception ("Cant inject null instance."); }
+            if (overridenType != null && !overridenType.IsInstanceOfType (obj)) { throw new Exception ("Invalid overriden type."); }
 #endif
-            _injections[typeof (T)] = obj;
+            if (overridenType == null) {
+                overridenType = obj.GetType ();
+            }
+            _injections[overridenType] = obj;
             return this;
         }
 
@@ -219,8 +225,7 @@ namespace Leopotam.Ecs {
         /// Registers component type as one-frame for auto-removing at this point in execution sequence.
         /// </summary>
         public EcsSystems OneFrame<T> () where T : struct {
-            Add (new RemoveOneFrame<T> ());
-            return this;
+            return Add (new RemoveOneFrame<T> ());
         }
 
         /// <summary>
@@ -364,7 +369,7 @@ namespace Leopotam.Ecs {
         readonly EcsFilter<T> _oneFrames = null;
 
         void IEcsRunSystem.Run () {
-            for (var idx = _oneFrames.GetEntitiesCount() - 1; idx >= 0; idx--) {
+            for (var idx = _oneFrames.GetEntitiesCount () - 1; idx >= 0; idx--) {
                 _oneFrames.GetEntity (idx).Del<T> ();
             }
         }
