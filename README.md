@@ -294,10 +294,11 @@ systems.SetRunSystemState (idx, false);
 
 # Examples
 ## With sources:
-* [Snake game](https://github.com/Leopotam/ecs-snake)
 * [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
 * [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
+* [Runner game](https://github.com/t1az2z/RunnerECS)
+* [Snake game](https://github.com/Leopotam/ecs-snake)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
 ## Released games:
