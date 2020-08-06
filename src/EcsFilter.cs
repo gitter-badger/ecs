@@ -562,6 +562,7 @@ namespace Leopotam.Ecs {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                     left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
@@ -737,11 +738,13 @@ namespace Leopotam.Ecs {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                     left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
                     left--;
+                    continue;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
                     _get3[EntitiesCount] = itemIdx;
@@ -939,16 +942,19 @@ namespace Leopotam.Ecs {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                     left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
                     left--;
+                    continue;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
                     _get3[EntitiesCount] = itemIdx;
                     allow3 = false;
                     left--;
+                    continue;
                 }
                 if (allow4 && typeIdx == EcsComponentType<Inc4>.TypeIndex) {
                     _get4[EntitiesCount] = itemIdx;
@@ -1168,21 +1174,25 @@ namespace Leopotam.Ecs {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                     left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
                     left--;
+                    continue;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
                     _get3[EntitiesCount] = itemIdx;
                     allow3 = false;
                     left--;
+                    continue;
                 }
                 if (allow4 && typeIdx == EcsComponentType<Inc4>.TypeIndex) {
                     _get4[EntitiesCount] = itemIdx;
                     allow4 = false;
                     left--;
+                    continue;
                 }
                 if (allow5 && typeIdx == EcsComponentType<Inc5>.TypeIndex) {
                     _get5[EntitiesCount] = itemIdx;
@@ -1424,26 +1434,31 @@ namespace Leopotam.Ecs {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
                     left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
                     left--;
+                    continue;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
                     _get3[EntitiesCount] = itemIdx;
                     allow3 = false;
                     left--;
+                    continue;
                 }
                 if (allow4 && typeIdx == EcsComponentType<Inc4>.TypeIndex) {
                     _get4[EntitiesCount] = itemIdx;
                     allow4 = false;
                     left--;
+                    continue;
                 }
                 if (allow5 && typeIdx == EcsComponentType<Inc5>.TypeIndex) {
                     _get5[EntitiesCount] = itemIdx;
                     allow5 = false;
                     left--;
+                    continue;
                 }
                 if (allow6 && typeIdx == EcsComponentType<Inc6>.TypeIndex) {
                     _get6[EntitiesCount] = itemIdx;
