@@ -443,7 +443,7 @@ var world = new EcsWorld(config);
 ...
 ```
 
-### I need more than 4 components in filter, how i can do it?
+### I need more than 6 "included" or more than 2 "excluded" components in filter, how i can do it?
 
 You can use [EcsFilter autogen-tool](https://leopotam.github.io/ecs/filter-gen.html) and replace `EcsFilter.cs` file with brand new generated content.
 
