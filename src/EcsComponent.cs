@@ -94,15 +94,6 @@ namespace Leopotam.Ecs {
         internal EcsComponentPool<T> Pool;
         internal int Idx;
 
-#if ENABLE_IL2CPP
-    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
-    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
-#endif
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref T Unref () {
-            return ref Pool.Items[Idx];
-        }
-
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator == (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
             return lhs.Idx == rhs.Idx && lhs.Pool == rhs.Pool;
@@ -123,14 +114,21 @@ namespace Leopotam.Ecs {
             return Idx;
             // ReSharper restore NonReadonlyMemberInGetHashCode
         }
+    }
 
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
+    public static class EcsComponentRefExtensions {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public bool IsNull () {
-            return Pool != null;
+        public static ref T Unref<T> (in this EcsComponentRef<T> wrapper) where T : struct {
+            return ref wrapper.Pool.Items[wrapper.Idx];
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool IsNull<T> (in this EcsComponentRef<T> wrapper) where T : struct {
+            return wrapper.Pool != null;
         }
     }
 
