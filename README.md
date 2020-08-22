@@ -294,10 +294,11 @@ systems.SetRunSystemState (idx, false);
 
 # Examples
 ## With sources:
-* [Snake game](https://github.com/Leopotam/ecs-snake)
 * [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
 * [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
+* [Runner game](https://github.com/t1az2z/RunnerECS)
+* [Snake game](https://github.com/Leopotam/ecs-snake)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
 ## Released games:
@@ -384,23 +385,18 @@ Current implementation of foreach-loop fast enough (custom enumerator, no memory
 
 If you want to simplify your code and keep reset/init code at one place, you can setup custom handler to process cleanup / initialization for component:
 ```csharp
-[EcsAutoResetCheck]
-struct MyComponent {
+struct MyComponent : IEcsAutoReset<MyComponent> {
     public int Id;
     public object LinkToAnotherComponent;
 
-    public static void CustomReset (ref MyComponent c) {
+    public void AutoReset (ref MyComponent c) {
         c.Id = 2;
         c.LinkToAnotherComponent = null;
     }
 }
-...
-world.GetPool<MyComponent> ().SetAutoReset (MyComponent.CustomReset);
 ```
 This method will be automatically called for brand new component instance and after component removing from entity and before recycling to component pool.
 > Important: With custom `AutoReset` behaviour there are no any additional checks for reference-type fields, you should provide correct cleanup/init behaviour without possible memory leaks.
-
-> Important: Attribute `[EcsAutoResetCheck]` can be useful for mark components that should have custom `AutoReset` behaviour. This attribute works in `DEBUG` mode only.  
 
 ### I use components as events that works only one frame, then remove it at last system in execution sequence. It's boring, how I can automate it?
 
@@ -447,7 +443,7 @@ var world = new EcsWorld(config);
 ...
 ```
 
-### I need more than 4 components in filter, how i can do it?
+### I need more than 6 "included" or more than 2 "excluded" components in filter, how i can do it?
 
 You can use [EcsFilter autogen-tool](https://leopotam.github.io/ecs/filter-gen.html) and replace `EcsFilter.cs` file with brand new generated content.
 

@@ -343,6 +343,11 @@ namespace Leopotam.Ecs {
             return entity.Gen;
         }
 
+        /// <summary>
+        /// Gets ComponentRef wrapper to keep direct reference to component.
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        /// <typeparam name="T">Component type.</typeparam>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static EcsComponentRef<T> Ref<T> (in this EcsEntity entity) where T : struct {
             ref var entityData = ref entity.Owner.GetEntityData (entity);

@@ -267,7 +267,8 @@ namespace Leopotam.Ecs {
             if (entityData.ComponentsCountX2 != 0) { throw new Exception ("Cant recycle invalid entity."); }
 #endif
             entityData.ComponentsCountX2 = -2;
-            entityData.Gen = (ushort) ((entityData.Gen + 1) % ushort.MaxValue);
+            entityData.Gen++;
+            if (entityData.Gen == 0) { entityData.Gen = 1; }
             FreeEntities.Add (id);
         }
 
