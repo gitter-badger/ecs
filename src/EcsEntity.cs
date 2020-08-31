@@ -11,13 +11,13 @@ namespace Leopotam.Ecs {
     /// <summary>
     /// Entity descriptor.
     /// </summary>
-    public struct EcsEntity {
+    public struct EcsEntity : IEquatable<EcsEntity> {
         internal int Id;
         internal ushort Gen;
         internal EcsWorld Owner;
 
         public static readonly EcsEntity Null = new EcsEntity ();
-        
+
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator == (in EcsEntity lhs, in EcsEntity rhs) {
             return lhs.Id == rhs.Id && lhs.Gen == rhs.Gen;
@@ -30,19 +30,18 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode () {
-            // ReSharper disable NonReadonlyMemberInGetHashCode
-            // not readonly for performance reason - no ctor calls for EcsEntity struct.
-            return Id.GetHashCode () ^ (Gen.GetHashCode () << 2);
-            // ReSharper restore NonReadonlyMemberInGetHashCode
+            unchecked {
+                // ReSharper disable NonReadonlyMemberInGetHashCode
+                var hashCode = (Id * 397) ^ Gen.GetHashCode ();
+                hashCode = (hashCode * 397) ^ (Owner != null ? Owner.GetHashCode () : 0);
+                // ReSharper restore NonReadonlyMemberInGetHashCode
+                return hashCode;
+            }
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override bool Equals (object other) {
-            if (!(other is EcsEntity)) {
-                return false;
-            }
-            var rhs = (EcsEntity) other;
-            return Id == rhs.Id && Gen == rhs.Gen;
+            return other is EcsEntity otherEntity && Equals (otherEntity);
         }
 
 #if DEBUG
@@ -50,6 +49,9 @@ namespace Leopotam.Ecs {
             return this.IsNull () ? "Entity-Null" : $"Entity-{Id}:{Gen}";
         }
 #endif
+        public bool Equals (EcsEntity other) {
+            return Id == other.Id && Gen == other.Gen && Owner == other.Owner;
+        }
     }
 
 #if ENABLE_IL2CPP
