@@ -112,7 +112,7 @@ namespace Leopotam.Ecs {
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool IsNull<T> (in this EcsComponentRef<T> wrapper) where T : struct {
-            return wrapper.Pool != null;
+            return wrapper.Pool == null;
         }
     }
 
