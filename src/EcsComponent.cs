@@ -121,19 +121,17 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
     public sealed class EcsComponentPool<T> : IEcsComponentPool where T : struct {
-        /// <summary>
-        /// Description of custom AutoReset handler.
-        /// </summary>
-        public delegate void AutoResetHandler (ref T component);
-
-        delegate void AutoResetHandler2 (ref T component);
+        delegate void AutoResetHandler (ref T component);
 
         public Type ItemType { get; }
         public T[] Items = new T[128];
         int[] _reservedItems = new int[128];
         int _itemsCount;
         int _reservedItemsCount;
-        readonly AutoResetHandler2 _autoReset;
+        readonly AutoResetHandler _autoReset;
+#if ENABLE_IL2CPP && !UNITY_EDITOR
+        T _autoresetFakeInstance;
+#endif
 
         internal EcsComponentPool () {
             ItemType = typeof (T);
@@ -146,9 +144,13 @@ namespace Leopotam.Ecs {
                         $"IEcsAutoReset<{typeof (T).Name}> explicit implementation not supported, use implicit instead.");
                 }
 #endif
-                _autoReset = (AutoResetHandler2) Delegate.CreateDelegate (
-                    typeof (AutoResetHandler2),
+                _autoReset = (AutoResetHandler) Delegate.CreateDelegate (
+                    typeof (AutoResetHandler),
+#if ENABLE_IL2CPP && !UNITY_EDITOR
+                    _autoresetFakeInstance,
+#else
                     null,
+#endif
                     autoResetMethod);
             }
         }
