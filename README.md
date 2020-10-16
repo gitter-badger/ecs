@@ -302,6 +302,7 @@ systems.SetRunSystemState (idx, false);
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
 ## Released games:
+* ["Idle Delivery City Tycoon"](https://play.google.com/store/apps/details?id=com.Arctic.IdleTransportTycoon)
 * ["Nasty Bird"](https://play.google.com/store/apps/details?id=magic.bird.fly)
 * ["I Am Arrow"](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
 * ["HypnoTap"](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
