@@ -294,20 +294,19 @@ systems.SetRunSystemState (idx, false);
 
 # Examples
 ## With sources:
-* [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
-* [Pacman game](https://github.com/SH42913/pacmanecs)
 * [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
 * [Runner game](https://github.com/t1az2z/RunnerECS)
-* [Snake game](https://github.com/Leopotam/ecs-snake)
+* [Pacman game](https://github.com/SH42913/pacmanecs)
+* [TicTacToe game (obsoleted api)](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
 ## Released games:
+* ["Idle Delivery City Tycoon"](https://play.google.com/store/apps/details?id=com.Arctic.IdleTransportTycoon)
+* ["Saboteur"](https://play.google.com/store/apps/details?id=com.zlodeystudios.saboteur)
 * ["Nasty Bird"](https://play.google.com/store/apps/details?id=magic.bird.fly)
 * ["I Am Arrow"](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
 * ["HypnoTap"](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
-* ["PrincessRun"](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
 * ["TowerRunner Revenge"](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
-* ["Cheek Clapper: BIG FACTS!"](https://play.google.com/store/apps/details?id=com.BigMoodGames.FactPuncherFight)
 * ["Natives"](https://alex-kpojb.itch.io/natives-ecs)
 
 # Extensions
