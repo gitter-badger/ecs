@@ -292,7 +292,57 @@ var state = systems.GetRunSystemState (idx);
 systems.SetRunSystemState (idx, false);
 ```
 
-# Examples
+# Engine integration
+
+## Unity
+In [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration) there are templates for startup and systems at project assets context menu.
+
+## Custom engine
+Code example - each part should be integrated in proper place of engine execution flow.
+```csharp
+using Leopotam.Ecs;
+
+class EcsStartup {
+    EcsWorld _world;
+    EcsSystems _systems;
+
+    // Initialization of ecs world and systems.
+    void Init () {        
+        _world = new EcsWorld ();
+        _systems = new EcsSystems (_world);
+        _systems
+            // register your systems here, for example:
+            // .Add (new TestSystem1 ())
+            // .Add (new TestSystem2 ())
+            
+            // register one-frame components (order is important), for example:
+            // .OneFrame<TestComponent1> ()
+            // .OneFrame<TestComponent2> ()
+            
+            // inject service instances here (order doesn't important), for example:
+            // .Inject (new CameraService ())
+            // .Inject (new NavMeshSupport ())
+            .Init ();
+    }
+
+    // Engine update loop.
+    void UpdateLoop () {
+        _systems?.Run ();
+    }
+
+    // Cleanup.
+    void Destroy () {
+        if (_systems != null) {
+            _systems.Destroy ();
+            _systems = null;
+            _world.Destroy ();
+            _world = null;
+        }
+    }
+}
+```
+
+# Projects powered by LeoECS.
 ## With sources:
 * [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
 * [Runner game](https://github.com/t1az2z/RunnerECS)
