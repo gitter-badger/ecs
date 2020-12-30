@@ -325,8 +325,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1> : EcsFilter
-        , EcsComponentPool<Inc1>.IResizeListener
+    public class EcsFilter<Inc1> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct {
         int[] _get1;
 
@@ -411,8 +410,8 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// For internal use.
         /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc1> pool) {
-            _pool1Items = pool.Items;
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
         }
 
         /// <summary>
@@ -506,9 +505,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2> : EcsFilter
-        , EcsComponentPool<Inc1>.IResizeListener
-        , EcsComponentPool<Inc2>.IResizeListener
+    public class EcsFilter<Inc1, Inc2> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct {
         int[] _get1;
@@ -576,14 +573,9 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// For internal use.
         /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc1> pool) {
-            _pool1Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc2> pool) {
-            _pool2Items = pool.Items;
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
         }
 
         /// <summary>
@@ -686,10 +678,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter
-        , EcsComponentPool<Inc1>.IResizeListener
-        , EcsComponentPool<Inc2>.IResizeListener
-        , EcsComponentPool<Inc3>.IResizeListener
+    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct {
@@ -780,20 +769,10 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// For internal use.
         /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc1> pool) {
-            _pool1Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc2> pool) {
-            _pool2Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc3> pool) {
-            _pool3Items = pool.Items;
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
         }
 
         /// <summary>
@@ -905,11 +884,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter
-        , EcsComponentPool<Inc1>.IResizeListener
-        , EcsComponentPool<Inc2>.IResizeListener
-        , EcsComponentPool<Inc3>.IResizeListener
-        , EcsComponentPool<Inc4>.IResizeListener
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -1023,26 +998,11 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// For internal use.
         /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc1> pool) {
-            _pool1Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc2> pool) {
-            _pool2Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc3> pool) {
-            _pool3Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc4> pool) {
-            _pool4Items = pool.Items;
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
+            _pool4Items = _pool4.Items;
         }
 
         /// <summary>
@@ -1163,12 +1123,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5> : EcsFilter
-        , EcsComponentPool<Inc1>.IResizeListener
-        , EcsComponentPool<Inc2>.IResizeListener
-        , EcsComponentPool<Inc3>.IResizeListener
-        , EcsComponentPool<Inc4>.IResizeListener
-        , EcsComponentPool<Inc5>.IResizeListener
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -1305,32 +1260,12 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// For internal use.
         /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc1> pool) {
-            _pool1Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc2> pool) {
-            _pool2Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc3> pool) {
-            _pool3Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc4> pool) {
-            _pool4Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc5> pool) {
-            _pool5Items = pool.Items;
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
+            _pool4Items = _pool4.Items;
+            _pool5Items = _pool5.Items;
         }
 
         /// <summary>
@@ -1460,13 +1395,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5, Inc6> : EcsFilter
-        , EcsComponentPool<Inc1>.IResizeListener
-        , EcsComponentPool<Inc2>.IResizeListener
-        , EcsComponentPool<Inc3>.IResizeListener
-        , EcsComponentPool<Inc4>.IResizeListener
-        , EcsComponentPool<Inc5>.IResizeListener
-        , EcsComponentPool<Inc6>.IResizeListener
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5, Inc6> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -1626,38 +1555,13 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// For internal use.
         /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc1> pool) {
-            _pool1Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc2> pool) {
-            _pool2Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc3> pool) {
-            _pool3Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc4> pool) {
-            _pool4Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc5> pool) {
-            _pool5Items = pool.Items;
-        }
-        /// <summary>
-        /// For internal use.
-        /// </summary>
-        public void OnComponentPoolResize (EcsComponentPool<Inc6> pool) {
-            _pool6Items = pool.Items;
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
+            _pool4Items = _pool4.Items;
+            _pool5Items = _pool5.Items;
+            _pool6Items = _pool6.Items;
         }
 
         /// <summary>

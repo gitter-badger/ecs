@@ -116,15 +116,15 @@ namespace Leopotam.Ecs {
         }
     }
 
+    public interface IEcsComponentPoolResizeListener {
+        void OnComponentPoolResize ();
+    }
+
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
     public sealed class EcsComponentPool<T> : IEcsComponentPool where T : struct {
-        public interface IResizeListener {
-            void OnComponentPoolResize (EcsComponentPool<T> pool);
-        }
-
         delegate void AutoResetHandler (ref T component);
 
         public Type ItemType { get; }
@@ -136,7 +136,7 @@ namespace Leopotam.Ecs {
 #if ENABLE_IL2CPP && !UNITY_EDITOR
         T _autoresetFakeInstance;
 #endif
-        IResizeListener[] _resizeListeners;
+        IEcsComponentPoolResizeListener[] _resizeListeners;
         int _resizeListenersCount;
 
         internal EcsComponentPool () {
@@ -159,11 +159,11 @@ namespace Leopotam.Ecs {
 #endif
                     autoResetMethod);
             }
-            _resizeListeners = new IResizeListener[128];
+            _resizeListeners = new IEcsComponentPoolResizeListener[128];
             _reservedItemsCount = 0;
         }
 
-        public void AddResizeListener (IResizeListener listener) {
+        public void AddResizeListener (IEcsComponentPoolResizeListener listener) {
 #if DEBUG
             if (listener == null) { throw new Exception ("Listener is null."); }
 #endif
@@ -173,7 +173,7 @@ namespace Leopotam.Ecs {
             _resizeListeners[_resizeListenersCount++] = listener;
         }
 
-        public void RemoveResizeListener (IResizeListener listener) {
+        public void RemoveResizeListener (IEcsComponentPoolResizeListener listener) {
 #if DEBUG
             if (listener == null) { throw new Exception ("Listener is null."); }
 #endif
