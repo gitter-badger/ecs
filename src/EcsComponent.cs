@@ -121,6 +121,10 @@ namespace Leopotam.Ecs {
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
     public sealed class EcsComponentPool<T> : IEcsComponentPool where T : struct {
+        public interface IResizeListener {
+            void OnComponentPoolResize (EcsComponentPool<T> pool);
+        }
+
         delegate void AutoResetHandler (ref T component);
 
         public Type ItemType { get; }
@@ -132,6 +136,8 @@ namespace Leopotam.Ecs {
 #if ENABLE_IL2CPP && !UNITY_EDITOR
         T _autoresetFakeInstance;
 #endif
+        IResizeListener[] _resizeListeners;
+        int _resizeListenersCount;
 
         internal EcsComponentPool () {
             ItemType = typeof (T);
@@ -152,6 +158,34 @@ namespace Leopotam.Ecs {
                     null,
 #endif
                     autoResetMethod);
+            }
+            _resizeListeners = new IResizeListener[128];
+            _reservedItemsCount = 0;
+        }
+
+        public void AddResizeListener (IResizeListener listener) {
+#if DEBUG
+            if (listener == null) { throw new Exception ("Listener is null."); }
+#endif
+            if (_resizeListeners.Length == _resizeListenersCount) {
+                Array.Resize (ref _resizeListeners, _resizeListenersCount << 1);
+            }
+            _resizeListeners[_resizeListenersCount++] = listener;
+        }
+
+        public void RemoveResizeListener (IResizeListener listener) {
+#if DEBUG
+            if (listener == null) { throw new Exception ("Listener is null."); }
+#endif
+            for (int i = 0, iMax = _resizeListenersCount; i < iMax; i++) {
+                if (_resizeListeners[i] == listener) {
+                    _resizeListenersCount--;
+                    if (i < _resizeListenersCount) {
+                        _resizeListeners[i] = _resizeListeners[_resizeListenersCount];
+                    }
+                    _resizeListeners[_resizeListenersCount] = null;
+                    break;
+                }
             }
         }
 

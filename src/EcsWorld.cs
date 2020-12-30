@@ -115,6 +115,10 @@ namespace Leopotam.Ecs {
                     entity.Destroy ();
                 }
             }
+            for (int i = 0, iMax = Filters.Count; i < iMax; i++) {
+                Filters.Items[i].Destroy ();
+            }
+            
             IsDestroyed = true;
 #if DEBUG
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
