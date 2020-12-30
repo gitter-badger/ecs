@@ -163,6 +163,12 @@ namespace Leopotam.Ecs {
             _reservedItemsCount = 0;
         }
 
+        void RaiseOnResizeEvent () {
+            for (int i = 0, iMax = _resizeListenersCount; i < iMax; i++) {
+                _resizeListeners[i].OnComponentPoolResize ();
+            }
+        }
+
         public void AddResizeListener (IEcsComponentPoolResizeListener listener) {
 #if DEBUG
             if (listener == null) { throw new Exception ("Listener is null."); }
@@ -196,6 +202,7 @@ namespace Leopotam.Ecs {
         public void SetCapacity (int capacity) {
             if (capacity > Items.Length) {
                 Array.Resize (ref Items, capacity);
+                RaiseOnResizeEvent ();
             }
         }
 
@@ -208,6 +215,7 @@ namespace Leopotam.Ecs {
                 id = _itemsCount;
                 if (_itemsCount == Items.Length) {
                     Array.Resize (ref Items, _itemsCount << 1);
+                    RaiseOnResizeEvent ();
                 }
                 // reset brand new instance if custom AutoReset was registered.
                 _autoReset?.Invoke (ref Items[_itemsCount]);
