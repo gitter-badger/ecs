@@ -11,6 +11,8 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 
 > **Important!** Don't forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
+> **Important!** Ecs core API **not tread safe** and will never be! If you need multithread-processing - you should implement it on your side as part of ecs-system.
+
 # Installation
 
 ## As unity module
