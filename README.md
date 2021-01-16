@@ -369,12 +369,16 @@ class EcsStartup {
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
-The software released under the terms of the [MIT license](./LICENSE.md). Enjoy.
+The software released under the terms of the [MIT license](./LICENSE.md).
 
-# Donate
-Its free open source software, but you can buy me a coffee:
+No support or any guarantees, no personal help. 
 
-<a href="https://www.buymeacoffee.com/leopotam" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
+# Special thanks (List sorted in back order, from high to low donations)
+* [VirtualMaestro](https://github.com/VirtualMaestro)
+* [Korchoon](https://github.com/korchoon)
+* [PureEmDe](https://github.com/PureEmDee)
+* [SH42913](https://github.com/SH42913)
+* [Svetlozar Valchev](https://github.com/SvetlozarValchev)
 
 # FAQ
 
