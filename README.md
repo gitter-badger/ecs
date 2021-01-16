@@ -384,9 +384,11 @@ No support or any guarantees, no personal help.
 
 ### Structs-based, classes-based versions? Which better and why?
 
-Classes-based version is stable, but not longer under active development - except bug fixes (can be found at ``classes-based` branch).
+Classes-based version is stable, but not longer under active development - except bug fixes (can be found at `classes-based` branch).
 
-Structs-based only one version that under active development. It should be faster than classed-based version, simpler in component-cleanup and you can switch to `unity-ecs` easier later (if you want). This framework will be under development even after `unity-ecs` release.
+Structs-based is only one version that under active development.
+It should be faster than classed-based version, simpler in component-cleanup and you can switch to `unity-ecs` easier later (if you want).
+This framework will be under development even after `unity-ecs` release.
 
 ### I want to know - is component already added to entity and get it / add new one otherwise, how I can do it?
 
