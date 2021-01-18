@@ -379,6 +379,7 @@ No support or any guarantees, no personal help.
 * [PureEmDe](https://github.com/PureEmDee)
 * [SH42913](https://github.com/SH42913)
 * [Svetlozar Valchev](https://github.com/SvetlozarValchev)
+* [Óscar F Gómez S](https://github.com/Racso)
 
 # FAQ
 
