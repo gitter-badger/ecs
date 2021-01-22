@@ -11,6 +11,8 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 
 > **Important!** Don't forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
+> **Important!** Ecs core API **not tread safe** and will never be! If you need multithread-processing - you should implement it on your side as part of ecs-system.
+
 # Installation
 
 ## As unity module
@@ -367,20 +369,27 @@ class EcsStartup {
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
-The software released under the terms of the [MIT license](./LICENSE.md). Enjoy.
+The software released under the terms of the [MIT license](./LICENSE.md).
 
-# Donate
-Its free open source software, but you can buy me a coffee:
+No support or any guarantees, no personal help. 
 
-<a href="https://www.buymeacoffee.com/leopotam" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
+# Special thanks (List sorted in back order, from high to low donations)
+* [VirtualMaestro](https://github.com/VirtualMaestro)
+* [Korchoon](https://github.com/korchoon)
+* [PureEmDe](https://github.com/PureEmDee)
+* [SH42913](https://github.com/SH42913)
+* [Svetlozar Valchev](https://github.com/SvetlozarValchev)
+* [Óscar F Gómez S](https://github.com/Racso)
 
 # FAQ
 
 ### Structs-based, classes-based versions? Which better and why?
 
-Classes-based version is stable, but not longer under active development - except bug fixes (can be found at ``classes-based` branch).
+Classes-based version is stable, but not longer under active development - except bug fixes (can be found at `classes-based` branch).
 
-Structs-based only one version that under active development. It should be faster than classed-based version, simpler in component-cleanup and you can switch to `unity-ecs` easier later (if you want). This framework will be under development even after `unity-ecs` release.
+Structs-based is only one version that under active development.
+It should be faster than classed-based version, simpler in component-cleanup and you can switch to `unity-ecs` easier later (if you want).
+This framework will be under development even after `unity-ecs` release.
 
 ### I want to know - is component already added to entity and get it / add new one otherwise, how I can do it?
 

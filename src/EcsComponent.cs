@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2020 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2021 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -116,6 +116,10 @@ namespace Leopotam.Ecs {
         }
     }
 
+    public interface IEcsComponentPoolResizeListener {
+        void OnComponentPoolResize ();
+    }
+
 #if ENABLE_IL2CPP
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
     [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
@@ -132,6 +136,8 @@ namespace Leopotam.Ecs {
 #if ENABLE_IL2CPP && !UNITY_EDITOR
         T _autoresetFakeInstance;
 #endif
+        IEcsComponentPoolResizeListener[] _resizeListeners;
+        int _resizeListenersCount;
 
         internal EcsComponentPool () {
             ItemType = typeof (T);
@@ -153,6 +159,40 @@ namespace Leopotam.Ecs {
 #endif
                     autoResetMethod);
             }
+            _resizeListeners = new IEcsComponentPoolResizeListener[128];
+            _reservedItemsCount = 0;
+        }
+
+        void RaiseOnResizeEvent () {
+            for (int i = 0, iMax = _resizeListenersCount; i < iMax; i++) {
+                _resizeListeners[i].OnComponentPoolResize ();
+            }
+        }
+
+        public void AddResizeListener (IEcsComponentPoolResizeListener listener) {
+#if DEBUG
+            if (listener == null) { throw new Exception ("Listener is null."); }
+#endif
+            if (_resizeListeners.Length == _resizeListenersCount) {
+                Array.Resize (ref _resizeListeners, _resizeListenersCount << 1);
+            }
+            _resizeListeners[_resizeListenersCount++] = listener;
+        }
+
+        public void RemoveResizeListener (IEcsComponentPoolResizeListener listener) {
+#if DEBUG
+            if (listener == null) { throw new Exception ("Listener is null."); }
+#endif
+            for (int i = 0, iMax = _resizeListenersCount; i < iMax; i++) {
+                if (_resizeListeners[i] == listener) {
+                    _resizeListenersCount--;
+                    if (i < _resizeListenersCount) {
+                        _resizeListeners[i] = _resizeListeners[_resizeListenersCount];
+                    }
+                    _resizeListeners[_resizeListenersCount] = null;
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -162,6 +202,7 @@ namespace Leopotam.Ecs {
         public void SetCapacity (int capacity) {
             if (capacity > Items.Length) {
                 Array.Resize (ref Items, capacity);
+                RaiseOnResizeEvent ();
             }
         }
 
@@ -174,6 +215,7 @@ namespace Leopotam.Ecs {
                 id = _itemsCount;
                 if (_itemsCount == Items.Length) {
                     Array.Resize (ref Items, _itemsCount << 1);
+                    RaiseOnResizeEvent ();
                 }
                 // reset brand new instance if custom AutoReset was registered.
                 _autoReset?.Invoke (ref Items[_itemsCount]);

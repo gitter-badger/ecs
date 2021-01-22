@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2020 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2021 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -58,6 +58,12 @@ namespace Leopotam.Ecs {
             EntitiesMap = new Dictionary<int, int> (EntitiesCacheSize);
             _delayedOps = new DelayedOp[EntitiesCacheSize];
         }
+        
+        /// <summary>
+        /// Remove subscription from component pools.
+        /// </summary>
+        public abstract void Destroy ();
+        
 #if DEBUG
         public Dictionary<int, int> GetInternalEntitiesMap () {
             return EntitiesMap;
@@ -319,17 +325,18 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1> : EcsFilter
+    public class EcsFilter<Inc1> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct {
         int[] _get1;
 
         readonly bool _allow1;
 
         readonly EcsComponentPool<Inc1> _pool1;
+        Inc1[] _pool1Items;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (in int idx) {
-            return ref _pool1.Items[_get1[idx]];
+            return ref _pool1Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -382,6 +389,8 @@ namespace Leopotam.Ecs {
         protected EcsFilter (EcsWorld world) : base (world) {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
+            _pool1.AddResizeListener (this);
+            _pool1Items = _pool1.Items;
             _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
             IncludedTypeIndices = new[] {
                 EcsComponentType<Inc1>.TypeIndex
@@ -390,12 +399,24 @@ namespace Leopotam.Ecs {
                 EcsComponentType<Inc1>.Type
             };
         }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public override void Destroy () {
+            _pool1.RemoveResizeListener (this);
+        }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+        }
 
         /// <summary>
-        /// Event for adding compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
@@ -424,10 +445,8 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Event for removing non-compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
@@ -486,7 +505,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2> : EcsFilter
+    public class EcsFilter<Inc1, Inc2> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct {
         int[] _get1;
@@ -496,16 +515,18 @@ namespace Leopotam.Ecs {
         readonly bool _allow2;
 
         readonly EcsComponentPool<Inc1> _pool1;
+        Inc1[] _pool1Items;
         readonly EcsComponentPool<Inc2> _pool2;
+        Inc2[] _pool2Items;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (in int idx) {
-            return ref _pool1.Items[_get1[idx]];
+            return ref _pool1Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (in int idx) {
-            return ref _pool2.Items[_get2[idx]];
+            return ref _pool2Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -524,7 +545,11 @@ namespace Leopotam.Ecs {
             _allow1 = !EcsComponentType<Inc1>.IsIgnoreInFilter;
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
+            _pool1.AddResizeListener (this);
+            _pool1Items = _pool1.Items;
             _pool2 = world.GetPool<Inc2> ();
+            _pool2.AddResizeListener (this);
+            _pool2Items = _pool2.Items;
             _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
             _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
             IncludedTypeIndices = new[] {
@@ -536,12 +561,26 @@ namespace Leopotam.Ecs {
                 EcsComponentType<Inc2>.Type
             };
         }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public override void Destroy () {
+            _pool1.RemoveResizeListener (this);
+            _pool2.RemoveResizeListener (this);
+        }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+        }
 
         /// <summary>
-        /// Event for adding compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
@@ -578,10 +617,8 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Event for removing non-compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
@@ -641,7 +678,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct {
@@ -654,22 +691,25 @@ namespace Leopotam.Ecs {
         readonly bool _allow3;
 
         readonly EcsComponentPool<Inc1> _pool1;
+        Inc1[] _pool1Items;
         readonly EcsComponentPool<Inc2> _pool2;
+        Inc2[] _pool2Items;
         readonly EcsComponentPool<Inc3> _pool3;
+        Inc3[] _pool3Items;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (in int idx) {
-            return ref _pool1.Items[_get1[idx]];
+            return ref _pool1Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (in int idx) {
-            return ref _pool2.Items[_get2[idx]];
+            return ref _pool2Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc3 Get3 (in int idx) {
-            return ref _pool3.Items[_get3[idx]];
+            return ref _pool3Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -694,8 +734,14 @@ namespace Leopotam.Ecs {
             _allow2 = !EcsComponentType<Inc2>.IsIgnoreInFilter;
             _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
+            _pool1.AddResizeListener (this);
+            _pool1Items = _pool1.Items;
             _pool2 = world.GetPool<Inc2> ();
+            _pool2.AddResizeListener (this);
+            _pool2Items = _pool2.Items;
             _pool3 = world.GetPool<Inc3> ();
+            _pool3.AddResizeListener (this);
+            _pool3Items = _pool3.Items;
             _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
             _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
             _get3 = _allow3 ? new int[EntitiesCacheSize] : null;
@@ -710,12 +756,28 @@ namespace Leopotam.Ecs {
                 EcsComponentType<Inc3>.Type
             };
         }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public override void Destroy () {
+            _pool1.RemoveResizeListener (this);
+            _pool2.RemoveResizeListener (this);
+            _pool3.RemoveResizeListener (this);
+        }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
+        }
 
         /// <summary>
-        /// Event for adding compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
@@ -760,10 +822,8 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Event for removing non-compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
@@ -824,7 +884,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -840,28 +900,32 @@ namespace Leopotam.Ecs {
         readonly bool _allow4;
 
         readonly EcsComponentPool<Inc1> _pool1;
+        Inc1[] _pool1Items;
         readonly EcsComponentPool<Inc2> _pool2;
+        Inc2[] _pool2Items;
         readonly EcsComponentPool<Inc3> _pool3;
+        Inc3[] _pool3Items;
         readonly EcsComponentPool<Inc4> _pool4;
+        Inc4[] _pool4Items;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (in int idx) {
-            return ref _pool1.Items[_get1[idx]];
+            return ref _pool1Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (in int idx) {
-            return ref _pool2.Items[_get2[idx]];
+            return ref _pool2Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc3 Get3 (in int idx) {
-            return ref _pool3.Items[_get3[idx]];
+            return ref _pool3Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc4 Get4 (in int idx) {
-            return ref _pool4.Items[_get4[idx]];
+            return ref _pool4Items[_get4[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -892,9 +956,17 @@ namespace Leopotam.Ecs {
             _allow3 = !EcsComponentType<Inc3>.IsIgnoreInFilter;
             _allow4 = !EcsComponentType<Inc4>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
+            _pool1.AddResizeListener (this);
+            _pool1Items = _pool1.Items;
             _pool2 = world.GetPool<Inc2> ();
+            _pool2.AddResizeListener (this);
+            _pool2Items = _pool2.Items;
             _pool3 = world.GetPool<Inc3> ();
+            _pool3.AddResizeListener (this);
+            _pool3Items = _pool3.Items;
             _pool4 = world.GetPool<Inc4> ();
+            _pool4.AddResizeListener (this);
+            _pool4Items = _pool4.Items;
             _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
             _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
             _get3 = _allow3 ? new int[EntitiesCacheSize] : null;
@@ -912,12 +984,30 @@ namespace Leopotam.Ecs {
                 EcsComponentType<Inc4>.Type
             };
         }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public override void Destroy () {
+            _pool1.RemoveResizeListener (this);
+            _pool2.RemoveResizeListener (this);
+            _pool3.RemoveResizeListener (this);
+            _pool4.RemoveResizeListener (this);
+        }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
+            _pool4Items = _pool4.Items;
+        }
 
         /// <summary>
-        /// Event for adding compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
@@ -970,10 +1060,8 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Event for removing non-compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
@@ -1035,7 +1123,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -1054,34 +1142,39 @@ namespace Leopotam.Ecs {
         readonly bool _allow5;
 
         readonly EcsComponentPool<Inc1> _pool1;
+        Inc1[] _pool1Items;
         readonly EcsComponentPool<Inc2> _pool2;
+        Inc2[] _pool2Items;
         readonly EcsComponentPool<Inc3> _pool3;
+        Inc3[] _pool3Items;
         readonly EcsComponentPool<Inc4> _pool4;
+        Inc4[] _pool4Items;
         readonly EcsComponentPool<Inc5> _pool5;
+        Inc5[] _pool5Items;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (in int idx) {
-            return ref _pool1.Items[_get1[idx]];
+            return ref _pool1Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (in int idx) {
-            return ref _pool2.Items[_get2[idx]];
+            return ref _pool2Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc3 Get3 (in int idx) {
-            return ref _pool3.Items[_get3[idx]];
+            return ref _pool3Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc4 Get4 (in int idx) {
-            return ref _pool4.Items[_get4[idx]];
+            return ref _pool4Items[_get4[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc5 Get5 (in int idx) {
-            return ref _pool5.Items[_get5[idx]];
+            return ref _pool5Items[_get5[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -1118,10 +1211,20 @@ namespace Leopotam.Ecs {
             _allow4 = !EcsComponentType<Inc4>.IsIgnoreInFilter;
             _allow5 = !EcsComponentType<Inc5>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
+            _pool1.AddResizeListener (this);
+            _pool1Items = _pool1.Items;
             _pool2 = world.GetPool<Inc2> ();
+            _pool2.AddResizeListener (this);
+            _pool2Items = _pool2.Items;
             _pool3 = world.GetPool<Inc3> ();
+            _pool3.AddResizeListener (this);
+            _pool3Items = _pool3.Items;
             _pool4 = world.GetPool<Inc4> ();
+            _pool4.AddResizeListener (this);
+            _pool4Items = _pool4.Items;
             _pool5 = world.GetPool<Inc5> ();
+            _pool5.AddResizeListener (this);
+            _pool5Items = _pool5.Items;
             _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
             _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
             _get3 = _allow3 ? new int[EntitiesCacheSize] : null;
@@ -1142,12 +1245,32 @@ namespace Leopotam.Ecs {
                 EcsComponentType<Inc5>.Type
             };
         }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public override void Destroy () {
+            _pool1.RemoveResizeListener (this);
+            _pool2.RemoveResizeListener (this);
+            _pool3.RemoveResizeListener (this);
+            _pool4.RemoveResizeListener (this);
+            _pool5.RemoveResizeListener (this);
+        }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
+            _pool4Items = _pool4.Items;
+            _pool5Items = _pool5.Items;
+        }
 
         /// <summary>
-        /// Event for adding compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
@@ -1208,10 +1331,8 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Event for removing non-compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
@@ -1274,7 +1395,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5, Inc6> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5, Inc6> : EcsFilter, IEcsComponentPoolResizeListener
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -1296,40 +1417,46 @@ namespace Leopotam.Ecs {
         readonly bool _allow6;
 
         readonly EcsComponentPool<Inc1> _pool1;
+        Inc1[] _pool1Items;
         readonly EcsComponentPool<Inc2> _pool2;
+        Inc2[] _pool2Items;
         readonly EcsComponentPool<Inc3> _pool3;
+        Inc3[] _pool3Items;
         readonly EcsComponentPool<Inc4> _pool4;
+        Inc4[] _pool4Items;
         readonly EcsComponentPool<Inc5> _pool5;
+        Inc5[] _pool5Items;
         readonly EcsComponentPool<Inc6> _pool6;
+        Inc6[] _pool6Items;
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc1 Get1 (in int idx) {
-            return ref _pool1.Items[_get1[idx]];
+            return ref _pool1Items[_get1[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc2 Get2 (in int idx) {
-            return ref _pool2.Items[_get2[idx]];
+            return ref _pool2Items[_get2[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc3 Get3 (in int idx) {
-            return ref _pool3.Items[_get3[idx]];
+            return ref _pool3Items[_get3[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc4 Get4 (in int idx) {
-            return ref _pool4.Items[_get4[idx]];
+            return ref _pool4Items[_get4[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc5 Get5 (in int idx) {
-            return ref _pool5.Items[_get5[idx]];
+            return ref _pool5Items[_get5[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public ref Inc6 Get6 (in int idx) {
-            return ref _pool6.Items[_get6[idx]];
+            return ref _pool6Items[_get6[idx]];
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -1372,11 +1499,23 @@ namespace Leopotam.Ecs {
             _allow5 = !EcsComponentType<Inc5>.IsIgnoreInFilter;
             _allow6 = !EcsComponentType<Inc6>.IsIgnoreInFilter;
             _pool1 = world.GetPool<Inc1> ();
+            _pool1.AddResizeListener (this);
+            _pool1Items = _pool1.Items;
             _pool2 = world.GetPool<Inc2> ();
+            _pool2.AddResizeListener (this);
+            _pool2Items = _pool2.Items;
             _pool3 = world.GetPool<Inc3> ();
+            _pool3.AddResizeListener (this);
+            _pool3Items = _pool3.Items;
             _pool4 = world.GetPool<Inc4> ();
+            _pool4.AddResizeListener (this);
+            _pool4Items = _pool4.Items;
             _pool5 = world.GetPool<Inc5> ();
+            _pool5.AddResizeListener (this);
+            _pool5Items = _pool5.Items;
             _pool6 = world.GetPool<Inc6> ();
+            _pool6.AddResizeListener (this);
+            _pool6Items = _pool6.Items;
             _get1 = _allow1 ? new int[EntitiesCacheSize] : null;
             _get2 = _allow2 ? new int[EntitiesCacheSize] : null;
             _get3 = _allow3 ? new int[EntitiesCacheSize] : null;
@@ -1400,12 +1539,34 @@ namespace Leopotam.Ecs {
                 EcsComponentType<Inc6>.Type
             };
         }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public override void Destroy () {
+            _pool1.RemoveResizeListener (this);
+            _pool2.RemoveResizeListener (this);
+            _pool3.RemoveResizeListener (this);
+            _pool4.RemoveResizeListener (this);
+            _pool5.RemoveResizeListener (this);
+            _pool6.RemoveResizeListener (this);
+        }
+        
+        /// <summary>
+        /// For internal use.
+        /// </summary>
+        public void OnComponentPoolResize () {
+            _pool1Items = _pool1.Items;
+            _pool2Items = _pool2.Items;
+            _pool3Items = _pool3.Items;
+            _pool4Items = _pool4.Items;
+            _pool5Items = _pool5.Items;
+            _pool6Items = _pool6.Items;
+        }
 
         /// <summary>
-        /// Event for adding compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnAddEntity (in EcsEntity entity) {
             if (AddDelayedOp (true, entity)) { return; }
@@ -1474,10 +1635,8 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Event for removing non-compatible entity to filter.
-        /// Warning: Don't call manually!
+        /// For internal use.
         /// </summary>
-        /// <param name="entity">Entity.</param>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }

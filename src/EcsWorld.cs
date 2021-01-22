@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // The MIT License
 // Simple Entity Component System framework https://github.com/Leopotam/ecs
-// Copyright (c) 2017-2020 Leopotam <leopotam@gmail.com>
+// Copyright (c) 2017-2021 Leopotam <leopotam@gmail.com>
 // ----------------------------------------------------------------------------
 
 using System;
@@ -115,6 +115,10 @@ namespace Leopotam.Ecs {
                     entity.Destroy ();
                 }
             }
+            for (int i = 0, iMax = Filters.Count; i < iMax; i++) {
+                Filters.Items[i].Destroy ();
+            }
+            
             IsDestroyed = true;
 #if DEBUG
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
