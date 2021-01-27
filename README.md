@@ -109,19 +109,29 @@ class HealthSystem : IEcsSystem {
 ```
 Instance of any custom type can be injected to all systems through `EcsSystems.Inject()` method:
 ```csharp
-var systems = new EcsSystems (world)
+class SharedData {
+    public string PrefabsPath;
+}
+...
+var sharedData = new SharedData { PrefabsPath = "Items/{0}" };
+var systems = new EcsSystems (world);
+systems
     .Add (new TestSystem1 ())
-    .Add (new TestSystem2 ())
-    .Add (new TestSystem3 ())
-    .Inject (a)
-    .Inject (b)
-    .Inject (c)
-    .Inject (d);
-systems.Init ();
+    .Inject (sharedData)
+    .Init ();
 ```
-Each system will be scanned for compatible fields (can contains all of them or no one) with proper initialization.
-
-> **Important!** Data injection for any user type can be used for sharing external data between systems.
+Each system will be scanned for compatible fields (can contains all of them or no one) with proper initialization:
+```csharp
+class TestSystem1 : IEcsInitSystem {
+    // auto-injected fields.
+    SharedData _sharedData;
+    
+    public void Init() {
+        var prefabPath = string.Format (_sharedData.Prefabspath, 123);
+        // prefabPath = "Items/123" here.
+    } 
+}
+```
 
 ## Data Injection with multiple EcsSystems
 
