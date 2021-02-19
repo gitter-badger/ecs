@@ -1,5 +1,5 @@
-[![discord](https://img.shields.io/discord/404358247621853185.svg?label=discord)](https://discord.gg/5GZVde6)
-[![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
+[![discord](https://img.shields.io/discord/404358247621853185.svg?label=enter%20to%20discord%20server&style=for-the-badge&logo=discord)](https://discord.gg/5GZVde6)
+
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
@@ -352,17 +352,23 @@ class EcsStartup {
 
 # Projects powered by LeoECS.
 ## With sources:
-* [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
-* [Runner game](https://github.com/t1az2z/RunnerECS)
-* [Pacman game](https://github.com/SH42913/pacmanecs)
-* [TicTacToe game (obsoleted api)](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
-* [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
+* ["MatchTwo"](https://github.com/cadfoot/unity-ecs-match-two)
+  [![](https://img.youtube.com/vi/Y3DwZmPCPSk/0.jpg)](https://www.youtube.com/watch?v=Y3DwZmPCPSk)
+* ["Bubble shooter"](https://github.com/cadfoot/unity-ecs-bubble-shooter)
+  [![](https://img.youtube.com/vi/l19wREGUf1k/0.jpg)](https://www.youtube.com/watch?v=l19wREGUf1k)
+* ["Frantic Architect Remake"](https://github.com/cadfoot/unity-ecs-fran-arch)
+  [![](https://img.youtube.com/vi/YAfHDyBl7Fg/0.jpg)](https://www.youtube.com/watch?v=YAfHDyBl7Fg)
+* ["Mahjong Solitaire"](https://github.com/cadfoot/unity-ecs-mahjong-solitaire)
+  [![](https://img.youtube.com/vi/FxOcqVwue9g/0.jpg)](https://www.youtube.com/watch?v=FxOcqVwue9g)
+* ["SpaceInvaders (Guns&Bullets variation)"](https://github.com/GoodCatGames/SpaceInvadersEcs)
+* ["Runner"](https://github.com/t1az2z/RunnerECS)
+* ["Pacman"](https://github.com/SH42913/pacmanecs)
 
 ## Released games:
 * ["Idle Delivery City Tycoon"](https://play.google.com/store/apps/details?id=com.Arctic.IdleTransportTycoon)
+  [![](https://img.youtube.com/vi/FV-0Dq4kcy8/0.jpg)](https://www.youtube.com/watch?v=FV-0Dq4kcy8)
 * ["Saboteur"](https://play.google.com/store/apps/details?id=com.zlodeystudios.saboteur)
 * ["Nasty Bird"](https://play.google.com/store/apps/details?id=magic.bird.fly)
-* ["I Am Arrow"](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
 * ["HypnoTap"](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
 * ["TowerRunner Revenge"](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
 * ["Natives"](https://alex-kpojb.itch.io/natives-ecs)
@@ -377,7 +383,7 @@ class EcsStartup {
 # License
 The software released under the terms of the [MIT license](./LICENSE.md).
 
-No support or any guarantees, no personal help. 
+No personal support or any guarantees. 
 
 # Special thanks (List sorted in back order, from high to low donations)
 * [VirtualMaestro](https://github.com/VirtualMaestro)
