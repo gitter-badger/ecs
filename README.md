@@ -350,8 +350,8 @@ class EcsStartup {
 }
 ```
 
-# Projects powered by LeoECS.
-## With sources:
+# Projects powered by LeoECS
+## With sources
 * ["MatchTwo"](https://github.com/cadfoot/unity-ecs-match-two)
   [![](https://img.youtube.com/vi/Y3DwZmPCPSk/0.jpg)](https://www.youtube.com/watch?v=Y3DwZmPCPSk)
 * ["Bubble shooter"](https://github.com/cadfoot/unity-ecs-bubble-shooter)
@@ -364,7 +364,7 @@ class EcsStartup {
 * ["Runner"](https://github.com/t1az2z/RunnerECS)
 * ["Pacman"](https://github.com/SH42913/pacmanecs)
 
-## Released games:
+## Released games
 * ["Idle Delivery City Tycoon"](https://play.google.com/store/apps/details?id=com.Arctic.IdleTransportTycoon)
   [![](https://img.youtube.com/vi/FV-0Dq4kcy8/0.jpg)](https://www.youtube.com/watch?v=FV-0Dq4kcy8)
 * ["Saboteur"](https://play.google.com/store/apps/details?id=com.zlodeystudios.saboteur)
