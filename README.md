@@ -1,5 +1,3 @@
-[![discord](https://img.shields.io/discord/404358247621853185.svg?label=discord)](https://discord.gg/5GZVde6)
-[![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
@@ -12,6 +10,9 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 > **Important!** Don't forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
 > **Important!** Ecs core API **not tread safe** and will never be! If you need multithread-processing - you should implement it on your side as part of ecs-system.
+
+# Socials
+[![discord](https://img.shields.io/discord/404358247621853185.svg?label=enter%20to%20discord%20server&style=for-the-badge&logo=discord)](https://discord.gg/5GZVde6)
 
 # Installation
 
@@ -46,23 +47,30 @@ struct WeaponComponent {
 ```csharp
 // Creates new entity in world context.
 EcsEntity entity = _world.NewEntity ();
+
 // Get() returns component on entity. If component not exists - it will be added.
 ref Component1 c1 = ref entity.Get<Component1> ();
 ref Component2 c2 = ref entity.Get<Component2> ();
-// Del() removes component from entity.
+
+// Del() removes component from entity. If it was last component - entity will be removed automatically too.
 entity.Del<Component2> ();
+
 // Component can be replaced with new instance of component. If component not exist - it will be added.
 var weapon = new WeaponComponent () { Ammo = 10, GunName = "Handgun" };
 entity.Replace (weapon);
+
 // With Replace() you can chain component's creation:
 var entity2 = world.NewEntity ();
 entity2.Replace (new Component1 { Id = 10 }).Replace (new Component2 { Name = "Username" });
+
 // Any entity can be copied with all components:
 var entity2Copy = entity2.Copy ();
+
 // Any entity can be merged / "moved" to another entity (source will be destroyed):
 var newEntity = world.NewEntity ();
 entity2Copy.MoveTo (newEntity); // all components from entity2Copy moved to newEntity, entity2Copy destroyed.
-// any entity can be destroyed. 
+
+// Any entity can be destroyed. All component will be removed first, then entity will be destroyed. 
 entity.Destroy ();
 ```
 
@@ -71,13 +79,17 @@ entity.Destroy ();
 ## System
 Сontainer for logic for processing filtered entities. User class should implements `IEcsInitSystem`, `IEcsDestroySystem`, `IEcsRunSystem` (or other supported) interfaces:
 ```csharp
-class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsPostDestroySystem {
+class UserSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem, IEcsPostDestroySystem {
     public void PreInit () {
         // Will be called once during EcsSystems.Init() call and before IEcsInitSystem.Init.
     }
 
     public void Init () {
         // Will be called once during EcsSystems.Init() call.
+    }
+    
+    public void Run () {
+        // Will be called on each EcsSystems.Run() call.
     }
 
     public void Destroy () {
@@ -86,14 +98,6 @@ class WeaponSystem : IEcsPreInitSystem, IEcsInitSystem, IEcsDestroySystem, IEcsP
 
     public void PostDestroy () {
         // Will be called once during EcsSystems.Destroy() call and after IEcsDestroySystem.Destroy.
-    }
-}
-```
-
-```csharp
-class HealthSystem : IEcsRunSystem {
-    public void Run () {
-        // Will be called on each EcsSystems.Run() call.
     }
 }
 ```
@@ -109,19 +113,29 @@ class HealthSystem : IEcsSystem {
 ```
 Instance of any custom type can be injected to all systems through `EcsSystems.Inject()` method:
 ```csharp
-var systems = new EcsSystems (world)
+class SharedData {
+    public string PrefabsPath;
+}
+...
+var sharedData = new SharedData { PrefabsPath = "Items/{0}" };
+var systems = new EcsSystems (world);
+systems
     .Add (new TestSystem1 ())
-    .Add (new TestSystem2 ())
-    .Add (new TestSystem3 ())
-    .Inject (a)
-    .Inject (b)
-    .Inject (c)
-    .Inject (d);
-systems.Init ();
+    .Inject (sharedData)
+    .Init ();
 ```
-Each system will be scanned for compatible fields (can contains all of them or no one) with proper initialization.
-
-> **Important!** Data injection for any user type can be used for sharing external data between systems.
+Each system will be scanned for compatible fields (can contains all of them or no one) with proper initialization:
+```csharp
+class TestSystem1 : IEcsInitSystem {
+    // auto-injected fields.
+    SharedData _sharedData;
+    
+    public void Init() {
+        var prefabPath = string.Format (_sharedData.Prefabspath, 123);
+        // prefabPath = "Items/123" here.
+    } 
+}
+```
 
 ## Data Injection with multiple EcsSystems
 
@@ -344,19 +358,25 @@ class EcsStartup {
 }
 ```
 
-# Projects powered by LeoECS.
-## With sources:
-* [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
-* [Runner game](https://github.com/t1az2z/RunnerECS)
-* [Pacman game](https://github.com/SH42913/pacmanecs)
-* [TicTacToe game (obsoleted api)](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
-* [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
+# Projects powered by LeoECS
+## With sources
+* ["MatchTwo"](https://github.com/cadfoot/unity-ecs-match-two)
+  [![](https://img.youtube.com/vi/Y3DwZmPCPSk/0.jpg)](https://www.youtube.com/watch?v=Y3DwZmPCPSk)
+* ["Bubble shooter"](https://github.com/cadfoot/unity-ecs-bubble-shooter)
+  [![](https://img.youtube.com/vi/l19wREGUf1k/0.jpg)](https://www.youtube.com/watch?v=l19wREGUf1k)
+* ["Frantic Architect Remake"](https://github.com/cadfoot/unity-ecs-fran-arch)
+  [![](https://img.youtube.com/vi/YAfHDyBl7Fg/0.jpg)](https://www.youtube.com/watch?v=YAfHDyBl7Fg)
+* ["Mahjong Solitaire"](https://github.com/cadfoot/unity-ecs-mahjong-solitaire)
+  [![](https://img.youtube.com/vi/FxOcqVwue9g/0.jpg)](https://www.youtube.com/watch?v=FxOcqVwue9g)
+* ["SpaceInvaders (Guns&Bullets variation)"](https://github.com/GoodCatGames/SpaceInvadersEcs)
+* ["Runner"](https://github.com/t1az2z/RunnerECS)
+* ["Pacman"](https://github.com/SH42913/pacmanecs)
 
-## Released games:
+## Released games
 * ["Idle Delivery City Tycoon"](https://play.google.com/store/apps/details?id=com.Arctic.IdleTransportTycoon)
+  [![](https://img.youtube.com/vi/FV-0Dq4kcy8/0.jpg)](https://www.youtube.com/watch?v=FV-0Dq4kcy8)
 * ["Saboteur"](https://play.google.com/store/apps/details?id=com.zlodeystudios.saboteur)
 * ["Nasty Bird"](https://play.google.com/store/apps/details?id=magic.bird.fly)
-* ["I Am Arrow"](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
 * ["HypnoTap"](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
 * ["TowerRunner Revenge"](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
 * ["Natives"](https://alex-kpojb.itch.io/natives-ecs)
@@ -371,7 +391,7 @@ class EcsStartup {
 # License
 The software released under the terms of the [MIT license](./LICENSE.md).
 
-No support or any guarantees, no personal help. 
+No personal support or any guarantees. 
 
 # Special thanks (List sorted in back order, from high to low donations)
 * [VirtualMaestro](https://github.com/VirtualMaestro)
