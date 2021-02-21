@@ -1,5 +1,3 @@
-[![discord](https://img.shields.io/discord/404358247621853185.svg?label=enter%20to%20discord%20server&style=for-the-badge&logo=discord)](https://discord.gg/5GZVde6)
-
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
@@ -12,6 +10,9 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 > **Important!** Don't forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
 > **Important!** Ecs core API **not tread safe** and will never be! If you need multithread-processing - you should implement it on your side as part of ecs-system.
+
+# Socials
+[![discord](https://img.shields.io/discord/404358247621853185.svg?label=enter%20to%20discord%20server&style=for-the-badge&logo=discord)](https://discord.gg/5GZVde6)
 
 # Installation
 
@@ -46,23 +47,30 @@ struct WeaponComponent {
 ```csharp
 // Creates new entity in world context.
 EcsEntity entity = _world.NewEntity ();
+
 // Get() returns component on entity. If component not exists - it will be added.
 ref Component1 c1 = ref entity.Get<Component1> ();
 ref Component2 c2 = ref entity.Get<Component2> ();
-// Del() removes component from entity.
+
+// Del() removes component from entity. If it was last component - entity will be removed automatically too.
 entity.Del<Component2> ();
+
 // Component can be replaced with new instance of component. If component not exist - it will be added.
 var weapon = new WeaponComponent () { Ammo = 10, GunName = "Handgun" };
 entity.Replace (weapon);
+
 // With Replace() you can chain component's creation:
 var entity2 = world.NewEntity ();
 entity2.Replace (new Component1 { Id = 10 }).Replace (new Component2 { Name = "Username" });
+
 // Any entity can be copied with all components:
 var entity2Copy = entity2.Copy ();
+
 // Any entity can be merged / "moved" to another entity (source will be destroyed):
 var newEntity = world.NewEntity ();
 entity2Copy.MoveTo (newEntity); // all components from entity2Copy moved to newEntity, entity2Copy destroyed.
-// any entity can be destroyed. 
+
+// Any entity can be destroyed. All component will be removed first, then entity will be destroyed. 
 entity.Destroy ();
 ```
 
