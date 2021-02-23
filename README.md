@@ -361,12 +361,16 @@ class EcsStartup {
 # Projects powered by LeoECS
 ## With sources
 * ["MatchTwo"](https://github.com/cadfoot/unity-ecs-match-two)
+  
   [![](https://img.youtube.com/vi/Y3DwZmPCPSk/0.jpg)](https://www.youtube.com/watch?v=Y3DwZmPCPSk)
 * ["Bubble shooter"](https://github.com/cadfoot/unity-ecs-bubble-shooter)
+  
   [![](https://img.youtube.com/vi/l19wREGUf1k/0.jpg)](https://www.youtube.com/watch?v=l19wREGUf1k)
 * ["Frantic Architect Remake"](https://github.com/cadfoot/unity-ecs-fran-arch)
+  
   [![](https://img.youtube.com/vi/YAfHDyBl7Fg/0.jpg)](https://www.youtube.com/watch?v=YAfHDyBl7Fg)
 * ["Mahjong Solitaire"](https://github.com/cadfoot/unity-ecs-mahjong-solitaire)
+  
   [![](https://img.youtube.com/vi/FxOcqVwue9g/0.jpg)](https://www.youtube.com/watch?v=FxOcqVwue9g)
 * ["SpaceInvaders (Guns&Bullets variation)"](https://github.com/GoodCatGames/SpaceInvadersEcs)
 * ["Runner"](https://github.com/t1az2z/RunnerECS)
@@ -374,6 +378,7 @@ class EcsStartup {
 
 ## Released games
 * ["Idle Delivery City Tycoon"](https://play.google.com/store/apps/details?id=com.Arctic.IdleTransportTycoon)
+  
   [![](https://img.youtube.com/vi/FV-0Dq4kcy8/0.jpg)](https://www.youtube.com/watch?v=FV-0Dq4kcy8)
 * ["Saboteur"](https://play.google.com/store/apps/details?id=com.zlodeystudios.saboteur)
 * ["Nasty Bird"](https://play.google.com/store/apps/details?id=magic.bird.fly)
