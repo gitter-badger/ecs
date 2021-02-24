@@ -1,8 +1,6 @@
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
-> **Important! It's "structs-based" version, if you search "classes-based" version - check [classes-based branch](https://github.com/Leopotam/ecs/tree/classes-based)!**
-
 > C#7.3 or above required for this framework.
 
 > Tested on unity 2019.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
