@@ -479,7 +479,7 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Gets types of all attached components. Important: force boxing / unboxing!
+        /// Gets values of all attached components as copies. Important: force boxing / unboxing!
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="list">List to put results in it. if null - will be created. If not enough space - will be resized.</param>
