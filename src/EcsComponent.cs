@@ -77,19 +77,27 @@ namespace Leopotam.Ecs {
     public struct EcsComponentRef<T> where T : struct {
         internal EcsComponentPool<T> Pool;
         internal int Idx;
+        
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool AreEquals (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
+            return lhs.Idx == rhs.Idx && lhs.Pool == rhs.Pool;
+        }
 
+        [Obsolete("Use EcsComponentRef.AreEquals instead.")]
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator == (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
             return lhs.Idx == rhs.Idx && lhs.Pool == rhs.Pool;
         }
 
+        [Obsolete("Use EcsComponentRef.AreEquals instead.")]
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator != (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
             return lhs.Idx != rhs.Idx || lhs.Pool != rhs.Pool;
         }
 
+        [Obsolete("Use EcsComponentRef.AreEquals instead.")]
         public override bool Equals (object obj) {
-            return obj is EcsComponentRef<T> other && Equals (other);
+            return obj is EcsComponentRef<T> other && this == other;
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
