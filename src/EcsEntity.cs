@@ -343,14 +343,6 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Gets internal identifier.
-        /// </summary>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static int GetInternalId (in this EcsEntity entity) {
-            return entity.Id;
-        }
-
-        /// <summary>
         /// Compares entities. 
         /// </summary>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -367,10 +359,25 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Gets internal identifier.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static int GetInternalId (in this EcsEntity entity) {
+            return entity.Id;
+        }
+
+        /// <summary>
         /// Gets internal generation.
         /// </summary>
         public static int GetInternalGen (in this EcsEntity entity) {
             return entity.Gen;
+        }
+        
+        /// <summary>
+        /// Gets internal world.
+        /// </summary>
+        public static EcsWorld GetInternalWorld (in this EcsEntity entity) {
+            return entity.Owner;
         }
 
         /// <summary>
