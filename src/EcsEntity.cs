@@ -72,7 +72,35 @@ namespace Leopotam.Ecs {
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static EcsEntity Replace<T> (in this EcsEntity entity, in T item) where T : struct {
-            Get<T> (entity) = item;
+            ref var entityData = ref entity.Owner.GetEntityData (entity);
+#if DEBUG
+            if (entityData.Gen != entity.Gen) { throw new Exception ("Cant add component to destroyed entity."); }
+#endif
+            var typeIdx = EcsComponentType<T>.TypeIndex;
+            // check already attached components.
+            for (int i = 0, iiMax = entityData.ComponentsCountX2; i < iiMax; i += 2) {
+                if (entityData.Components[i] == typeIdx) {
+                    ((EcsComponentPool<T>) entity.Owner.ComponentPools[typeIdx]).Items[entityData.Components[i + 1]] = item;
+                    return entity;
+                }
+            }
+            // attach new component.
+            if (entityData.Components.Length == entityData.ComponentsCountX2) {
+                Array.Resize (ref entityData.Components, entityData.ComponentsCountX2 << 1);
+            }
+            entityData.Components[entityData.ComponentsCountX2++] = typeIdx;
+
+            var pool = entity.Owner.GetPool<T> ();
+
+            var idx = pool.New ();
+            entityData.Components[entityData.ComponentsCountX2++] = idx;
+            pool.Items[idx] = item;
+#if DEBUG
+            for (var ii = 0; ii < entity.Owner.DebugListeners.Count; ii++) {
+                entity.Owner.DebugListeners[ii].OnComponentListChanged (entity);
+            }
+#endif
+            entity.Owner.UpdateFilters (typeIdx, entity, entityData);
             return entity;
         }
 
@@ -315,14 +343,6 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Gets internal identifier.
-        /// </summary>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static int GetInternalId (in this EcsEntity entity) {
-            return entity.Id;
-        }
-
-        /// <summary>
         /// Compares entities. 
         /// </summary>
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
@@ -339,10 +359,25 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Gets internal identifier.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static int GetInternalId (in this EcsEntity entity) {
+            return entity.Id;
+        }
+
+        /// <summary>
         /// Gets internal generation.
         /// </summary>
         public static int GetInternalGen (in this EcsEntity entity) {
             return entity.Gen;
+        }
+        
+        /// <summary>
+        /// Gets internal world.
+        /// </summary>
+        public static EcsWorld GetInternalWorld (in this EcsEntity entity) {
+            return entity.Owner;
         }
 
         /// <summary>
@@ -479,7 +514,7 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Gets types of all attached components. Important: force boxing / unboxing!
+        /// Gets values of all attached components as copies. Important: force boxing / unboxing!
         /// </summary>
         /// <param name="entity">Entity.</param>
         /// <param name="list">List to put results in it. if null - will be created. If not enough space - will be resized.</param>
