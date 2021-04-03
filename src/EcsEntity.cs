@@ -58,6 +58,7 @@ namespace Leopotam.Ecs {
 
 #if DEBUG
         public override string ToString () {
+            if (this.IsNull ()) { return "Entity-Null"; }
             if (!this.IsAlive ()) { return "Entity-NonAlive"; }
             Type[] types = null;
             this.GetComponentTypes (ref types);
