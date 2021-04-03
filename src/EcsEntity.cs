@@ -15,6 +15,18 @@ namespace Leopotam.Ecs {
         internal int Id;
         internal ushort Gen;
         internal EcsWorld Owner;
+#if DEBUG
+        // For using in IDE debugger.
+        internal object[] Components {
+            get {
+                object[] list = null;
+                if (this.IsAlive ()) {
+                    this.GetComponentValues (ref list);
+                }
+                return list;
+            }
+        }
+#endif
 
         public static readonly EcsEntity Null = new EcsEntity ();
 
@@ -372,7 +384,7 @@ namespace Leopotam.Ecs {
         public static int GetInternalGen (in this EcsEntity entity) {
             return entity.Gen;
         }
-        
+
         /// <summary>
         /// Gets internal world.
         /// </summary>
