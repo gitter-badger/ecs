@@ -82,30 +82,6 @@ namespace Leopotam.Ecs {
         public static bool AreEquals (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
             return lhs.Idx == rhs.Idx && lhs.Pool == rhs.Pool;
         }
-
-        [Obsolete("Use EcsComponentRef.AreEquals instead.")]
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static bool operator == (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
-            return lhs.Idx == rhs.Idx && lhs.Pool == rhs.Pool;
-        }
-
-        [Obsolete("Use EcsComponentRef.AreEquals instead.")]
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static bool operator != (in EcsComponentRef<T> lhs, in EcsComponentRef<T> rhs) {
-            return lhs.Idx != rhs.Idx || lhs.Pool != rhs.Pool;
-        }
-
-        [Obsolete("Use EcsComponentRef.AreEquals instead.")]
-        public override bool Equals (object obj) {
-            return obj is EcsComponentRef<T> other && this == other;
-        }
-
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode () {
-            // ReSharper disable NonReadonlyMemberInGetHashCode
-            return Idx;
-            // ReSharper restore NonReadonlyMemberInGetHashCode
-        }
     }
 
 #if ENABLE_IL2CPP

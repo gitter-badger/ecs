@@ -135,52 +135,6 @@ class TestSystem1 : IEcsInitSystem {
 }
 ```
 
-## Data Injection with multiple EcsSystems
-
-If you want to use multiple `EcsSystems` you can find strange behaviour with DI:
-
-```csharp
-struct Component1 { }
-
-class System1 : IEcsInitSystem {
-    EcsWorld _world = null;
-
-    public void Init () {
-        _world.NewEntity ().Get<Component1> ();
-    } 
-}
-
-class System2 : IEcsInitSystem {
-    EcsFilter<Component1> _filter = null;
-
-    public void Init () {
-        Debug.Log (_filter.GetEntitiesCount ());
-    }
-}
-
-var systems1 = new EcsSystems (world);
-var systems2 = new EcsSystems (world);
-systems1.Add (new System1 ());
-systems2.Add (new System2 ());
-systems1.Init ();
-systems2.Init ();
-```
-You will get "0" at console. Problem is that DI starts at `Init()` method inside each `EcsSystems`. It means that any new `EcsFilter` instance (with lazy initialization) will be correctly injected only at current `EcsSystems`. 
-
-To fix this behaviour startup code should be modified in this way:
-
-```csharp
-var systems1 = new EcsSystems (world);
-var systems2 = new EcsSystems (world);
-systems1.Add (new System1 ());
-systems2.Add (new System2 ());
-systems1.ProcessInjects ();
-systems2.ProcessInjects ();
-systems1.Init ();
-systems2.Init ();
-```
-You should get "1" at console after fix.
-
 # Special classes
 
 ## EcsFilter<T>

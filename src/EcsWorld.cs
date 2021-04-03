@@ -118,7 +118,7 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = Filters.Count; i < iMax; i++) {
                 Filters.Items[i].Destroy ();
             }
-            
+
             IsDestroyed = true;
 #if DEBUG
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
@@ -245,6 +245,17 @@ namespace Leopotam.Ecs {
                 debugListener.OnFilterCreated (filter);
             }
 #endif
+            // scan exist entities for compatibility with new filter.
+            EcsEntity entity;
+            entity.Owner = this;
+            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
+                ref var entityData = ref Entities[i];
+                if (filter.IsCompatible (entityData, 0)) {
+                    entity.Id = i;
+                    entity.Gen = entityData.Gen;
+                    filter.OnAddEntity (entity);
+                }
+            }
             return filter;
         }
 
