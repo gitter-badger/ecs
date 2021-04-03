@@ -58,7 +58,15 @@ namespace Leopotam.Ecs {
 
 #if DEBUG
         public override string ToString () {
-            return this.IsNull () ? "Entity-Null" : $"Entity-{Id}:{Gen}";
+            if (!this.IsAlive ()) { return "Entity-NonAlive"; }
+            Type[] types = null;
+            this.GetComponentTypes (ref types);
+            var sb = new System.Text.StringBuilder (512);
+            foreach (var type in types) {
+                if (sb.Length > 0) { sb.Append (","); }
+                sb.Append (type.Name);
+            }
+            return $"Entity-{Id}:{Gen} [{sb}]";
         }
 #endif
         public bool Equals (EcsEntity other) {
