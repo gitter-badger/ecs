@@ -250,7 +250,7 @@ namespace Leopotam.Ecs {
             entity.Owner = this;
             for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
                 ref var entityData = ref Entities[i];
-                if (filter.IsCompatible (entityData, 0)) {
+                if (entityData.ComponentsCountX2 > 0 && filter.IsCompatible (entityData, 0)) {
                     entity.Id = i;
                     entity.Gen = entityData.Gen;
                     filter.OnAddEntity (entity);
