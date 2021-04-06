@@ -412,6 +412,31 @@ namespace Leopotam.Ecs {
             }
             return pool;
         }
+
+        /// <summary>
+        /// Gets all alive entities.
+        /// </summary>
+        /// <param name="entities">List to put results in it. if null - will be created. If not enough space - will be resized.</param>
+        /// <returns>Amount of alive entities.</returns>
+        public int GetAllEntities (ref EcsEntity[] entities) {
+            var count = EntitiesCount - FreeEntities.Count;
+            if (entities == null || entities.Length < count) {
+                entities = new EcsEntity[count];
+            }
+            EcsEntity e;
+            e.Owner = this;
+            var id = 0;
+            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
+                ref var entityData = ref Entities[i];
+                // should we skip empty entities here?
+                if (entityData.ComponentsCountX2 >= 0) {
+                    e.Id = i;
+                    e.Gen = entityData.Gen;
+                    entities[id++] = e;
+                }
+            }
+            return count;
+        }
     }
 
     /// <summary>
