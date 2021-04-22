@@ -1,13 +1,34 @@
 # LeoECS - Simple lightweight C# Entity Component System framework
 Performance, zero/small memory allocations/footprint, no dependencies on any game engine - main goals of this project.
 
-> C#7.3 or above required for this framework.
-
-> Tested on unity 2019.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
-
 > **Important!** Don't forget to use `DEBUG` builds for development and `RELEASE` builds in production: all internal error checks / exception throwing works only in `DEBUG` builds and eleminated for performance reasons in `RELEASE`.
 
 > **Important!** Ecs core API **not tread safe** and will never be! If you need multithread-processing - you should implement it on your side as part of ecs-system.
+
+# Table of content
+* [Socials](#socials)
+* [Installation](#installation)
+    * [As unity module](#as-unity-module)
+    * [As source](#as-source)
+* [Main parts of ecs](#main-parts-of-ecs)
+    * [Component](#component)
+    * [Entity](#entity)
+    * [System](#system)
+* [Data injection](#data-injection)
+* [Special classes](#special-classes)
+    * [EcsFilter<T>](#ecsfiltert)
+    * [EcsWorld](#ecsworld)
+    * [EcsSystems](#ecssystems)
+* [Engine integration](#engine-integration)
+    * [Unity](#unity)
+    * [Custom engine](#custom-engine)
+* [Projects powered by LeoECS](#projects-powered-by-leoecs)
+    * [With sources](#with-sources)
+    * [Released games](#released-games)
+* [Extensions](#extensions)
+* [License](#license)
+* [Special thanks](#special-thanks)
+* [FAQ](#faq)
 
 # Socials
 [![discord](https://img.shields.io/discord/404358247621853185.svg?label=enter%20to%20discord%20server&style=for-the-badge&logo=discord)](https://discord.gg/5GZVde6)
@@ -134,52 +155,6 @@ class TestSystem1 : IEcsInitSystem {
     } 
 }
 ```
-
-## Data Injection with multiple EcsSystems
-
-If you want to use multiple `EcsSystems` you can find strange behaviour with DI:
-
-```csharp
-struct Component1 { }
-
-class System1 : IEcsInitSystem {
-    EcsWorld _world = null;
-
-    public void Init () {
-        _world.NewEntity ().Get<Component1> ();
-    } 
-}
-
-class System2 : IEcsInitSystem {
-    EcsFilter<Component1> _filter = null;
-
-    public void Init () {
-        Debug.Log (_filter.GetEntitiesCount ());
-    }
-}
-
-var systems1 = new EcsSystems (world);
-var systems2 = new EcsSystems (world);
-systems1.Add (new System1 ());
-systems2.Add (new System2 ());
-systems1.Init ();
-systems2.Init ();
-```
-You will get "0" at console. Problem is that DI starts at `Init()` method inside each `EcsSystems`. It means that any new `EcsFilter` instance (with lazy initialization) will be correctly injected only at current `EcsSystems`. 
-
-To fix this behaviour startup code should be modified in this way:
-
-```csharp
-var systems1 = new EcsSystems (world);
-var systems2 = new EcsSystems (world);
-systems1.Add (new System1 ());
-systems2.Add (new System2 ());
-systems1.ProcessInjects ();
-systems2.ProcessInjects ();
-systems1.Init ();
-systems2.Init ();
-```
-You should get "1" at console after fix.
 
 # Special classes
 
@@ -309,9 +284,14 @@ systems.SetRunSystemState (idx, false);
 # Engine integration
 
 ## Unity
-In [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration) there are templates for startup and systems at project assets context menu.
+> Tested on unity 2019.1 (not dependent on it) and contains assembly definition for compiling to separate assembly file for performance reason.
+
+[Unity editor integration](https://github.com/Leopotam/ecs-unityintegration) contains code templates and world debug viewer.
+
 
 ## Custom engine
+> C#7.3 or above required for this framework.
+
 Code example - each part should be integrated in proper place of engine execution flow.
 ```csharp
 using Leopotam.Ecs;
@@ -396,7 +376,7 @@ The software released under the terms of the [MIT license](./LICENSE.md).
 
 No personal support or any guarantees. 
 
-# Special thanks (List sorted in back order, from high to low donations)
+# Special thanks
 * [VirtualMaestro](https://github.com/VirtualMaestro)
 * [Korchoon](https://github.com/korchoon)
 * [PureEmDe](https://github.com/PureEmDee)

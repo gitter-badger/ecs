@@ -15,6 +15,18 @@ namespace Leopotam.Ecs {
         internal int Id;
         internal ushort Gen;
         internal EcsWorld Owner;
+#if DEBUG
+        // For using in IDE debugger.
+        internal object[] Components {
+            get {
+                object[] list = null;
+                if (this.IsAlive ()) {
+                    this.GetComponentValues (ref list);
+                }
+                return list;
+            }
+        }
+#endif
 
         public static readonly EcsEntity Null = new EcsEntity ();
 
@@ -46,7 +58,16 @@ namespace Leopotam.Ecs {
 
 #if DEBUG
         public override string ToString () {
-            return this.IsNull () ? "Entity-Null" : $"Entity-{Id}:{Gen}";
+            if (this.IsNull ()) { return "Entity-Null"; }
+            if (!this.IsAlive ()) { return "Entity-NonAlive"; }
+            Type[] types = null;
+            this.GetComponentTypes (ref types);
+            var sb = new System.Text.StringBuilder (512);
+            foreach (var type in types) {
+                if (sb.Length > 0) { sb.Append (","); }
+                sb.Append (type.Name);
+            }
+            return $"Entity-{Id}:{Gen} [{sb}]";
         }
 #endif
         public bool Equals (EcsEntity other) {
@@ -61,7 +82,6 @@ namespace Leopotam.Ecs {
     public static class EcsEntityExtensions {
         /// <summary>
         /// Replaces or adds new one component to entity.
-        /// Slower than Get() direct call.
         /// </summary>
         /// <typeparam name="T">Type of component.</typeparam>
         /// <param name="entity">Entity.</param>
@@ -372,7 +392,7 @@ namespace Leopotam.Ecs {
         public static int GetInternalGen (in this EcsEntity entity) {
             return entity.Gen;
         }
-        
+
         /// <summary>
         /// Gets internal world.
         /// </summary>

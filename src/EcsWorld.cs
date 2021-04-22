@@ -118,7 +118,7 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = Filters.Count; i < iMax; i++) {
                 Filters.Items[i].Destroy ();
             }
-            
+
             IsDestroyed = true;
 #if DEBUG
             for (var i = DebugListeners.Count - 1; i >= 0; i--) {
@@ -245,6 +245,17 @@ namespace Leopotam.Ecs {
                 debugListener.OnFilterCreated (filter);
             }
 #endif
+            // scan exist entities for compatibility with new filter.
+            EcsEntity entity;
+            entity.Owner = this;
+            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
+                ref var entityData = ref Entities[i];
+                if (entityData.ComponentsCountX2 > 0 && filter.IsCompatible (entityData, 0)) {
+                    entity.Id = i;
+                    entity.Gen = entityData.Gen;
+                    filter.OnAddEntity (entity);
+                }
+            }
             return filter;
         }
 
@@ -400,6 +411,31 @@ namespace Leopotam.Ecs {
                 _usedComponentsCount++;
             }
             return pool;
+        }
+
+        /// <summary>
+        /// Gets all alive entities.
+        /// </summary>
+        /// <param name="entities">List to put results in it. if null - will be created. If not enough space - will be resized.</param>
+        /// <returns>Amount of alive entities.</returns>
+        public int GetAllEntities (ref EcsEntity[] entities) {
+            var count = EntitiesCount - FreeEntities.Count;
+            if (entities == null || entities.Length < count) {
+                entities = new EcsEntity[count];
+            }
+            EcsEntity e;
+            e.Owner = this;
+            var id = 0;
+            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
+                ref var entityData = ref Entities[i];
+                // should we skip empty entities here?
+                if (entityData.ComponentsCountX2 >= 0) {
+                    e.Id = i;
+                    e.Gen = entityData.Gen;
+                    entities[id++] = e;
+                }
+            }
+            return count;
         }
     }
 
