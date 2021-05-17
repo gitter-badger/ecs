@@ -155,6 +155,7 @@ class TestSystem1 : IEcsInitSystem {
     } 
 }
 ```
+> **Important!** Only fields of final class or public / protected fields of any base classes can be injected. Private fields of any base classes will be ignored!
 
 # Special classes
 
