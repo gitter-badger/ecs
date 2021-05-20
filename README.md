@@ -371,6 +371,7 @@ class EcsStartup {
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
 * [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
 * [Multi-threading support](https://github.com/Leopotam/ecs-threads)
+* [UniLeo - Unity scene data converter](https://github.com/voody2506/UniLeo)
 * [Service locator](https://github.com/Leopotam/globals)
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
