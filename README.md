@@ -155,6 +155,7 @@ class TestSystem1 : IEcsInitSystem {
     } 
 }
 ```
+> **Important!** Only fields of final class or public / protected fields of any base classes can be injected. Private fields of any base classes will be ignored!
 
 # Special classes
 
@@ -350,6 +351,8 @@ class EcsStartup {
 * ["Mahjong Solitaire"](https://github.com/cadfoot/unity-ecs-mahjong-solitaire)
   
   [![](https://img.youtube.com/vi/FxOcqVwue9g/0.jpg)](https://www.youtube.com/watch?v=FxOcqVwue9g)
+* ["3D Platformer"](https://github.com/supremestranger/3D-Platformer)
+  [![](https://camo.githubusercontent.com/dcd2f525130d73f4688c1f1cfb12f6e37d166dae23a1c6fac70e5b7873c3ab21/68747470733a2f2f692e6962622e636f2f686d374c726d342f506c6174666f726d65722e706e67)](https://github.com/supremestranger/3D-Platformer)
 * ["SpaceInvaders (Guns&Bullets variation)"](https://github.com/GoodCatGames/SpaceInvadersEcs)
 * ["Runner"](https://github.com/t1az2z/RunnerECS)
 * ["Pacman"](https://github.com/SH42913/pacmanecs)
@@ -368,6 +371,7 @@ class EcsStartup {
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
 * [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
 * [Multi-threading support](https://github.com/Leopotam/ecs-threads)
+* [UniLeo - Unity scene data converter](https://github.com/voody2506/UniLeo)
 * [Service locator](https://github.com/Leopotam/globals)
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
