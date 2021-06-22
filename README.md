@@ -27,7 +27,6 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
     * [Released games](#released-games)
 * [Extensions](#extensions)
 * [License](#license)
-* [Special thanks](#special-thanks)
 * [FAQ](#faq)
 
 # Socials
@@ -372,21 +371,14 @@ class EcsStartup {
 * [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
 * [Multi-threading support](https://github.com/Leopotam/ecs-threads)
 * [UniLeo - Unity scene data converter](https://github.com/voody2506/UniLeo)
+* [Unity Physx events support](https://github.com/supremestranger/leoecs-physics)
 * [Service locator](https://github.com/Leopotam/globals)
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
 # License
 The software released under the terms of the [MIT license](./LICENSE.md).
 
-No personal support or any guarantees. 
-
-# Special thanks
-* [VirtualMaestro](https://github.com/VirtualMaestro)
-* [Korchoon](https://github.com/korchoon)
-* [PureEmDe](https://github.com/PureEmDee)
-* [SH42913](https://github.com/SH42913)
-* [Svetlozar Valchev](https://github.com/SvetlozarValchev)
-* [Óscar F Gómez S](https://github.com/Racso)
+No personal support or any guarantees.
 
 # FAQ
 
