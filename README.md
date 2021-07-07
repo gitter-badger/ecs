@@ -357,6 +357,9 @@ class EcsStartup {
 * ["Pacman"](https://github.com/SH42913/pacmanecs)
 
 ## Released games
+* ["OUTERBLAST"](https://studiocraftapps.itch.io/outerblast)
+  
+  [![](https://img.youtube.com/vi/PqCJsiyogTg/0.jpg)](https://www.youtube.com/watch?v=PqCJsiyogTg)
 * ["Idle Delivery City Tycoon"](https://play.google.com/store/apps/details?id=com.Arctic.IdleTransportTycoon)
   
   [![](https://img.youtube.com/vi/FV-0Dq4kcy8/0.jpg)](https://www.youtube.com/watch?v=FV-0Dq4kcy8)
@@ -370,6 +373,7 @@ class EcsStartup {
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
 * [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
 * [Multi-threading support](https://github.com/Leopotam/ecs-threads)
+* [SharpPhysics2D](https://github.com/7Bpencil/sharpPhysics/tree/LeoECS)
 * [UniLeo - Unity scene data converter](https://github.com/voody2506/UniLeo)
 * [Unity Physx events support](https://github.com/supremestranger/leoecs-physics)
 * [Service locator](https://github.com/Leopotam/globals)
