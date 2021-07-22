@@ -5,6 +5,8 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 
 > **Important!** Ecs core API **not thread safe** and will never be! If you need multithread-processing - you should implement it on your side as part of ecs-system.
 
+> **Important!** No new features, bugfixes only! For new features you can check [EcsLite](https://github.com/Leopotam/ecslite).
+
 # Table of content
 * [Socials](#socials)
 * [Installation](#installation)
