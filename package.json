@@ -4,7 +4,7 @@
     "displayName": "LeoECS Core",
     "description": "LeoECS is simple lightweight C# Entity Component System framework based on structs. Performance, zero/small memory allocations/footprint - main goals of this project.",
     "unity": "2019.1",
-    "version": "2021.6.22",
+    "version": "2021.7.22",
     "keywords": [
         "leoecs",
         "ecs",
